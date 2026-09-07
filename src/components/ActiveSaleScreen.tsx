@@ -254,7 +254,10 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="pt-6 pb-2 space-y-2.5">
+        <div
+          className="pt-6 space-y-2.5"
+          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <button
             id="btn-sale-receipt-new"
             type="button"

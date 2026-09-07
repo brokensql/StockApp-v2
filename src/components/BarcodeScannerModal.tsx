@@ -1331,7 +1331,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 )}
 
                 {/* Center Viewfinder Reticle with Reference Rounded White Corners */}
-                <div className="relative z-20 flex items-center justify-center my-auto pointer-events-none">
+                <div
+                  className="relative z-20 flex items-center justify-center my-auto pointer-events-none"
+                  style={{ visibility: hasCamera === true ? 'visible' : 'hidden' }}
+                >
                   <div className="relative w-64 h-80 sm:w-72 sm:h-92 flex items-center justify-center transition-all duration-200">
                     {/* 4 Floating Rounded Corner Brackets in Pure White (Layered on top with z-30) */}
                     <svg

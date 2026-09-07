@@ -186,8 +186,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               itemLabel={(sale) => `Receipt ${sale.transactionNumber || sale.id}`}
               label="Transaction receipts deck"
               emptyLabel="All transactions reviewed"
-              height={360}
-              peek={3}
+              height={300}
+              peek={2}
               threshold={88}
               transformOrigin="top center"
               cardClassName="absolute inset-x-2 top-0 select-none overflow-visible cursor-grab active:cursor-grabbing"
