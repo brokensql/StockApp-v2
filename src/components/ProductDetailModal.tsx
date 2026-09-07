@@ -211,7 +211,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#DEE3DE] rounded-xl text-[15px] text-[#252825] appearance-none focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] cursor-pointer transition-colors"
                   >
                     {categoryList.map((cat) => (
-                      <option key={cat} value={cat}>
+                      <option
+                        key={cat}
+                        value={cat}
+                        className="text-[#252825] bg-white"
+                        style={{ color: '#252825', backgroundColor: '#ffffff' }}
+                      >
                         {cat}
                       </option>
                     ))}
