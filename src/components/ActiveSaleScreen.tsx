@@ -294,8 +294,11 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col justify-between"
     >
       <div
-        className="px-5 pt-6 pb-28"
-        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
+        className="px-5 pt-6"
+        style={{
+          paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))',
+        }}
       >
         {/* Top Header */}
         <header className="mb-4 flex items-center justify-between">
