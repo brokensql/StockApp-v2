@@ -974,7 +974,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 w-full h-full flex flex-col select-none bg-black overflow-hidden"
+          className="fixed inset-0 z-50 w-full h-full flex flex-col select-none bg-[#F7F9FB] overflow-hidden"
         >
           {/* Always-mounted Background Camera Video so stream is never interrupted */}
           <video
@@ -982,7 +982,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             playsInline
             muted
             autoPlay
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none bg-[#F7F9FB]"
           />
 
           {/* In-Modal Toaster using Navy Blue Format, strictly hugging text width */}

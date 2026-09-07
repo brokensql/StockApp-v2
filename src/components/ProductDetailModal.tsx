@@ -315,7 +315,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 pb-2 space-y-2.5">
+              <div
+                className="pt-3 space-y-2.5"
+                style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+              >
                 <button
                   id="btn-save-product"
                   type="submit"
