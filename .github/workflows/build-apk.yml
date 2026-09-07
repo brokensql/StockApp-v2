@@ -89,8 +89,20 @@ jobs:
           STYLES_DIR=android/app/src/main/res/values
           STYLES_FILE="$STYLES_DIR/styles.xml"
           mkdir -p "$STYLES_DIR"
-          # 1. Write a brand color resource (reused for the adaptive-icon background)
-          if ! grep -q 'splash_background' "$STYLES_DIR/colors.xml" 2>/dev/null; then
+          # 1. Force the ic_launcher_background color to #F7F9FB in whichever file the template put it in
+          if [ -f "$STYLES_DIR/ic_launcher_background.xml" ]; then
+            cat > "$STYLES_DIR/ic_launcher_background.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#F7F9FB</color>
+          </resources>
+          XML
+          fi
+          if [ -f "$STYLES_DIR/colors.xml" ]; then
+            sed -i 's|<color name="ic_launcher_background">.*</color>|<color name="ic_launcher_background">#F7F9FB</color>|' "$STYLES_DIR/colors.xml" 2>/dev/null || true
+          fi
+          # 2. Add splash_background color if not present
+          if ! grep -q 'splash_background' "$STYLES_DIR/"*.xml 2>/dev/null; then
             if [ -f "$STYLES_DIR/colors.xml" ]; then
               printf '\n    <color name="splash_background">#F7F9FB</color>\n' >> "$STYLES_DIR/colors.xml"
             else
@@ -98,16 +110,11 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <color name="splash_background">#F7F9FB</color>
-              <color name="ic_launcher_background">#F7F9FB</color>
           </resources>
           XML
             fi
           fi
-          if [ -f "$STYLES_DIR/colors.xml" ]; then
-            sed -i 's/<color name="ic_launcher_background">.*<\/color>/<color name="ic_launcher_background">#F7F9FB<\/color>/' "$STYLES_DIR/colors.xml" 2>/dev/null || true
-          fi
-          # 2. Rewrite styles.xml so AppTheme.NoActionBarLaunch (the splash theme) and AppTheme.NoActionBar
-          #    both use splash_background instead of @android:color/black.
+          # 3. Rewrite styles.xml so AppTheme.NoActionBarLaunch uses splash_background (no drawable - keeps the launch fast)
           cat > "$STYLES_FILE" <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -122,25 +129,14 @@ jobs:
               </style>
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
                   <item name="android:background">@color/splash_background</item>
-                  <item name="android:windowBackground">@drawable/splash</item>
+                  <item name="android:windowBackground">@color/splash_background</item>
               </style>
           </resources>
           XML
-          # 3. Write a drawable splash that paints splash_background and centers the launcher icon.
-          mkdir -p android/app/src/main/res/drawable
-          cat > android/app/src/main/res/drawable/splash.xml <<'XML'
-          <?xml version="1.0" encoding="utf-8"?>
-          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-              <item android:drawable="@color/splash_background"/>
-              <item>
-                  <bitmap
-                      android:gravity="center"
-                      android:src="@mipmap/ic_launcher"/>
-              </item>
-          </layer-list>
-          XML
-          # 4. Sanity check
-          grep -n 'splash_background\|splash.xml' "$STYLES_FILE" android/app/src/main/res/drawable/splash.xml | head -20
+          # 4. DELETE the template's splash.png so it doesn't conflict; we use a plain colored background
+          rm -f android/app/src/main/res/drawable/splash.png
+          rm -f android/app/src/main/res/drawable-port-*/splash.png 2>/dev/null || true
+          rm -f android/app/src/main/res/drawable/splash.xml 2>/dev/null || true
 
       - name: Declare camera permission for barcode scanner
         run: |
