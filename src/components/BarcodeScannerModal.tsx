@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -18,6 +18,9 @@ import {
   Redo2,
   Plus,
   Trash2,
+  Search,
+  Minus,
+  Barcode,
 } from 'lucide-react';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
@@ -126,10 +129,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const controlsRef = useRef<IScannerControls | null>(null);
   const frameCallbackIdRef = useRef<number | null>(null);
 
-  // Input Method: 'barcode' (camera live scanner) vs 'key' (manual code typing)
+  // Input Method: 'barcode' (camera live scanner) vs 'key' (inventory search & select)
   const [inputMethod, setInputMethod] = useState<'barcode' | 'key'>('barcode');
-  const [manualBarcodes, setManualBarcodes] = useState<string[]>(['']);
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [barcodeFilter, setBarcodeFilter] = useState<'all' | 'with-barcode' | 'without-barcode'>('all');
 
   // Undo / Redo history state
   const [cartHistory, setCartHistory] = useState<HistorySnapshot[]>([
@@ -507,7 +510,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setInputMethod('barcode');
-      setManualBarcodes(['']);
+      setSearchQuery('');
+      setBarcodeFilter('all');
       setCartHistory([{ cart: [], unrecognizedBarcode: null }]);
       setHistoryIndex(0);
       setIsScanningActive(false);
@@ -538,7 +542,6 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         scanTimeoutRef.current = null;
       }
       setScanToast(null);
-      setTimeout(() => inputRefs.current[0]?.focus(), 80);
     }
   };
 
@@ -836,152 +839,127 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
   };
 
-  const handleBarcodeChange = (index: number, value: string) => {
-    setManualBarcodes((prev) => {
-      const copy = [...prev];
-      copy[index] = value;
-      return copy;
-    });
-  };
+  // Counts for the barcode presence filter
+  const barcodeFilterCounts = useMemo(() => {
+    const all = products.length;
+    const withBarcode = products.filter((p) => Boolean(p.sku && p.sku.trim().length > 0)).length;
+    const withoutBarcode = all - withBarcode;
+    return { all, withBarcode, withoutBarcode };
+  }, [products]);
 
-  const handleAddLine = () => {
-    setManualBarcodes((prev) => {
-      const next = [...prev, ''];
-      setTimeout(() => {
-        const nextIdx = next.length - 1;
-        inputRefs.current[nextIdx]?.focus();
-      }, 50);
-      return next;
-    });
-  };
+  // Filtered products based on search input and barcode filter ("All", "With barcodes", "Without barcodes")
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return products.filter((p) => {
+      const hasBarcode = Boolean(p.sku && p.sku.trim().length > 0);
+      if (barcodeFilter === 'with-barcode' && !hasBarcode) return false;
+      if (barcodeFilter === 'without-barcode' && hasBarcode) return false;
 
-  const handleRemoveLine = (index: number) => {
-    setManualBarcodes((prev) => {
-      if (prev.length <= 1) return [''];
-      return prev.filter((_, idx) => idx !== index);
-    });
-  };
-
-  const handleClearLine = (index: number) => {
-    setManualBarcodes((prev) => {
-      const copy = [...prev];
-      copy[index] = '';
-      return copy;
-    });
-    inputRefs.current[index]?.focus();
-  };
-
-  const handleKeySubmit = (singleCode?: string) => {
-    const codes = (singleCode !== undefined
-      ? [singleCode.trim()]
-      : manualBarcodes.map((b) => b.trim())
-    ).filter((b) => b.length > 0);
-
-    if (codes.length === 0) return;
-
-    playBeep();
-
-    const {
-      products: currentProducts,
-      onItemScanned: currentOnItemScanned,
-      onScanSuccess: currentOnScanSuccess,
-      onClose: currentOnClose,
-    } = propsRef.current;
-
-    // --- INVENTORY MODE KEY SUBMIT ---
-    if (isInventoryMode) {
-      const code = codes[0];
-      const matched = currentProducts.find(
-        (p) =>
-          (p.sku && p.sku.trim().toLowerCase() === code.toLowerCase()) ||
-          p.id.toLowerCase() === code.toLowerCase() ||
-          p.name.trim().toLowerCase() === code.toLowerCase()
-      );
-      if (matched && currentOnItemScanned) {
-        currentOnItemScanned(matched);
+      if (q) {
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const catMatch = p.category ? p.category.toLowerCase().includes(q) : false;
+        const skuMatch = p.sku ? p.sku.toLowerCase().includes(q) : false;
+        return nameMatch || catMatch || skuMatch;
       }
-      if (currentOnScanSuccess) {
-        currentOnScanSuccess(code);
-      }
-      currentOnClose();
-      return;
-    }
+      return true;
+    });
+  }, [products, searchQuery, barcodeFilter]);
 
-    // --- SALES MODE KEY SUBMIT ---
-    let updatedCart = [...scannedCart];
-    let lastUnrecognized: string | null = unrecognizedBarcode;
-    const matchedNames: string[] = [];
-    const unrecognizedCodes: string[] = [];
+  // Add a product to the cart (accumulates with barcodes scanned in "Barcode" view)
+  const handleAddProductToCart = useCallback(
+    (product: Product) => {
+      const {
+        onItemScanned: currentOnItemScanned,
+        onScanSuccess: currentOnScanSuccess,
+        onClose: currentOnClose,
+      } = propsRef.current;
 
-    for (const code of codes) {
-      const matched = currentProducts.find(
-        (p) =>
-          (p.sku && p.sku.trim().toLowerCase() === code.toLowerCase()) ||
-          p.id.toLowerCase() === code.toLowerCase() ||
-          p.name.trim().toLowerCase() === code.toLowerCase()
-      );
-
-      if (matched) {
-        if (currentOnItemScanned) {
-          currentOnItemScanned(matched);
-        }
-        const existingIdx = updatedCart.findIndex((item) => item.productId === matched.id);
-        if (existingIdx >= 0) {
-          updatedCart[existingIdx] = {
-            ...updatedCart[existingIdx],
-            quantity: updatedCart[existingIdx].quantity + 1,
-          };
+      // In inventory mode: selecting a product
+      if (isInventoryMode) {
+        if (product.sku) {
+          if (currentOnItemScanned) currentOnItemScanned(product);
+          if (currentOnScanSuccess) currentOnScanSuccess(product.sku);
+          currentOnClose();
         } else {
-          updatedCart = [
-            ...updatedCart,
-            {
-              productId: matched.id,
-              name: matched.name,
-              unitPrice: matched.price,
-              quantity: 1,
-              category: matched.category,
-            },
-          ];
+          setScanToast({
+            id: Date.now(),
+            type: 'warning',
+            title: product.name,
+            subtitle: 'This product has no barcode assigned',
+          });
+          if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+          toastDismissTimerRef.current = window.setTimeout(() => setScanToast(null), 2500);
         }
-        matchedNames.push(matched.name);
-      } else {
-        lastUnrecognized = code;
-        unrecognizedCodes.push(code);
+        return;
       }
-    }
 
-    const actionTitle = matchedNames.length > 0 ? matchedNames.join(', ') : 'Manual Entry';
-    pushHistory(updatedCart, lastUnrecognized, actionTitle);
+      playBeep();
+      if (currentOnItemScanned) {
+        currentOnItemScanned(product);
+      }
 
-    if (toastDismissTimerRef.current) {
-      clearTimeout(toastDismissTimerRef.current);
-    }
+      const existingIdx = scannedCart.findIndex((item) => item.productId === product.id);
+      let updatedCart: SaleItem[];
+      if (existingIdx >= 0) {
+        updatedCart = [...scannedCart];
+        updatedCart[existingIdx] = {
+          ...updatedCart[existingIdx],
+          quantity: updatedCart[existingIdx].quantity + 1,
+        };
+      } else {
+        updatedCart = [
+          ...scannedCart,
+          {
+            productId: product.id,
+            name: product.name,
+            unitPrice: product.price,
+            quantity: 1,
+            category: product.category,
+          },
+        ];
+      }
 
-    if (unrecognizedCodes.length > 0 && matchedNames.length === 0) {
-      setScanToast({
-        id: Date.now(),
-        type: 'warning',
-        title: unrecognizedCodes.length === 1 ? 'Unrecognized Barcode' : 'Unrecognized Barcodes',
-        subtitle: unrecognizedCodes.join(', '),
-      });
-    } else if (matchedNames.length > 0) {
+      pushHistory(updatedCart, unrecognizedBarcode, product.name);
+
       setScanToast({
         id: Date.now(),
         type: 'success',
-        title: matchedNames.length === 1 ? matchedNames[0] : `${matchedNames.length} Items Added`,
-        subtitle: unrecognizedCodes.length > 0 ? `${unrecognizedCodes.length} unrecognized` : 'Added to cart',
+        title: product.name,
+        subtitle: `₱${product.price.toFixed(2)} • Added to cart`,
       });
-    }
 
-    toastDismissTimerRef.current = window.setTimeout(() => {
-      setScanToast(null);
-    }, 3000);
+      if (toastDismissTimerRef.current) {
+        clearTimeout(toastDismissTimerRef.current);
+      }
+      toastDismissTimerRef.current = window.setTimeout(() => {
+        setScanToast(null);
+      }, 2000);
+    },
+    [isInventoryMode, playBeep, scannedCart, unrecognizedBarcode, pushHistory]
+  );
 
-    setManualBarcodes(['']);
-    setTimeout(() => inputRefs.current[0]?.focus(), 60);
-  };
+  // Decrement a product in the cart or remove if quantity reaches 0
+  const handleDecrementProductInCart = useCallback(
+    (productId: string) => {
+      const existingIdx = scannedCart.findIndex((item) => item.productId === productId);
+      if (existingIdx < 0) return;
 
-  const validBarcodesCount = manualBarcodes.filter((b) => b.trim().length > 0).length;
+      const item = scannedCart[existingIdx];
+      let updatedCart: SaleItem[];
+      if (item.quantity > 1) {
+        updatedCart = [...scannedCart];
+        updatedCart[existingIdx] = {
+          ...updatedCart[existingIdx],
+          quantity: updatedCart[existingIdx].quantity - 1,
+        };
+      } else {
+        updatedCart = scannedCart.filter((i) => i.productId !== productId);
+      }
+
+      pushHistory(updatedCart, unrecognizedBarcode, `Decremented ${item.name}`);
+    },
+    [scannedCart, unrecognizedBarcode, pushHistory]
+  );
 
   return (
     <AnimatePresence>
@@ -1048,186 +1026,290 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           {/* Smooth transition between Key and Barcode camera views */}
           <AnimatePresence mode="wait" initial={false}>
             {inputMethod === 'key' ? (
-              /* MANUAL BARCODE "KEY" VIEW (Full Page) */
+              /* INVENTORY SELECTION "KEY" VIEW (Full Page) */
               <motion.div
                 key="manual-key"
                 initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -24 }}
                 transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-                className="relative z-10 w-full h-full flex-1 flex flex-col justify-between p-5 bg-white text-[#252825] overflow-y-auto select-none pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)]"
+                className="relative z-10 w-full h-full flex-1 flex flex-col bg-[#F7F9FB] text-[#252825] overflow-hidden select-none"
               >
-                {/* Top header with close button & Checkout button */}
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-[#161816] flex items-center justify-center transition-colors cursor-pointer"
-                    aria-label="Close"
-                  >
-                    <X size={18} strokeWidth={2.5} />
-                  </button>
+                {/* Top header with close button, title & Checkout button */}
+                <div
+                  className="px-4 py-3 flex items-center justify-between border-b border-[#DEE3DE] bg-white shrink-0"
+                  style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 14px)' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-[#161816] flex items-center justify-center transition-colors cursor-pointer"
+                      aria-label="Close"
+                    >
+                      <X size={17} strokeWidth={2.5} />
+                    </button>
+                    <div>
+                      <h2 className="text-[16px] sm:text-[17px] font-bold text-[#252825] leading-tight">
+                        {isInventoryMode ? 'Select Product' : 'Product Inventory'}
+                      </h2>
+                      <p className="text-[12px] text-[#717671] leading-none mt-0.5">
+                        {products.length} {products.length === 1 ? 'product' : 'products'} total
+                      </p>
+                    </div>
+                  </div>
 
-                  {/* Checkout Button in Key View Header (Sales Mode only) */}
+                  {/* Quick Checkout Button in Key View Header (Sales Mode only) */}
                   {!isInventoryMode && (totalQuantity > 0 || unrecognizedBarcode) && (
                     <button
                       type="button"
                       onClick={handleCheckout}
-                      className="h-10 px-4 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center gap-2 shadow-[0_3px_12px_rgba(79,128,101,0.35)] font-bold text-[13px] active:scale-95 transition-all cursor-pointer"
+                      className="h-9 px-3.5 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center gap-1.5 shadow-[0_2px_8px_rgba(79,128,101,0.3)] font-bold text-[13px] active:scale-95 transition-all cursor-pointer"
                     >
-                      <ShoppingCart size={15} strokeWidth={2.4} />
+                      <ShoppingCart size={14} strokeWidth={2.4} />
                       <span>Checkout ({totalQuantity})</span>
                     </button>
                   )}
                 </div>
 
-                {/* Center Content */}
-                <div className="my-auto flex flex-col items-center max-w-sm mx-auto w-full px-2">
-                  <h2 className="text-[20px] font-bold text-[#252825] text-center mb-1">
-                    {isInventoryMode ? 'Type product barcode' : 'Type product barcode'}
-                  </h2>
-                  <p className="text-[13px] text-[#717671] text-center mb-5">
-                    {isInventoryMode
-                      ? 'Enter the barcode digits to assign to this product in inventory'
-                      : 'Enter the barcode digits or add multiple lines'}
-                  </p>
-
-                  {/* Barcode graphic for aesthetics */}
-                  <div className="w-full flex items-center justify-center py-2.5 px-4 mb-3">
-                    <svg
-                      viewBox="0 0 190 56"
-                      className="w-44 h-11 text-[#161816] fill-current opacity-85"
-                      aria-hidden="true"
-                    >
-                      <rect x="0" y="0" width="3" height="56" />
-                      <rect x="6" y="0" width="1.8" height="56" />
-                      <rect x="11" y="0" width="5.5" height="56" />
-                      <rect x="20" y="0" width="2.8" height="56" />
-                      <rect x="26" y="0" width="6.5" height="56" />
-                      <rect x="36" y="0" width="1.8" height="56" />
-                      <rect x="41" y="0" width="4.5" height="56" />
-                      <rect x="49" y="0" width="7" height="56" />
-                      <rect x="60" y="0" width="2.8" height="56" />
-                      <rect x="66" y="0" width="5.5" height="56" />
-                      <rect x="75" y="0" width="1.8" height="56" />
-                      <rect x="80" y="0" width="6.5" height="56" />
-                      <rect x="90" y="0" width="3.8" height="56" />
-                      <rect x="97" y="0" width="5.5" height="56" />
-                      <rect x="106" y="0" width="1.8" height="56" />
-                      <rect x="111" y="0" width="6.5" height="56" />
-                      <rect x="121" y="0" width="2.8" height="56" />
-                      <rect x="127" y="0" width="4.5" height="56" />
-                      <rect x="135" y="0" width="6.5" height="56" />
-                      <rect x="145" y="0" width="1.8" height="56" />
-                      <rect x="150" y="0" width="4.5" height="56" />
-                      <rect x="158" y="0" width="2.8" height="56" />
-                      <rect x="164" y="0" width="5.5" height="56" />
-                      <rect x="173" y="0" width="2.8" height="56" />
-                      <rect x="179" y="0" width="4.5" height="56" />
-                      <rect x="187" y="0" width="3" height="56" />
-                    </svg>
+                {/* Search Bar & Filter selection: "All", "With barcodes", "Without barcodes" */}
+                <div className="px-4 pt-3 pb-2.5 bg-white border-b border-[#DEE3DE] space-y-2.5 shrink-0">
+                  {/* Search input */}
+                  <div className="relative w-full">
+                    <Search
+                      size={17}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#717671] pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search products, barcodes, category..."
+                      className="w-full h-10 pl-10 pr-9 bg-[#F2F4F2] text-[#252825] text-[14px] rounded-xl border border-transparent focus:border-[#4F8065] focus:bg-white focus:outline-none transition-all placeholder:text-[#9CA3AF]"
+                    />
+                    {searchQuery.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center cursor-pointer transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X size={13} strokeWidth={2.4} />
+                      </button>
+                    )}
                   </div>
 
-                  {/* Multi-line minimal underline inputs (Single line in inventory mode) */}
-                  <div className="w-full flex flex-col gap-3.5 mb-2 max-h-[260px] overflow-y-auto px-1 py-1">
-                    {(isInventoryMode ? manualBarcodes.slice(0, 1) : manualBarcodes).map((code, idx) => (
-                      <div key={idx} className="relative w-full group">
-                        <input
-                          ref={(el) => {
-                            inputRefs.current[idx] = el;
-                          }}
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          autoFocus={idx === 0}
-                          placeholder={
-                            isInventoryMode
-                              ? 'e.g. 4800016644815'
-                              : manualBarcodes.length > 1
-                              ? `Barcode #${idx + 1}...`
-                              : 'Click here to type barcode...'
-                          }
-                          value={code}
-                          onChange={(e) => handleBarcodeChange(idx, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (!isInventoryMode && idx === manualBarcodes.length - 1 && code.trim().length > 0) {
-                                handleAddLine();
-                              } else {
-                                handleKeySubmit();
-                              }
-                            }
-                          }}
-                          className="w-full h-11 bg-transparent text-center font-mono text-[20px] font-bold text-[#161816] placeholder:text-[#9CA3AF] placeholder:text-[14px] placeholder:font-normal outline-none transition-all pb-1.5 border-b-2 border-[#DEE3DE] focus:border-[#4F8065] px-8"
-                        />
-
-                        {/* Remove Line (if multiple lines exist and not inventory mode) */}
-                        {!isInventoryMode && manualBarcodes.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveLine(idx)}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center cursor-pointer transition-colors"
-                            aria-label={`Remove barcode line ${idx + 1}`}
-                            title="Remove line"
-                          >
-                            <Trash2 size={14} strokeWidth={2.2} />
-                          </button>
-                        )}
-
-                        {/* Clear text button */}
-                        {code.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleClearLine(idx)}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center cursor-pointer transition-colors"
-                            aria-label={`Clear line ${idx + 1}`}
-                          >
-                            <X size={13} strokeWidth={2.5} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Option to add another barcode line (Only in sales multi-mode) */}
-                  {!isInventoryMode && (
+                  {/* Filter chips: "All", "With barcodes", "Without barcodes" */}
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                     <button
                       type="button"
-                      onClick={handleAddLine}
-                      className="flex items-center gap-1.5 text-[13px] font-semibold text-[#161816] hover:text-black active:scale-95 transition-all py-1.5 px-3 rounded-lg hover:bg-black/5 cursor-pointer mb-3"
+                      onClick={() => setBarcodeFilter('all')}
+                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                        barcodeFilter === 'all'
+                          ? 'bg-[#252825] text-white shadow-xs'
+                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
+                      }`}
                     >
-                      <Plus size={15} strokeWidth={2.5} />
-                      <span>Add another barcode line</span>
+                      <span>All</span>
+                      <span
+                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                          barcodeFilter === 'all'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-black/5 text-[#717671]'
+                        }`}
+                      >
+                        {barcodeFilterCounts.all}
+                      </span>
                     </button>
-                  )}
 
-                  {/* Submit Button in project Green variant */}
-                  <button
-                    type="button"
-                    onClick={() => handleKeySubmit()}
-                    disabled={validBarcodesCount === 0}
-                    className="w-full h-12 bg-[#4F8065] hover:bg-[#3D684F] active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed text-white rounded-full font-bold text-[15px] flex items-center justify-center shadow-[0_4px_14px_rgba(79,128,101,0.35)] transition-all cursor-pointer"
-                  >
-                    <span>
-                      {isInventoryMode
-                        ? 'Confirm Barcode'
-                        : validBarcodesCount > 1
-                        ? `Add ${validBarcodesCount} Barcodes`
-                        : 'Add Barcode'}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setBarcodeFilter('with-barcode')}
+                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                        barcodeFilter === 'with-barcode'
+                          ? 'bg-[#4F8065] text-white shadow-xs'
+                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
+                      }`}
+                    >
+                      <span>With barcodes</span>
+                      <span
+                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                          barcodeFilter === 'with-barcode'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-black/5 text-[#717671]'
+                        }`}
+                      >
+                        {barcodeFilterCounts.withBarcode}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBarcodeFilter('without-barcode')}
+                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                        barcodeFilter === 'without-barcode'
+                          ? 'bg-[#4F8065] text-white shadow-xs'
+                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
+                      }`}
+                    >
+                      <span>Without barcodes</span>
+                      <span
+                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                          barcodeFilter === 'without-barcode'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-black/5 text-[#717671]'
+                        }`}
+                      >
+                        {barcodeFilterCounts.withoutBarcode}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Bottom Bar: Summary & Checkout if items scanned (Sales mode only) */}
-                <div className="flex flex-col items-center gap-3 pt-2">
+                {/* Available Products List */}
+                <div
+                  className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
+                  style={{
+                    paddingBottom: 'calc(10rem + env(safe-area-inset-bottom, 0px))',
+                  }}
+                >
+                  {filteredProducts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
+                        <Search size={22} strokeWidth={2} />
+                      </div>
+                      <p className="text-[15px] font-semibold text-[#252825]">No matching products</p>
+                      <p className="text-[13px] text-[#717671] mt-1 max-w-xs">
+                        Try changing your search keywords or choosing "All" to view every product in your inventory.
+                      </p>
+                      {(searchQuery || barcodeFilter !== 'all') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setBarcodeFilter('all');
+                          }}
+                          className="mt-4 px-4 py-2 rounded-xl bg-[#F2F4F2] hover:bg-[#E5E9E5] text-[#252825] text-[13px] font-semibold cursor-pointer transition-colors"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    filteredProducts.map((p) => {
+                      const cartItem = scannedCart.find((i) => i.productId === p.id);
+                      const qty = cartItem ? cartItem.quantity : 0;
+                      const hasBarcode = Boolean(p.sku && p.sku.trim().length > 0);
+
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleAddProductToCart(p)}
+                          className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                            qty > 0
+                              ? 'bg-[#F2F8F4] border-[#4F8065] shadow-xs'
+                              : 'bg-white border-[#DEE3DE] hover:border-gray-300 shadow-2xs active:bg-gray-50'
+                          }`}
+                        >
+                          {/* Product details */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[15px] font-semibold text-[#252825] truncate">
+                              {p.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className="text-[11px] font-medium text-[#555A55] bg-[#EAEFEA] px-2 py-0.5 rounded-md">
+                                {p.category || 'General'}
+                              </span>
+                              {hasBarcode ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#555A55] bg-gray-100 px-2 py-0.5 rounded-md">
+                                  <Barcode size={11} />
+                                  <span className="truncate max-w-[120px]">{p.sku}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center text-[11px] text-[#9E653A] bg-[#FDF4EC] px-2 py-0.5 rounded-md font-medium">
+                                  No barcode
+                                </span>
+                              )}
+                              {p.stock <= p.lowStockThreshold && (
+                                <span className="text-[11px] text-amber-700 font-medium">
+                                  {p.stock <= 0 ? 'Out of stock' : `${p.stock} left`}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1.5">
+                              <span className="text-[15px] font-bold text-[#252825]">
+                                ₱{p.price.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Right Action / Quantity Stepper */}
+                          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {!isInventoryMode ? (
+                              qty > 0 ? (
+                                <div className="flex items-center gap-1.5 bg-white border border-[#4F8065]/50 rounded-xl p-1 shadow-2xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDecrementProductInCart(p.id)}
+                                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#252825] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
+                                    aria-label={`Decrease ${p.name}`}
+                                  >
+                                    <Minus size={13} strokeWidth={2.5} />
+                                  </button>
+                                  <span className="w-6 text-center text-[13px] font-bold text-[#252825]">
+                                    {qty}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddProductToCart(p)}
+                                    className="w-7 h-7 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95"
+                                    aria-label={`Increase ${p.name}`}
+                                  >
+                                    <Plus size={13} strokeWidth={2.5} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddProductToCart(p)}
+                                  className="h-8.5 px-3 rounded-xl bg-[#F2F4F2] hover:bg-[#4F8065] hover:text-white text-[#252825] font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 border border-[#DEE3DE]"
+                                  aria-label={`Add ${p.name}`}
+                                >
+                                  <Plus size={14} strokeWidth={2.5} />
+                                  <span>Add</span>
+                                </button>
+                              )
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleAddProductToCart(p)}
+                                className="h-8.5 px-3 rounded-xl bg-[#4F8065] text-white font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                              >
+                                <span>Select</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Bottom Floating Bar: Summary & Checkout + Switcher */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center gap-2.5 px-4 pt-6 bg-gradient-to-t from-[#F7F9FB] via-[#F7F9FB]/95 to-transparent pointer-events-none"
+                  style={{
+                    paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+                  }}
+                >
+                  {/* Floating Checkout Summary Bar (Sales Mode only) */}
                   {!isInventoryMode && totalQuantity > 0 && (
-                    <div className="w-full max-w-sm flex items-center justify-between px-4 py-2.5 bg-[#F2F4F2] rounded-2xl border border-[#DEE3DE]">
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[12px] text-[#717671] font-medium">
+                    <div className="w-full max-w-sm flex items-center justify-between px-4 py-2.5 bg-[#161816]/95 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl text-white pointer-events-auto">
+                      <div className="flex flex-col text-left leading-tight">
+                        <span className="text-[11px] text-gray-300 font-medium">
                           {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in cart
                         </span>
-                        <span className="text-[16px] font-bold text-[#161816]">
+                        <span className="text-[15px] font-bold text-white">
                           ₱{totalAmount.toFixed(2)}
                         </span>
                       </div>
@@ -1242,12 +1324,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Switcher ("Barcode" & "Key") */}
-                  <div className="flex items-center justify-center gap-3 pb-2">
+                  {/* Switcher Buttons: "Barcode" and "Key" */}
+                  <div className="flex items-center justify-center gap-3 pointer-events-auto">
                     <button
                       type="button"
                       onClick={() => handleSwitchInputMethod('barcode')}
-                      className="w-28 h-14 rounded-2xl bg-[#F2F4F2] hover:bg-[#E5E9E5] text-[#4B524D] border border-[#DEE3DE]/60 flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      className="w-28 h-14 rounded-2xl bg-white hover:bg-[#F2F4F2] text-[#4B524D] border border-[#DEE3DE] shadow-xs flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
                     >
                       <ScanLine size={18} strokeWidth={2.3} />
                       <span>Barcode</span>
