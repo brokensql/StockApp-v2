@@ -51,7 +51,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       className="w-full max-w-[430px] mx-auto px-5 pt-6 sm:pt-8"
       style={{
         paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
-        paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'calc(10rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
       {/* Home Greeting Bar */}
