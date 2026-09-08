@@ -55,16 +55,69 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setError('');
       setIsCategoryOpen(false);
     } else {
-      setName('');
-      setCategory('General');
-      setPrice('');
-      setStock('');
-      setThreshold('5');
-      setSku(initialSku || '');
+      const cleanInitSku = initialSku ? initialSku.trim().toLowerCase() : '';
+      const matched = cleanInitSku
+        ? products.find(
+            (p) =>
+              (p.sku && p.sku.trim().toLowerCase() === cleanInitSku) ||
+              p.id.toLowerCase() === cleanInitSku
+          )
+        : null;
+
+      if (matched) {
+        setName(matched.name);
+        setCategory(matched.category);
+        setPrice(matched.price.toString());
+        setStock(matched.stock.toString());
+        setThreshold(matched.lowStockThreshold.toString());
+        setSku(matched.sku || initialSku || '');
+      } else {
+        setName('');
+        setCategory('General');
+        setPrice('');
+        setStock('');
+        setThreshold('5');
+        setSku(initialSku || '');
+      }
       setError('');
       setIsCategoryOpen(false);
     }
-  }, [product, isOpen, initialSku]);
+  }, [product, isOpen, initialSku, products]);
+
+  // Detect if an existing product matches the entered barcode or name when adding a new product
+  const matchingExistingProduct = useMemo(() => {
+    if (isEditing) return null;
+    const cleanName = name.trim().toLowerCase();
+    const cleanSku = sku.trim().toLowerCase();
+
+    if (!cleanName && !cleanSku) return null;
+
+    return (
+      products.find((p) => {
+        const matchesSku = Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
+        const matchesName = Boolean(cleanName && p.name.trim().toLowerCase() === cleanName);
+        return matchesSku || matchesName;
+      }) || null
+    );
+  }, [products, isEditing, name, sku]);
+
+  // Detect if user is editing a product and collides with another product's SKU or name
+  const duplicateConflict = useMemo(() => {
+    if (!isEditing || !product) return null;
+    const cleanName = name.trim().toLowerCase();
+    const cleanSku = sku.trim().toLowerCase();
+
+    if (!cleanName && !cleanSku) return null;
+
+    return (
+      products.find((p) => {
+        if (p.id === product.id) return false;
+        const matchesSku = Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
+        const matchesName = Boolean(cleanName && p.name.trim().toLowerCase() === cleanName);
+        return matchesSku || matchesName;
+      }) || null
+    );
+  }, [products, isEditing, product, name, sku]);
 
   const handleBarcodeScanned = (scannedCode: string) => {
     const clean = scannedCode.trim();
@@ -73,7 +126,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       const matched = products.find(
         (p) =>
           (p.sku && p.sku.trim().toLowerCase() === clean.toLowerCase()) ||
-          p.id.toLowerCase() === clean.toLowerCase()
+          p.id.toLowerCase() === clean.toLowerCase() ||
+          p.name.trim().toLowerCase() === clean.toLowerCase()
       );
       if (matched) {
         setName(matched.name);
@@ -87,7 +141,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    setError('');
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       setError('Product name is required');
       return;
     }
@@ -103,10 +160,31 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
     const numThreshold = parseInt(threshold, 10);
 
+    // If editing, prevent conflicting with another product's barcode or name
+    if (isEditing && duplicateConflict) {
+      const isSkuConflict = Boolean(
+        duplicateConflict.sku &&
+          duplicateConflict.sku.trim().toLowerCase() === sku.trim().toLowerCase()
+      );
+      setError(
+        `Another product "${duplicateConflict.name}" already uses this ${
+          isSkuConflict ? 'barcode' : 'name'
+        }. Barcodes and product names must be unique.`
+      );
+      return;
+    }
+
+    // If adding a product that matches an existing product in inventory, update the old one's ID
+    const targetId = product
+      ? product.id
+      : matchingExistingProduct
+      ? matchingExistingProduct.id
+      : `prod-${Date.now()}`;
+
     const savedProduct: Product = {
-      id: product ? product.id : `prod-${Date.now()}`,
-      name: name.trim(),
-      category: category.trim() || 'General',
+      id: targetId,
+      name: trimmedName,
+      category: category.trim() || (matchingExistingProduct?.category || 'General'),
       price: numPrice,
       stock: numStock,
       lowStockThreshold: isNaN(numThreshold) ? 5 : numThreshold,
@@ -358,6 +436,37 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Existing product detection notice */}
+              {matchingExistingProduct && !isEditing && (
+                <div className="p-3.5 bg-[#EAF2ED] border border-[#B8D9C5] rounded-xl flex items-start gap-2.5 text-[13px] text-[#2D5A40]">
+                  <AlertCircle size={18} className="shrink-0 mt-0.5 text-[#4F8065]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-[#1F4530]">Existing product detected</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setName(matchingExistingProduct.name);
+                          setCategory(matchingExistingProduct.category);
+                          setPrice(matchingExistingProduct.price.toString());
+                          setStock(matchingExistingProduct.stock.toString());
+                          setThreshold(matchingExistingProduct.lowStockThreshold.toString());
+                          if (matchingExistingProduct.sku) setSku(matchingExistingProduct.sku);
+                        }}
+                        className="text-[11px] font-semibold text-[#4F8065] hover:text-[#3D684F] underline cursor-pointer shrink-0"
+                      >
+                        Load current info
+                      </button>
+                    </div>
+                    <p className="text-[12px] text-[#3D684F] mt-1 leading-relaxed">
+                      "<span className="font-medium text-[#1F4530]">{matchingExistingProduct.name}</span>"
+                      {matchingExistingProduct.sku ? ` (${matchingExistingProduct.sku})` : ''} is already in your inventory.
+                      Saving will update this product instead of creating a duplicate.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div
                 className="pt-3 space-y-2.5"
@@ -368,7 +477,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   type="submit"
                   className="w-full h-13 bg-[#4F8065] active:bg-[#3D684F] text-white text-[15px] font-semibold rounded-xl flex items-center justify-center cursor-pointer transition-colors shadow-xs"
                 >
-                  {isEditing ? 'Save changes' : 'Add product'}
+                  {isEditing
+                    ? 'Save changes'
+                    : matchingExistingProduct
+                    ? 'Update existing product'
+                    : 'Add product'}
                 </button>
 
                 {isEditing && (

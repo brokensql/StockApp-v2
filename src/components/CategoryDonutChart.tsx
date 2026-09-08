@@ -95,65 +95,58 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
   // Process top product sales
   const chartItems = useMemo<DonutItem[]>(() => {
-    if (hasSalesInPeriod) {
-      const map: Record<string, { id: string; name: string; revenue: number }> = {};
+    if (!hasSalesInPeriod || filteredSales.length === 0) {
+      return [];
+    }
 
-      filteredSales.forEach((sale) => {
-        if (sale.items && sale.items.length > 0) {
-          sale.items.forEach((item) => {
-            const key = item.productId || item.name;
-            if (!map[key]) {
-              map[key] = {
-                id: item.productId || item.name,
-                name: item.name,
-                revenue: 0,
-              };
-            }
-            map[key].revenue += item.unitPrice * item.quantity;
-          });
-        } else if (sale.primaryItemName) {
-          const key = sale.primaryItemName;
+    const map: Record<string, { id: string; name: string; revenue: number }> = {};
+
+    filteredSales.forEach((sale) => {
+      if (sale.items && sale.items.length > 0) {
+        sale.items.forEach((item) => {
+          const key = item.productId || item.name;
           if (!map[key]) {
             map[key] = {
-              id: key,
-              name: sale.primaryItemName,
+              id: item.productId || item.name,
+              name: item.name,
               revenue: 0,
             };
           }
-          map[key].revenue += sale.total;
+          map[key].revenue += item.unitPrice * item.quantity;
+        });
+      } else if (sale.primaryItemName) {
+        const key = sale.primaryItemName;
+        if (!map[key]) {
+          map[key] = {
+            id: key,
+            name: sale.primaryItemName,
+            revenue: 0,
+          };
         }
-      });
+        map[key].revenue += sale.total;
+      }
+    });
 
-      const items = Object.values(map)
-        .filter((i) => i.revenue > 0)
-        .sort((a, b) => b.revenue - a.revenue);
+    const items = Object.values(map)
+      .filter((i) => i.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue);
 
-      const sumRevenue = items.reduce((acc, i) => acc + i.revenue, 0) || totalRevenue || 1;
-
-      // Take top 5
-      const top5 = items.slice(0, 5);
-
-      return top5.map((item) => ({
-        id: item.id,
-        name: item.name,
-        value: item.revenue,
-        formattedValue: formatCurrency(item.revenue),
-        percentage: (item.revenue / sumRevenue) * 100,
-        color: getProductColor(item.id, products),
-      }));
+    if (items.length === 0) {
+      return [];
     }
 
-    // Default fallback prior to sales: display available products catalog
-    const top5Products = products.slice(0, 5);
-    const sumVal = top5Products.reduce((acc, p) => acc + p.price, 0) || 1;
+    const sumRevenue = items.reduce((acc, i) => acc + i.revenue, 0) || totalRevenue || 1;
 
-    return top5Products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      value: p.price,
-      formattedValue: formatCurrency(p.price),
-      percentage: (p.price / sumVal) * 100,
-      color: getProductColor(p.id, products),
+    // Take top 5
+    const top5 = items.slice(0, 5);
+
+    return top5.map((item) => ({
+      id: item.id,
+      name: item.name,
+      value: item.revenue,
+      formattedValue: formatCurrency(item.revenue),
+      percentage: (item.revenue / sumRevenue) * 100,
+      color: getProductColor(item.id, products),
     }));
   }, [hasSalesInPeriod, filteredSales, totalRevenue, products, formatCurrency]);
 
@@ -227,7 +220,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
       {chartItems.length === 0 ? (
         <div className="py-8 text-center text-[14px] text-[#6E746F]">
-          No sales recorded yet.
+          No sales recorded for this timeframe yet.
         </div>
       ) : (
         <div className="flex items-center gap-4 sm:gap-8 justify-between">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Receipt, ChevronRight, ArrowLeft, Search, X } from 'lucide-react';
+import { Plus, Receipt, ChevronRight, Search, X } from 'lucide-react';
 import { Product, SaleTransaction } from '../types';
 import { ActiveSaleScreen } from './ActiveSaleScreen';
 import { TransactionDetailModal } from './TransactionDetailModal';
@@ -102,49 +102,18 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto px-5 pt-6"
+      className="w-full max-w-[430px] mx-auto px-5 pt-3.5"
       style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      {/* Header with Back, Title, and New Sale CTA */}
-      <header className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-9 h-9 rounded-xl bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-[#FAF9F6] active:scale-95 transition-all cursor-pointer shadow-xs"
-              aria-label="Back to home"
-            >
-              <ArrowLeft size={18} strokeWidth={2.2} />
-            </button>
-          )}
-          <div>
-            <h1
-              id="sales-title"
-              className="text-[26px] sm:text-[28px] font-bold text-[#252825] tracking-[-0.02em] leading-tight"
-            >
-              Sales
-            </h1>
-            <p
-              id="sales-subtitle"
-              className="text-[13px] font-normal text-[#6E746F] mt-0.5 tabular-nums"
-            >
-              {sales.length} {sales.length === 1 ? 'sale' : 'sales'} recorded
-            </p>
-          </div>
-        </div>
-
-        <button
-          id="btn-new-sale-header"
-          type="button"
-          onClick={handleStartSale}
-          className="h-10 px-3.5 bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#3D684F] text-white text-[13.5px] font-medium rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
-          aria-label="Start new sale"
+      {/* Sales Count Subtitle */}
+      <div className="mb-4 flex items-center justify-between">
+        <p
+          id="sales-subtitle"
+          className="text-[13px] font-medium text-[#6E746F] tabular-nums"
         >
-          <Plus size={17} strokeWidth={2.2} />
-          <span>New sale</span>
-        </button>
-      </header>
+          {sales.length} {sales.length === 1 ? 'sale' : 'sales'} recorded
+        </p>
+      </div>
 
       {/* Today's Sales Card */}
       <section aria-label="Today's sales summary" className="mb-5">
