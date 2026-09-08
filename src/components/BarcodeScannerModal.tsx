@@ -1035,136 +1035,108 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
                 className="relative z-10 w-full h-full flex-1 flex flex-col bg-[#F7F9FB] text-[#252825] overflow-hidden select-none"
               >
-                {/* Top header with close button, title & Checkout button */}
-                <div
-                  className="px-4 py-3 flex items-center justify-between border-b border-[#DEE3DE] bg-white shrink-0"
-                  style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 14px)' }}
+                {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons (matching Inventory page) */}
+                <header
+                  className="sticky top-0 z-30 w-full bg-[#f7f9fb]/90 backdrop-blur-md border-b border-transparent select-none shrink-0"
+                  style={{
+                    paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-[#161816] flex items-center justify-center transition-colors cursor-pointer"
-                      aria-label="Close"
-                    >
-                      <X size={17} strokeWidth={2.5} />
-                    </button>
-                    <div>
-                      <h2 className="text-[16px] sm:text-[17px] font-bold text-[#252825] leading-tight">
-                        {isInventoryMode ? 'Select Product' : 'Product Inventory'}
-                      </h2>
-                      <p className="text-[12px] text-[#717671] leading-none mt-0.5">
-                        {products.length} {products.length === 1 ? 'product' : 'products'} total
-                      </p>
+                  <div className="px-4 sm:px-5 pt-1 pb-3 space-y-3">
+                    {/* Top Row: Left-Aligned Title + Close Button */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={onClose}
+                          className="w-9 h-9 rounded-full bg-white border border-[#DEE3DE] hover:bg-gray-100 text-[#161816] flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                          aria-label="Close"
+                        >
+                          <X size={17} strokeWidth={2.5} />
+                        </button>
+                        <div>
+                          <h2 className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-tight text-left leading-tight">
+                            {isInventoryMode ? 'Select Product' : 'Product Inventory'}
+                          </h2>
+                          <p className="text-[12px] text-[#6E746F] text-left leading-none mt-0.5">
+                            {products.length} {products.length === 1 ? 'product' : 'products'} total
+                          </p>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Search Row: Curvy on both ends */}
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Search
+                          size={18}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717671] pointer-events-none"
+                        />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search products, barcodes, category..."
+                          className="w-full h-10.5 pl-11 pr-10 bg-white border border-[#DEE3DE] rounded-full text-[13.5px] text-[#252825] placeholder:text-[#8E948F] focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all shadow-2xs"
+                        />
+                        {searchQuery.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                            aria-label="Clear search"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filter Tabs / Buttons: Seen completely without horizontal scroll, increased height, smooth tween transition, no number badges */}
+                    <nav
+                      aria-label="Product filter options"
+                      className="grid grid-cols-[0.8fr_1.1fr_1.1fr] gap-1.5 sm:gap-2 w-full py-0.5 select-none"
+                    >
+                      {[
+                        { id: 'all' as const, label: 'All' },
+                        { id: 'with-barcode' as const, label: 'With barcodes' },
+                        { id: 'without-barcode' as const, label: 'Without barcodes' },
+                      ].map((filter) => {
+                        const isSelected = barcodeFilter === filter.id;
+                        return (
+                          <button
+                            key={filter.id}
+                            id={`key-filter-${filter.id}`}
+                            type="button"
+                            onClick={() => setBarcodeFilter(filter.id)}
+                            className="relative h-9.5 sm:h-10 px-1 sm:px-2 rounded-full text-[12px] min-[390px]:text-[12.5px] sm:text-[13px] font-medium whitespace-nowrap cursor-pointer flex items-center justify-center border border-[#DEE3DE] bg-white focus:outline-none"
+                          >
+                            {isSelected && (
+                              <motion.div
+                                layoutId="key-barcode-filter-active-pill"
+                                className="absolute -inset-px bg-[#4F8065] rounded-full shadow-xs"
+                                transition={{
+                                  type: 'tween',
+                                  ease: [0.25, 0.1, 0.25, 1],
+                                  duration: 0.2,
+                                }}
+                              />
+                            )}
+                            <span
+                              className={`relative z-10 transition-colors duration-150 text-center ${
+                                isSelected ? 'text-white' : 'text-[#6E746F] hover:text-[#252825]'
+                              }`}
+                            >
+                              {filter.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </nav>
                   </div>
-
-                  {/* Quick Checkout Button in Key View Header (Sales Mode only) */}
-                  {!isInventoryMode && (totalQuantity > 0 || unrecognizedBarcode) && (
-                    <button
-                      type="button"
-                      onClick={handleCheckout}
-                      className="h-9 px-3.5 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center gap-1.5 shadow-[0_2px_8px_rgba(79,128,101,0.3)] font-bold text-[13px] active:scale-95 transition-all cursor-pointer"
-                    >
-                      <ShoppingCart size={14} strokeWidth={2.4} />
-                      <span>Checkout ({totalQuantity})</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Search Bar & Filter selection: "All", "With barcodes", "Without barcodes" */}
-                <div className="px-4 pt-3 pb-2.5 bg-white border-b border-[#DEE3DE] space-y-2.5 shrink-0">
-                  {/* Search input */}
-                  <div className="relative w-full">
-                    <Search
-                      size={17}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#717671] pointer-events-none"
-                    />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search products, barcodes, category..."
-                      className="w-full h-10 pl-10 pr-9 bg-[#F2F4F2] text-[#252825] text-[14px] rounded-xl border border-transparent focus:border-[#4F8065] focus:bg-white focus:outline-none transition-all placeholder:text-[#9CA3AF]"
-                    />
-                    {searchQuery.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center cursor-pointer transition-colors"
-                        aria-label="Clear search"
-                      >
-                        <X size={13} strokeWidth={2.4} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Filter chips: "All", "With barcodes", "Without barcodes" */}
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setBarcodeFilter('all')}
-                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                        barcodeFilter === 'all'
-                          ? 'bg-[#252825] text-white shadow-xs'
-                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
-                      }`}
-                    >
-                      <span>All</span>
-                      <span
-                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                          barcodeFilter === 'all'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-black/5 text-[#717671]'
-                        }`}
-                      >
-                        {barcodeFilterCounts.all}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setBarcodeFilter('with-barcode')}
-                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                        barcodeFilter === 'with-barcode'
-                          ? 'bg-[#4F8065] text-white shadow-xs'
-                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
-                      }`}
-                    >
-                      <span>With barcodes</span>
-                      <span
-                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                          barcodeFilter === 'with-barcode'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-black/5 text-[#717671]'
-                        }`}
-                      >
-                        {barcodeFilterCounts.withBarcode}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setBarcodeFilter('without-barcode')}
-                      className={`px-3 py-1.5 rounded-xl text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                        barcodeFilter === 'without-barcode'
-                          ? 'bg-[#4F8065] text-white shadow-xs'
-                          : 'bg-[#F2F4F2] text-[#5A605B] hover:bg-[#E5E9E5] border border-[#DEE3DE]/80'
-                      }`}
-                    >
-                      <span>Without barcodes</span>
-                      <span
-                        className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                          barcodeFilter === 'without-barcode'
-                            ? 'bg-white/20 text-white'
-                            : 'bg-black/5 text-[#717671]'
-                        }`}
-                      >
-                        {barcodeFilterCounts.withoutBarcode}
-                      </span>
-                    </button>
-                  </div>
-                </div>
+                </header>
 
                 {/* Available Products List */}
                 <div
@@ -1207,7 +1179,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                           onClick={() => handleAddProductToCart(p)}
                           className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                             qty > 0
-                              ? 'bg-[#F2F8F4] border-[#4F8065] shadow-xs'
+                              ? 'bg-white border-[#C5CAC5] shadow-xs'
                               : 'bg-white border-[#DEE3DE] hover:border-gray-300 shadow-2xs active:bg-gray-50'
                           }`}
                         >
@@ -1217,7 +1189,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                               {p.name}
                             </h3>
                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <span className="text-[11px] font-medium text-[#555A55] bg-[#EAEFEA] px-2 py-0.5 rounded-md">
+                              <span className="text-[11px] font-medium text-[#555A55] bg-gray-100 px-2 py-0.5 rounded-md">
                                 {p.category || 'General'}
                               </span>
                               {hasBarcode ? (
@@ -1247,7 +1219,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                             {!isInventoryMode ? (
                               qty > 0 ? (
-                                <div className="flex items-center gap-1.5 bg-white border border-[#4F8065]/50 rounded-xl p-1 shadow-2xs">
+                                <div className="flex items-center gap-1.5 bg-white border border-[#DEE3DE] rounded-xl p-1 shadow-2xs">
                                   <button
                                     type="button"
                                     onClick={() => handleDecrementProductInCart(p.id)}
@@ -1262,7 +1234,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleAddProductToCart(p)}
-                                    className="w-7 h-7 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95"
+                                    className="w-7 h-7 rounded-lg bg-[#252825] hover:bg-[#161816] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95"
                                     aria-label={`Increase ${p.name}`}
                                   >
                                     <Plus size={13} strokeWidth={2.5} />
@@ -1272,7 +1244,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAddProductToCart(p)}
-                                  className="h-8.5 px-3 rounded-xl bg-[#F2F4F2] hover:bg-[#4F8065] hover:text-white text-[#252825] font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 border border-[#DEE3DE]"
+                                  className="h-8.5 px-3 rounded-xl bg-[#F2F4F2] hover:bg-gray-200 text-[#252825] font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 border border-[#DEE3DE]"
                                   aria-label={`Add ${p.name}`}
                                 >
                                   <Plus size={14} strokeWidth={2.5} />
@@ -1283,7 +1255,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleAddProductToCart(p)}
-                                className="h-8.5 px-3 rounded-xl bg-[#4F8065] text-white font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                className="h-8.5 px-3 rounded-xl bg-[#252825] hover:bg-[#161816] text-white font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                               >
                                 <span>Select</span>
                               </button>

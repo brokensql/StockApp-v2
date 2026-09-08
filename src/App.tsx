@@ -14,6 +14,7 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { ActiveSaleScreen } from './components/ActiveSaleScreen';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { User, Bell, ArrowLeft, Plus } from 'lucide-react';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SALES } from './data/initialSales';
@@ -123,6 +124,29 @@ function getInitialProfile(): UserProfile {
   return DEFAULT_PROFILE;
 }
 
+function deduplicateProducts(prods: Product[]): Product[] {
+  const seenIds = new Set<string>();
+  const seenSkus = new Set<string>();
+  const seenNames = new Set<string>();
+  const deduplicated: Product[] = [];
+
+  for (const p of prods) {
+    if (seenIds.has(p.id)) continue;
+    const cleanSku = p.sku ? p.sku.trim().toLowerCase() : '';
+    const cleanName = p.name ? p.name.trim().toLowerCase() : '';
+
+    if (cleanSku && seenSkus.has(cleanSku)) continue;
+    if (cleanName && seenNames.has(cleanName)) continue;
+
+    seenIds.add(p.id);
+    if (cleanSku) seenSkus.add(cleanSku);
+    if (cleanName) seenNames.add(cleanName);
+    deduplicated.push(p);
+  }
+
+  return deduplicated;
+}
+
 function getInitialProducts(): Product[] {
   try {
     // Migration: ensure clean slate on first run or when reset
@@ -136,7 +160,10 @@ function getInitialProducts(): Product[] {
 
     const saved = localStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return deduplicateProducts(parsed);
+      }
     }
   } catch (e) {
     console.error('Failed to load products from localStorage', e);
@@ -322,7 +349,30 @@ export default function App() {
   };
 
   const handleAddProduct = (newProduct: Product) => {
-    setProducts((prev) => [newProduct, ...prev]);
+    const cleanSku = newProduct.sku?.trim().toLowerCase();
+    const cleanName = newProduct.name.trim().toLowerCase();
+
+    setProducts((prev) => {
+      const existingIndex = prev.findIndex((p) => {
+        if (p.id === newProduct.id) return true;
+        const matchesSku = Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
+        const matchesName = Boolean(cleanName && p.name.trim().toLowerCase() === cleanName);
+        return matchesSku || matchesName;
+      });
+
+      if (existingIndex >= 0) {
+        const existing = prev[existingIndex];
+        const updatedList = [...prev];
+        updatedList[existingIndex] = {
+          ...existing,
+          ...newProduct,
+          id: existing.id, // Preserve original id
+        };
+        return updatedList;
+      }
+
+      return [newProduct, ...prev];
+    });
     toast.success('Completed');
   };
 
@@ -357,7 +407,7 @@ export default function App() {
       case 'sales':
         return 'Sales';
       case 'statistics':
-        return 'Statistics';
+        return 'Stats';
       case 'profile':
         return 'Profile';
       default:
@@ -430,8 +480,8 @@ export default function App() {
         </div>
       ) : (
         <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#f7f9fb]">
-          {/* Glassmorphic Page Header (Excluding Home Screen) */}
-          {activeTab !== 'home' && (
+          {/* Glassmorphic Page Header */}
+          {activeTab !== 'store' && activeTab !== 'inventory' && (
             <header
               id="page-header"
               className="sticky top-0 z-30 w-full bg-[#f7f9fb]/80 backdrop-blur-md select-none border-b border-transparent"
@@ -441,14 +491,91 @@ export default function App() {
                 paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
             >
-              <div className="h-16 sm:h-[68px] px-5 flex items-center justify-center relative">
-                <h1
-                  id="page-header-title"
-                  className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-center"
+              {activeTab === 'home' ? (
+                <div
+                  id="home-header"
+                  className="h-16 sm:h-[68px] px-5 flex items-center justify-between"
                 >
-                  {getHeaderTitle(activeTab)}
-                </h1>
-              </div>
+                  <button
+                    id="home-header-profile-button"
+                    type="button"
+                    onClick={() => handleSelectTab('profile')}
+                    className="flex items-center gap-3 text-left cursor-pointer group focus:outline-none"
+                  >
+                    {/* Circular Profile Container */}
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#4F8065]/12 border border-[#4F8065]/20 flex items-center justify-center text-[#4F8065] flex-shrink-0 shadow-xs group-hover:opacity-90 transition-opacity">
+                      <User size={20} strokeWidth={1.8} />
+                    </div>
+
+                    <div>
+                      <span className="text-[12px] sm:text-[13px] font-medium text-[#6E746F] block leading-tight">
+                        Welcome Back
+                      </span>
+                      <h1
+                        id="home-greeting"
+                        className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-[-0.01em] leading-snug mt-0.5 truncate max-w-[220px]"
+                      >
+                        {userProfile?.ownerName || 'Store Owner'}
+                      </h1>
+                    </div>
+                  </button>
+
+                  {/* Notification Bell */}
+                  <button
+                    id="home-notifications-button"
+                    type="button"
+                    aria-label="Notifications"
+                    onClick={() =>
+                      toast('No unread notifications', {
+                        description: 'Your inventory and store are up to date.',
+                      })
+                    }
+                    className="text-[#252825] hover:text-[#4F8065] p-2 transition-colors cursor-pointer relative focus:outline-none active:scale-95"
+                  >
+                    <Bell size={22} strokeWidth={1.8} />
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-[#4F8065] rounded-full border border-[#f7f9fb]" />
+                  </button>
+                </div>
+              ) : activeTab === 'sales' ? (
+                <div className="h-16 sm:h-[68px] px-5 flex items-center justify-between relative">
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab('home')}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer shadow-xs"
+                      aria-label="Back to home"
+                    >
+                      <ArrowLeft size={18} strokeWidth={2.2} />
+                    </button>
+                    <h1
+                      id="page-header-title"
+                      className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
+                    >
+                      Sales
+                    </h1>
+                  </div>
+
+                  <button
+                    id="btn-new-sale-header"
+                    type="button"
+                    onClick={handleQuickNewSale}
+                    className="h-9 sm:h-10 px-3 sm:px-3.5 bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#3D684F] text-white text-[13px] sm:text-[13.5px] font-medium rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                    aria-label="Start new sale"
+                  >
+                    <Plus size={16} strokeWidth={2.2} />
+                    <span>New sale</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="h-16 sm:h-[68px] px-5 flex items-center justify-start relative">
+                  <h1
+                    id="page-header-title"
+                    className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
+                  >
+                    {getHeaderTitle(activeTab)}
+                  </h1>
+                </div>
+              )}
             </header>
           )}
 

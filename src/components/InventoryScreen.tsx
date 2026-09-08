@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Search, Plus, X, AlertCircle, ScanLine } from 'lucide-react';
+import { Search, Plus, X, AlertCircle } from 'lucide-react';
 import { Product, InventoryFilter } from '../types';
 import { ProductDetailModal } from './ProductDetailModal';
-import { BarcodeScannerModal } from './BarcodeScannerModal';
 
 interface InventoryScreenProps {
   products: Product[];
@@ -27,7 +26,6 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
   const [activeFilter, setActiveFilter] = useState<InventoryFilter>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(initialAddModalOpen);
-  const [isInventoryScannerOpen, setIsInventoryScannerOpen] = useState(false);
   const [dynamicInitialSku, setDynamicInitialSku] = useState(initialSku || '');
 
   useEffect(() => {
@@ -92,32 +90,26 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
   };
 
   const handleSaveProduct = (product: Product) => {
-    if (selectedProduct) {
-      onUpdateProduct(product);
+    const cleanSku = product.sku?.trim().toLowerCase();
+    const cleanName = product.name.trim().toLowerCase();
+
+    // Check if updating currently selected product or if a matching product already exists
+    const existing = products.find((p) => {
+      if (selectedProduct && p.id === selectedProduct.id) return true;
+      if (p.id === product.id) return true;
+      const matchesSku = Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
+      const matchesName = Boolean(cleanName && p.name.trim().toLowerCase() === cleanName);
+      return matchesSku || matchesName;
+    });
+
+    if (existing) {
+      onUpdateProduct({
+        ...existing,
+        ...product,
+        id: existing.id,
+      });
     } else {
       onAddProduct(product);
-    }
-  };
-
-  const handleInventoryScanSuccess = (scannedCode: string) => {
-    const clean = scannedCode.trim();
-    if (!clean) return;
-
-    const matched = products.find(
-      (p) =>
-        (p.sku && p.sku.trim().toLowerCase() === clean.toLowerCase()) ||
-        p.id.toLowerCase() === clean.toLowerCase() ||
-        p.name.trim().toLowerCase() === clean.toLowerCase()
-    );
-
-    if (matched) {
-      setSelectedProduct(matched);
-      setDynamicInitialSku('');
-      setIsModalOpen(true);
-    } else {
-      setSelectedProduct(null);
-      setDynamicInitialSku(clean);
-      setIsModalOpen(true);
     }
   };
 
@@ -142,82 +134,97 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto px-5 pt-6"
+      className="w-full max-w-[430px] mx-auto flex flex-col"
       style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      {/* Search Input & Scan Barcode Action */}
-      <div className="relative mb-3.5 pt-1 flex items-center gap-2">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6E746F]">
-            <Search size={18} strokeWidth={2} />
-          </div>
-          <input
-            id="inventory-search-input"
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products..."
-            className="w-full h-12 pl-10 pr-10 bg-white border border-[#DEE3DE] rounded-2xl text-[15px] text-[#252825] placeholder:text-[#6E746F]/60 focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] shadow-[0_2px_6px_rgba(37,40,37,0.02)] transition-colors"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#6E746F] hover:text-[#252825] cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsInventoryScannerOpen(true)}
-          className="h-12 w-12 rounded-2xl bg-white hover:bg-[#4F8065]/10 active:bg-[#4F8065]/20 border border-[#DEE3DE] flex items-center justify-center text-[#4F8065] shadow-[0_2px_6px_rgba(37,40,37,0.02)] transition-all cursor-pointer flex-shrink-0"
-          title="Scan barcode to find or add product"
-          aria-label="Scan barcode"
-        >
-          <ScanLine size={20} strokeWidth={2.3} />
-        </button>
-      </div>
-
-      {/* Filter Tabs */}
-      <nav
-        aria-label="Stock status filters"
-        className="flex items-center gap-2 overflow-x-auto pb-1 mb-5 no-scrollbar -mx-1 px-1"
+      {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons */}
+      <header
+        id="page-header"
+        className="sticky top-0 z-30 w-full bg-[#f7f9fb]/90 backdrop-blur-md border-b border-transparent select-none"
+        style={{
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
       >
-        {filters.map((filter) => {
-          const isSelected = activeFilter === filter.id;
-          return (
-            <button
-              key={filter.id}
-              id={`filter-${filter.id}`}
-              type="button"
-              onClick={() => setActiveFilter(filter.id)}
-              className={`h-9 px-3.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-150 cursor-pointer flex items-center gap-1.5 flex-shrink-0 ${
-                isSelected
-                  ? 'bg-[#4F8065] text-white shadow-xs'
-                  : 'bg-white border border-[#DEE3DE] text-[#6E746F] hover:text-[#252825]'
-              }`}
+        <div className="px-5 pt-3 pb-2.5">
+          {/* Header Title on Left */}
+          <div className="h-10 sm:h-11 flex items-center justify-start mb-2">
+            <h1
+              id="page-header-title"
+              className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
             >
-              <span>{filter.label}</span>
-              <span
-                className={`text-[11px] px-1.5 py-0.2 rounded-full font-medium tabular-nums ${
-                  isSelected
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white border border-[#DEE3DE] text-[#6E746F]'
-                }`}
+              Inventory
+            </h1>
+          </div>
+
+          {/* Curvy Search Bar (rounded-full, scanner removed) */}
+          <div className="relative mb-2.5">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#6E746F]">
+              <Search size={18} strokeWidth={2} />
+            </div>
+            <input
+              id="inventory-search-input"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#DEE3DE] rounded-full text-[14.5px] text-[#252825] placeholder:text-[#6E746F]/60 focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] shadow-[0_2px_6px_rgba(37,40,37,0.02)] transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#6E746F] hover:text-[#252825] cursor-pointer"
+                aria-label="Clear search"
               >
-                {filter.count}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Tabs / Buttons */}
+          <nav
+            aria-label="Stock status filters"
+            className="grid grid-cols-[0.85fr_1.05fr_1.05fr_1.25fr] gap-1.5 sm:gap-2 w-full py-0.5 select-none"
+          >
+            {filters.map((filter) => {
+              const isSelected = activeFilter === filter.id;
+              return (
+                <button
+                  key={filter.id}
+                  id={`filter-${filter.id}`}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.id)}
+                  className="relative h-9.5 sm:h-10 px-1 sm:px-2 rounded-full text-[12px] min-[390px]:text-[12.5px] sm:text-[13px] font-medium whitespace-nowrap cursor-pointer flex items-center justify-center border border-[#DEE3DE] bg-white focus:outline-none"
+                >
+                  {isSelected && (
+                    <motion.div
+                      layoutId="inventory-filter-active-pill"
+                      className="absolute -inset-px bg-[#4F8065] rounded-full shadow-xs"
+                      transition={{
+                        type: 'tween',
+                        ease: [0.25, 0.1, 0.25, 1],
+                        duration: 0.2,
+                      }}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 transition-colors duration-150 text-center ${
+                      isSelected ? 'text-white' : 'text-[#6E746F] hover:text-[#252825]'
+                    }`}
+                  >
+                    {filter.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
 
       {/* Products Content List */}
-      <section aria-label="Product list">
+      <section aria-label="Product list" className="px-5 pt-3.5">
         {products.length === 0 ? (
           /* Global Empty State */
           <div
@@ -384,16 +391,6 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
         }}
         onSave={handleSaveProduct}
         onDelete={onDeleteProduct}
-      />
-
-      {/* Direct Inventory Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={isInventoryScannerOpen}
-        onClose={() => setIsInventoryScannerOpen(false)}
-        onScanSuccess={handleInventoryScanSuccess}
-        products={products}
-        mode="inventory"
-        title="Scan Product Barcode"
       />
     </motion.div>
   );

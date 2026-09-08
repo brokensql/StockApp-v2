@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Bell, User, Package, Receipt } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { NavTab, Product, SaleTransaction, UserProfile } from '../types';
 import { SalesTrendChart } from './SalesTrendChart';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -20,8 +20,6 @@ interface HomeScreenProps {
   onAddProductClick?: () => void;
   onNewSaleClick?: () => void;
 }
-
-
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   products = [],
@@ -48,49 +46,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto px-5 pt-6 sm:pt-8"
+      className="w-full max-w-[430px] mx-auto px-5 pt-3 sm:pt-4"
       style={{
-        paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
         paddingBottom: 'calc(10rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      {/* Home Greeting Bar */}
-      <section aria-label="User and Store Greeting" className="mb-6 pt-2 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => onNavigate && onNavigate('profile')}
-          className="flex items-center gap-3 text-left cursor-pointer group focus:outline-none"
-        >
-          {/* Circular Profile Container */}
-          <div className="w-11 h-11 rounded-full bg-[#4F8065]/12 border border-[#4F8065]/20 flex items-center justify-center text-[#4F8065] flex-shrink-0 shadow-xs group-hover:opacity-90 transition-opacity">
-            <User size={22} strokeWidth={1.8} />
-          </div>
-
-          <div>
-            <span className="text-[13px] font-medium text-[#6E746F] block leading-tight">
-              Welcome Back
-            </span>
-            <h1
-              id="home-greeting"
-              className="text-[20px] sm:text-[21px] font-bold text-[#252825] tracking-[-0.01em] leading-snug mt-0.5"
-            >
-              {userProfile?.ownerName || 'Store Owner'}
-            </h1>
-          </div>
-        </button>
-
-        {/* Notification Bell - No Container */}
-        <button
-          id="home-notifications-button"
-          type="button"
-          aria-label="Notifications"
-          className="text-[#252825] hover:text-[#4F8065] p-1.5 transition-colors cursor-pointer relative focus:outline-none"
-        >
-          <Bell size={22} strokeWidth={1.8} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#4F8065] rounded-full border border-[#f7f9fb]" />
-        </button>
-      </section>
-
       {/* In-app PWA install prompt banner for offline installation */}
       <div className="-mx-4">
         <PWAInstallButton variant="banner" />
