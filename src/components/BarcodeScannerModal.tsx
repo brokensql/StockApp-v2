@@ -684,10 +684,26 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
           const codeReader = new BrowserMultiFormatReader(hints);
 
+          // Wait until the video element actually has frames before starting ZXing.
+          // Without this, every decode attempt throws "Could not create a Canvas element"
+          // (the warning spam seen in camera-less previews).
+          await new Promise<void>((resolve) => {
+            const v = videoEl;
+            if (v.readyState >= 2 && v.videoWidth > 0) return resolve();
+            const to = window.setTimeout(() => {
+              v.onloadeddata = null;
+              resolve();
+            }, 3000);
+            v.onloadeddata = () => {
+              window.clearTimeout(to);
+              resolve();
+            };
+          });
+
           const controls = await codeReader.decodeFromStream(
             stream,
             videoEl,
-            (result) => {
+            (result, err) => {
               if (!isMounted || !isScanningActiveRef.current) return;
               if (result) {
                 const text = result.getText();
@@ -695,6 +711,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   handleScanResultRef.current(text);
                 }
               }
+              // Per-frame misses are normal (no barcode in view) — stay silent.
+              // Never console.warn here: ZXing already logs genuine faults itself.
             }
           );
 
