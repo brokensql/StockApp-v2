@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, AlertCircle, Camera, ChevronDown, ScanLine } from 'lucide-react';
+import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine } from 'lucide-react';
 import { Product } from '../types';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { STANDARD_CATEGORIES } from '../data/categories';
@@ -33,6 +33,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [threshold, setThreshold] = useState('5');
   const [sku, setSku] = useState('');
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [error, setError] = useState('');
 
   // Standard category list, ensuring any existing product custom category is retained
@@ -52,6 +53,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setThreshold(product.lowStockThreshold.toString());
       setSku(product.sku || '');
       setError('');
+      setIsCategoryOpen(false);
     } else {
       setName('');
       setCategory('General');
@@ -60,6 +62,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setThreshold('5');
       setSku(initialSku || '');
       setError('');
+      setIsCategoryOpen(false);
     }
   }, [product, isOpen, initialSku]);
 
@@ -204,30 +207,66 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   Category
                 </label>
                 <div id="product-category-container" className="relative">
-                  <select
+                  <button
                     id="input-product-category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#DEE3DE] rounded-xl text-[15px] text-[#252825] appearance-none focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] cursor-pointer transition-colors"
+                    type="button"
+                    onClick={() => setIsCategoryOpen((v) => !v)}
+                    aria-haspopup="listbox"
+                    aria-expanded={isCategoryOpen}
+                    className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#DEE3DE] rounded-xl text-[15px] text-[#252825] text-left focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] cursor-pointer transition-colors flex items-center"
                   >
-                    {categoryList.map((cat) => (
-                      <option
-                        key={cat}
-                        value={cat}
-                        className="text-[#252825] bg-white"
-                        style={{ color: '#252825', backgroundColor: '#ffffff' }}
-                      >
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="truncate">{category || 'General'}</span>
+                  </button>
                   <div
-                    id="category-arrow-down-indicator"
                     className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-6 h-6 flex items-center justify-center text-[#6E746F]"
                     aria-hidden="true"
                   >
-                    <ChevronDown size={17} strokeWidth={2.2} />
+                    <ChevronDown
+                      size={17}
+                      strokeWidth={2.2}
+                      className={`transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''}`}
+                    />
                   </div>
+                  <AnimatePresence>
+                    {isCategoryOpen && (
+                      <motion.ul
+                        role="listbox"
+                        aria-label="Product category"
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
+                        className="absolute z-20 left-0 right-0 mt-2 bg-white border border-[#DEE3DE] rounded-xl shadow-[0_12px_32px_rgba(37,40,37,0.14)] py-1.5 max-h-56 overflow-y-auto"
+                      >
+                        {categoryList.map((cat) => {
+                          const selected = cat === category;
+                          return (
+                            <li key={cat}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                onClick={() => {
+                                  setCategory(cat);
+                                  setIsCategoryOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[15px] cursor-pointer transition-colors ${
+                                  selected
+                                    ? 'bg-[#EBF4EE] text-[#252825] font-semibold'
+                                    : 'text-[#252825] hover:bg-[#F4F6F4]'
+                                }`}
+                              >
+                                <span className="truncate">{cat}</span>
+                                {selected && (
+                                  <Check size={17} strokeWidth={2.5} className="text-[#4F8065] flex-shrink-0" />
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
