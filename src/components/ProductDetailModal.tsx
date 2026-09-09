@@ -609,26 +609,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="input-product-sku"
-                    className="block text-[13px] font-medium text-[#252825] mb-1.5"
-                  >
-                    SKU / Barcode
-                  </label>
+                  <div className="flex items-baseline justify-between mb-1.5">
+                    <label
+                      htmlFor="input-product-sku"
+                      className="text-[12.5px] sm:text-[13px] font-medium text-[#252825] truncate"
+                    >
+                      SKU / Barcode
+                    </label>
+                    <span className="text-[10.5px] font-normal text-[#6E746F] shrink-0 ml-1">
+                      Optional
+                    </span>
+                  </div>
                   <div className="relative flex items-center">
                     <input
                       id="input-product-sku"
                       type="text"
                       value={sku}
-                      onChange={(e) => setSku(e.target.value)}
-                      placeholder="e.g. 4800016644815 or scan"
-                      className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#DEE3DE] rounded-xl text-[15px] text-[#252825] placeholder:text-[#6E746F]/50 focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065]"
+                      readOnly
+                      onClick={() => setIsBarcodeScannerOpen(true)}
+                      placeholder="Scan to add"
+                      className="w-full h-12 pl-3.5 pr-10 bg-[#FAFBFB] hover:bg-[#F2F5F3] border border-[#DEE3DE] rounded-xl text-[14px] text-[#252825] placeholder:text-[#6E746F]/60 cursor-pointer focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] select-none transition-colors font-mono"
                     />
                     <button
                       type="button"
                       onClick={() => setIsBarcodeScannerOpen(true)}
                       className="absolute right-2 text-[#4F8065] hover:bg-[#4F8065]/10 p-1.5 rounded-lg transition-colors cursor-pointer"
-                      title="Scan barcode with camera"
+                      title="Scan barcode with camera or upload"
                     >
                       <ScanLine size={19} strokeWidth={2.3} />
                     </button>
