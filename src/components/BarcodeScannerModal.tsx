@@ -21,10 +21,13 @@ import {
   Search,
   Minus,
   Barcode,
+  Package,
 } from 'lucide-react';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import { Product, SaleItem, SaleTransaction } from '../types';
+import { ProductThumbnail } from './ProductThumbnail';
+import { useProductImages } from '../hooks/useProductImages';
 
 // Web standard Native BarcodeDetector interface
 interface DetectedBarcode {
@@ -112,6 +115,29 @@ const applyTrackConstraint = async (track: MediaStreamTrack, constraints: Record
   }
 };
 
+const ProductCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src, alt }) => {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className="w-full h-full bg-[#FAFBFB] flex items-center justify-center text-[#8E948F]">
+        <Package size={34} strokeWidth={1.4} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setError(true)}
+      className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+    />
+  );
+};
+
 export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   isOpen,
   onClose,
@@ -133,6 +159,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [inputMethod, setInputMethod] = useState<'barcode' | 'key'>('barcode');
   const [searchQuery, setSearchQuery] = useState('');
   const [barcodeFilter, setBarcodeFilter] = useState<'all' | 'with-barcode' | 'without-barcode'>('all');
+  const { images } = useProductImages();
 
   // Undo / Redo history state
   const [cartHistory, setCartHistory] = useState<HistorySnapshot[]>([
@@ -1138,9 +1165,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   </div>
                 </header>
 
-                {/* Available Products List */}
+                {/* Available Products Grid (card layout matching user reference) */}
                 <div
-                  className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
+                  className="flex-1 overflow-y-auto px-4 py-3"
                   style={{
                     paddingBottom: 'calc(10rem + env(safe-area-inset-bottom, 0px))',
                   }}
@@ -1168,102 +1195,125 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       )}
                     </div>
                   ) : (
-                    filteredProducts.map((p) => {
-                      const cartItem = scannedCart.find((i) => i.productId === p.id);
-                      const qty = cartItem ? cartItem.quantity : 0;
-                      const hasBarcode = Boolean(p.sku && p.sku.trim().length > 0);
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-3.5">
+                      {filteredProducts.map((p) => {
+                        const cartItem = scannedCart.find((i) => i.productId === p.id);
+                        const qty = cartItem ? cartItem.quantity : 0;
+                        const imgSrc = p.imageUrl || images[p.id];
 
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => handleAddProductToCart(p)}
-                          className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                            qty > 0
-                              ? 'bg-white border-[#C5CAC5] shadow-xs'
-                              : 'bg-white border-[#DEE3DE] hover:border-gray-300 shadow-2xs active:bg-gray-50'
-                          }`}
-                        >
-                          {/* Product details */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-[15px] font-semibold text-[#252825] truncate">
-                              {p.name}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <span className="text-[11px] font-medium text-[#555A55] bg-gray-100 px-2 py-0.5 rounded-md">
-                                {p.category || 'General'}
-                              </span>
-                              {hasBarcode ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#555A55] bg-gray-100 px-2 py-0.5 rounded-md">
-                                  <Barcode size={11} />
-                                  <span className="truncate max-w-[120px]">{p.sku}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center text-[11px] text-[#9E653A] bg-[#FDF4EC] px-2 py-0.5 rounded-md font-medium">
-                                  No barcode
-                                </span>
-                              )}
+                        return (
+                          <div
+                            key={p.id}
+                            id={`key-product-card-${p.id}`}
+                            onClick={() => handleAddProductToCart(p)}
+                            className={`group bg-white rounded-2xl border transition-all cursor-pointer flex flex-col overflow-hidden select-none ${
+                              qty > 0
+                                ? 'border-[#4F8065] shadow-xs ring-1 ring-[#4F8065]'
+                                : 'border-[#DEE3DE] hover:border-[#4F8065]/50 shadow-2xs hover:shadow-xs active:scale-[0.99]'
+                            }`}
+                          >
+                            {/* Top Product Photo Container (prominent picture centered on clean white canvas) */}
+                            <div className="relative w-full aspect-square bg-white flex items-center justify-center p-3.5 overflow-hidden">
+                              <ProductCardImage src={imgSrc} alt={p.name} />
+
+                              {/* Stock Warning Badge if Low/Out */}
                               {p.stock <= p.lowStockThreshold && (
-                                <span className="text-[11px] text-amber-700 font-medium">
-                                  {p.stock <= 0 ? 'Out of stock' : `${p.stock} left`}
+                                <span
+                                  className={`absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-2xs ${
+                                    p.stock <= 0
+                                      ? 'bg-red-50 text-red-700 border border-red-200/60'
+                                      : 'bg-amber-50 text-amber-800 border border-amber-200/60'
+                                  }`}
+                                >
+                                  {p.stock <= 0 ? 'Out' : `${p.stock} left`}
+                                </span>
+                              )}
+
+                              {/* Cart Quantity Badge (Pop-up number with green container & crisp white ring) */}
+                              {qty > 0 && (
+                                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#4F8065] text-white text-[11px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white animate-in zoom-in-75 duration-150">
+                                  {qty}
                                 </span>
                               )}
                             </div>
-                            <div className="mt-1.5">
-                              <span className="text-[15px] font-bold text-[#252825]">
-                                ₱{p.price.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
 
-                          {/* Right Action / Quantity Stepper */}
-                          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                            {!isInventoryMode ? (
-                              qty > 0 ? (
-                                <div className="flex items-center gap-1.5 bg-white border border-[#DEE3DE] rounded-xl p-1 shadow-2xs">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDecrementProductInCart(p.id)}
-                                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#252825] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
-                                    aria-label={`Decrease ${p.name}`}
-                                  >
-                                    <Minus size={13} strokeWidth={2.5} />
-                                  </button>
-                                  <span className="w-6 text-center text-[13px] font-bold text-[#252825]">
-                                    {qty}
-                                  </span>
+                            {/* Subtle Divider Line (matches user's reference) */}
+                            <div className="w-full border-t border-[#F0F2F0]" />
+
+                            {/* Bottom Info & Inline Price + Small Add Button */}
+                            <div className="p-3 flex flex-col justify-between flex-1 gap-2">
+                              <div>
+                                <h3
+                                  className="text-[13.5px] sm:text-[14.5px] font-semibold text-[#252825] truncate leading-tight"
+                                  title={p.name}
+                                >
+                                  {p.name}
+                                </h3>
+                                {p.category && (
+                                  <p className="text-[11px] text-[#717671] truncate mt-0.5">
+                                    {p.category}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* In-line Price & Small Add Button */}
+                              <div
+                                className="flex items-center justify-between gap-1.5 pt-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="text-[13.5px] sm:text-[14.5px] font-bold text-[#252825] tabular-nums whitespace-nowrap">
+                                  ₱{p.price.toFixed(2)}
+                                </span>
+
+                                {!isInventoryMode ? (
+                                  qty > 0 ? (
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDecrementProductInCart(p.id)}
+                                        className="w-6 h-6 rounded-lg bg-white hover:bg-gray-100 text-[#252825] flex items-center justify-center cursor-pointer transition-colors active:scale-95 border border-[#DEE3DE] shadow-2xs"
+                                        aria-label={`Decrease ${p.name}`}
+                                      >
+                                        <Minus size={11} strokeWidth={2.5} />
+                                      </button>
+                                      <span className="w-4.5 text-center text-[12px] font-bold text-[#252825] tabular-nums">
+                                        {qty}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAddProductToCart(p)}
+                                        className="w-6 h-6 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
+                                        aria-label={`Increase ${p.name}`}
+                                      >
+                                        <Plus size={11} strokeWidth={2.5} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddProductToCart(p)}
+                                      className="h-7 px-2.5 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white font-semibold text-[11.5px] sm:text-[12px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                      aria-label={`Add ${p.name}`}
+                                    >
+                                      <Plus size={12} strokeWidth={2.5} />
+                                      <span>Add</span>
+                                    </button>
+                                  )
+                                ) : (
                                   <button
                                     type="button"
                                     onClick={() => handleAddProductToCart(p)}
-                                    className="w-7 h-7 rounded-lg bg-[#252825] hover:bg-[#161816] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95"
-                                    aria-label={`Increase ${p.name}`}
+                                    className="h-7 px-2.5 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white font-semibold text-[11.5px] sm:text-[12px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                   >
-                                    <Plus size={13} strokeWidth={2.5} />
+                                    <span>Select</span>
                                   </button>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddProductToCart(p)}
-                                  className="h-8.5 px-3 rounded-xl bg-[#F2F4F2] hover:bg-gray-200 text-[#252825] font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 border border-[#DEE3DE]"
-                                  aria-label={`Add ${p.name}`}
-                                >
-                                  <Plus size={14} strokeWidth={2.5} />
-                                  <span>Add</span>
-                                </button>
-                              )
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleAddProductToCart(p)}
-                                className="h-8.5 px-3 rounded-xl bg-[#252825] hover:bg-[#161816] text-white font-semibold text-[13px] flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                              >
-                                <span>Select</span>
-                              </button>
-                            )}
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 

@@ -1,9 +1,33 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Search, Plus, X, AlertCircle } from 'lucide-react';
+import { Search, Plus, X, Package } from 'lucide-react';
 import { Product, InventoryFilter } from '../types';
 import { ProductDetailModal } from './ProductDetailModal';
+import { useProductImages } from '../hooks/useProductImages';
+
+const InventoryCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src, alt }) => {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className="absolute inset-0 w-full h-full bg-[#FAFBFB] flex items-center justify-center text-[#8E948F]">
+        <Package size={26} strokeWidth={1.5} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setError(true)}
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+    />
+  );
+};
 
 interface InventoryScreenProps {
   products: Product[];
@@ -27,6 +51,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(initialAddModalOpen);
   const [dynamicInitialSku, setDynamicInitialSku] = useState(initialSku || '');
+  const { images } = useProductImages();
 
   useEffect(() => {
     if (initialAddModalOpen) {
@@ -135,7 +160,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       className="w-full max-w-[430px] mx-auto flex flex-col"
-      style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
+      style={{ paddingBottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))' }}
     >
       {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons */}
       <header
@@ -264,11 +289,29 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
             </button>
           </div>
         ) : (
-          /* Clean Product List Rows */
-          <div
-            id="products-list-card"
-            className="bg-white border border-[#DEE3DE] rounded-2xl divide-y divide-[#DEE3DE] overflow-hidden shadow-[0_2px_8px_rgba(37,40,37,0.02)]"
-          >
+          <div className="space-y-2.5">
+            {/* Number Total Count Header on top of top product card */}
+            <div
+              id="inventory-total-count"
+              className="flex items-center justify-between px-1 pt-0.5 pb-0.5"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[13.5px] font-bold text-[#252825]">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+                </span>
+                {searchQuery && (
+                  <span className="text-[12px] text-[#8E948F]">
+                    matching &ldquo;{searchQuery}&rdquo;
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Individual Horizontal Product Cards (matching user reference) */}
+            <div
+              id="products-list-container"
+              className="space-y-3"
+            >
             {filteredProducts.map((product) => {
               const isLowStock = product.stock > 0 && product.stock <= product.lowStockThreshold;
               const isOutOfStock = product.stock === 0;
@@ -276,9 +319,9 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
               return (
                 <div
                   key={product.id}
-                  id={`product-row-${product.id}`}
+                  id={`product-card-${product.id}`}
                   onClick={() => handleOpenEditModal(product)}
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                  className="group bg-white rounded-2xl border border-[#DEE3DE] hover:border-[#4F8065]/50 shadow-2xs hover:shadow-xs transition-all cursor-pointer overflow-hidden flex items-stretch h-[104px] sm:h-[112px] active:scale-[0.995]"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
@@ -286,65 +329,64 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                       handleOpenEditModal(product);
                     }
                   }}
-                  aria-label={`Edit ${product.name}`}
+                  aria-label={`View or edit ${product.name}`}
                 >
-                  {/* Left: Product Name & Stock Info */}
-                  <div className="min-w-0 pr-3 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[15px] font-medium text-[#252825] truncate">
-                        {product.name}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[13px] text-[#6E746F] tabular-nums">
-                        {product.stock} {product.stock === 1 ? 'unit' : 'units'}
-                      </span>
-
-                      {/* Stock Status Tag */}
-                      {isOutOfStock ? (
-                        <>
-                          <span className="text-[11px] text-[#6E746F]">·</span>
-                          <span className="text-[12px] font-medium text-[#252825] flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#9F3F46]" />
-                            Out of stock
-                          </span>
-                        </>
-                      ) : isLowStock ? (
-                        <>
-                          <span className="text-[11px] text-[#6E746F]">·</span>
-                          <span className="text-[12px] font-medium text-[#252825] flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#9F3F46]" />
-                            Low stock
-                          </span>
-                        </>
-                      ) : (
-                        product.category && (
-                          <>
-                            <span className="text-[11px] text-[#6E746F]">·</span>
-                            <span className="text-[12px] text-[#6E746F]">
-                              {product.category}
-                            </span>
-                          </>
-                        )
-                      )}
-                    </div>
+                  {/* Left: Product Image Container (strictly fixed dimensions, matching reference) */}
+                  <div className="w-24 sm:w-28 h-full min-w-[96px] sm:min-w-[112px] max-w-[96px] sm:max-w-[112px] bg-[#FAFBFB] relative overflow-hidden flex-shrink-0 flex items-center justify-center border-r border-[#F0F2F0]">
+                    <InventoryCardImage
+                      src={product.imageUrl || images[product.id]}
+                      alt={product.name}
+                    />
                   </div>
 
-                  {/* Right: Price */}
-                  <div className="flex-shrink-0 text-right pl-2">
-                    <p className="text-[16px] font-semibold text-[#252825] tabular-nums">
-                      {formatCurrency(product.price)}
-                    </p>
-                    {product.sku && (
-                      <p className="text-[11px] text-[#6E746F] font-mono mt-0.5">
-                        {product.sku}
-                      </p>
-                    )}
+                  {/* Right: Content details (Product Name, Category, Price, Units with fixed layout) */}
+                  <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 min-w-0 h-full overflow-hidden">
+                    {/* Top: Product Name & Category */}
+                    <div className="min-w-0">
+                      <h3
+                        className="text-[14.5px] sm:text-[15.5px] font-semibold text-[#252825] leading-snug truncate"
+                        title={product.name}
+                      >
+                        {product.name}
+                      </h3>
+                      {product.category ? (
+                        <p className="text-[12px] text-[#6E746F] truncate mt-0.5">
+                          {product.category}
+                        </p>
+                      ) : (
+                        <p className="text-[12px] text-transparent select-none mt-0.5" aria-hidden="true">
+                          &nbsp;
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Bottom: Price & Units */}
+                    <div className="flex items-baseline justify-between gap-x-2 pt-1 mt-auto">
+                      <span className="text-[15.5px] sm:text-[17px] font-bold text-[#252825] tabular-nums shrink-0">
+                        {formatCurrency(product.price)}
+                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[11.5px] sm:text-[12px] text-[#6E746F] tabular-nums font-medium">
+                          {product.stock} {product.stock === 1 ? 'unit' : 'units'}
+                        </span>
+
+                        {isOutOfStock ? (
+                          <span className="text-[10.5px] font-semibold text-red-700 bg-red-50 border border-red-200/60 px-1.5 py-0.5 rounded-md">
+                            Out
+                          </span>
+                        ) : isLowStock ? (
+                          <span className="text-[10.5px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md">
+                            Low
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </section>
@@ -355,7 +397,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           <div
             id="inventory-fab-portal-container"
             className="fixed left-0 right-0 z-40 flex justify-center pointer-events-none"
-            style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))' }}
+            style={{ bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <div className="w-full max-w-[430px] px-5 flex justify-end pointer-events-auto">
               <motion.button

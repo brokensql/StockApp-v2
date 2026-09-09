@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine } from 'lucide-react';
+import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine, Loader2 } from 'lucide-react';
 import { Product } from '../types';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { STANDARD_CATEGORIES } from '../data/categories';
+import {
+  getProductImage,
+  saveProductImage,
+  deleteProductImage,
+  compressImage,
+} from '../utils/imageStorage';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
@@ -36,6 +42,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [error, setError] = useState('');
 
+  // Offline Image State
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [hasImageChanged, setHasImageChanged] = useState<boolean>(false);
+  const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+  const [isCompressingImage, setIsCompressingImage] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Standard category list, ensuring any existing product custom category is retained
   const categoryList = useMemo(() => {
     if (category && !STANDARD_CATEGORIES.includes(category as (typeof STANDARD_CATEGORIES)[number])) {
@@ -54,6 +67,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setSku(product.sku || '');
       setError('');
       setIsCategoryOpen(false);
+      setHasImageChanged(false);
+
+      if (product.imageUrl) {
+        setImagePreview(product.imageUrl);
+      } else {
+        getProductImage(product.id).then((stored) => {
+          setImagePreview(stored || null);
+        });
+      }
     } else {
       const cleanInitSku = initialSku ? initialSku.trim().toLowerCase() : '';
       const matched = cleanInitSku
@@ -71,6 +93,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         setStock(matched.stock.toString());
         setThreshold(matched.lowStockThreshold.toString());
         setSku(matched.sku || initialSku || '');
+        if (matched.imageUrl) {
+          setImagePreview(matched.imageUrl);
+        } else {
+          getProductImage(matched.id).then((stored) => {
+            setImagePreview(stored || null);
+          });
+        }
       } else {
         setName('');
         setCategory('General');
@@ -78,11 +107,50 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         setStock('');
         setThreshold('5');
         setSku(initialSku || '');
+        setImagePreview(null);
       }
       setError('');
       setIsCategoryOpen(false);
+      setHasImageChanged(false);
     }
   }, [product, isOpen, initialSku, products]);
+
+  const handleProcessFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload a valid image file (PNG, JPG, WebP)');
+      return;
+    }
+
+    try {
+      setIsCompressingImage(true);
+      setError('');
+      const compressedDataUrl = await compressImage(file, 400, 0.82);
+      setImagePreview(compressedDataUrl);
+      setHasImageChanged(true);
+    } catch {
+      setError('Failed to process image. Please try another photo.');
+    } finally {
+      setIsCompressingImage(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleProcessFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  };
 
   // Detect if an existing product matches the entered barcode or name when adding a new product
   const matchingExistingProduct = useMemo(() => {
@@ -181,6 +249,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ? matchingExistingProduct.id
       : `prod-${Date.now()}`;
 
+    // Persist or delete image in offline IndexedDB
+    if (hasImageChanged) {
+      if (imagePreview) {
+        saveProductImage(targetId, imagePreview).catch((err) =>
+          console.error('Failed to save product image:', err)
+        );
+      } else {
+        deleteProductImage(targetId).catch((err) =>
+          console.error('Failed to delete product image:', err)
+        );
+      }
+    }
+
     const savedProduct: Product = {
       id: targetId,
       name: trimmedName,
@@ -189,6 +270,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       stock: numStock,
       lowStockThreshold: isNaN(numThreshold) ? 5 : numThreshold,
       sku: sku.trim() || undefined,
+      imageUrl: imagePreview || undefined,
     };
 
     onSave(savedProduct);
@@ -197,6 +279,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleDelete = () => {
     if (product && onDelete) {
+      deleteProductImage(product.id).catch((err) =>
+        console.error('Failed to delete image on product delete:', err)
+      );
       onDelete(product.id);
       onClose();
     }
@@ -256,6 +341,97 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <span>{error}</span>
                 </div>
               )}
+
+              {/* Product Photo Upload / Drag & Drop with Instant Preview */}
+              <div id="product-photo-upload-section">
+                <label className="block text-[13px] font-medium text-[#252825] mb-1.5">
+                  Product photo
+                </label>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleProcessFile(e.target.files[0]);
+                    }
+                  }}
+                  className="hidden"
+                  id="input-product-image"
+                />
+
+                {imagePreview ? (
+                  <div className="flex items-center gap-3 p-3 bg-[#FAFBFB] border border-[#DEE3DE] rounded-2xl">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-[#DEE3DE] bg-white flex-shrink-0">
+                      <img
+                        src={imagePreview}
+                        alt="Product preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-semibold text-[#252825] truncate">
+                        Photo attached
+                      </p>
+                      <p className="text-[11px] text-[#6E746F] mt-0.5">
+                        Compressed & saved offline to device
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1 rounded-lg bg-white border border-[#DEE3DE] hover:bg-gray-100 text-[12px] font-medium text-[#252825] cursor-pointer transition-colors shadow-2xs"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImagePreview(null);
+                            setHasImageChanged(true);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="px-2.5 py-1 rounded-lg text-[12px] font-medium text-[#9F3F46] hover:bg-[#9F3F46]/10 cursor-pointer transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative w-full border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                      isDraggingOver
+                        ? 'border-[#4F8065] bg-[#EAF2ED]'
+                        : 'border-[#DEE3DE] hover:border-[#4F8065]/60 bg-[#FAFBFB] hover:bg-white'
+                    }`}
+                  >
+                    {isCompressingImage ? (
+                      <div className="flex items-center gap-2 py-2 text-[#4F8065]">
+                        <Loader2 size={20} className="animate-spin" />
+                        <span className="text-[13px] font-medium">Optimizing photo...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-white border border-[#DEE3DE] flex items-center justify-center text-[#4F8065] mb-2 shadow-2xs">
+                          <Camera size={18} strokeWidth={2.2} />
+                        </div>
+                        <p className="text-[13px] font-semibold text-[#252825]">
+                          Take photo or upload image
+                        </p>
+                        <p className="text-[11px] text-[#6E746F] mt-0.5">
+                          Drag & drop or tap to browse • Stored offline
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Product Name */}
               <div>

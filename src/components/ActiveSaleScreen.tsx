@@ -16,6 +16,8 @@ import { formatPHTTimestamp } from '../utils/philippineDate';
 import { getNextReceiptId } from '../utils/receiptNumber';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
+import { ProductThumbnail } from './ProductThumbnail';
+import { useProductImages } from '../hooks/useProductImages';
 
 interface ActiveSaleScreenProps {
   products: Product[];
@@ -46,6 +48,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
     initialUnrecognizedBarcode
   );
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
+  const { images } = useProductImages();
 
   // Sync initialItems when prop changes from parent (e.g. from fresh barcode scan)
   useEffect(() => {
@@ -429,27 +432,26 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   <div
                     key={item.productId}
                     id={`cart-item-${item.productId}`}
-                    className="py-3.5 space-y-2 select-none rounded-xl px-2 -mx-2 transition-all hover:bg-gray-50/50"
+                    className="py-3 select-none rounded-xl px-2 -mx-2 transition-all hover:bg-gray-50/50 flex items-center justify-between gap-3"
                   >
-                    {/* Top Row: Product Name & Line Total */}
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <ProductThumbnail
+                        src={prod?.imageUrl || images[item.productId]}
+                        alt={item.name}
+                        size="sm"
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="text-[14.5px] font-bold text-[#252825] truncate">
                           {item.name}
                         </p>
+                        <p className="text-[12px] text-[#6E746F] tabular-nums mt-0.5">
+                          {formatCurrency(item.unitPrice)} each
+                        </p>
                       </div>
-                      <span className="text-[15px] font-bold text-[#252825] tabular-nums flex-shrink-0">
-                        {formatCurrency(item.quantity * item.unitPrice)}
-                      </span>
                     </div>
 
-                    {/* Bottom Row: Unit Price & Stepper Controls */}
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[12.5px] text-[#6E746F] tabular-nums">
-                        {formatCurrency(item.unitPrice)} each
-                      </span>
-
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.productId, -1)}
@@ -459,7 +461,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                           <Minus size={13} />
                         </button>
 
-                        <span className="w-7 text-center text-[14px] font-bold text-[#252825] tabular-nums">
+                        <span className="w-6 text-center text-[13.5px] font-bold text-[#252825] tabular-nums">
                           {item.quantity}
                         </span>
 
@@ -473,6 +475,10 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                           <Plus size={13} />
                         </button>
                       </div>
+
+                      <span className="text-[14.5px] font-bold text-[#252825] tabular-nums text-right min-w-[60px]">
+                        {formatCurrency(item.quantity * item.unitPrice)}
+                      </span>
                     </div>
                   </div>
                 );

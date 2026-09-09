@@ -14,7 +14,7 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { ActiveSaleScreen } from './components/ActiveSaleScreen';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
-import { User, Bell, ArrowLeft, Plus } from 'lucide-react';
+import { User, ArrowLeft, Plus } from 'lucide-react';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SALES } from './data/initialSales';
@@ -223,7 +223,9 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+      // Store products in localStorage without raw image strings to guarantee localStorage never exceeds quota
+      const safeProducts = products.map(({ imageUrl, ...rest }) => rest);
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
     }
@@ -513,27 +515,11 @@ export default function App() {
                       </span>
                       <h1
                         id="home-greeting"
-                        className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-[-0.01em] leading-snug mt-0.5 truncate max-w-[220px]"
+                        className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-[-0.01em] leading-snug mt-0.5 truncate max-w-[280px]"
                       >
                         {userProfile?.ownerName || 'Store Owner'}
                       </h1>
                     </div>
-                  </button>
-
-                  {/* Notification Bell */}
-                  <button
-                    id="home-notifications-button"
-                    type="button"
-                    aria-label="Notifications"
-                    onClick={() =>
-                      toast('No unread notifications', {
-                        description: 'Your inventory and store are up to date.',
-                      })
-                    }
-                    className="text-[#252825] hover:text-[#4F8065] p-2 transition-colors cursor-pointer relative focus:outline-none active:scale-95"
-                  >
-                    <Bell size={22} strokeWidth={1.8} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-[#4F8065] rounded-full border border-[#f7f9fb]" />
                   </button>
                 </div>
               ) : activeTab === 'sales' ? (
