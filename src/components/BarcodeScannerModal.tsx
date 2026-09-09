@@ -1271,7 +1271,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleDecrementProductInCart(p.id)}
-                                        className="w-6 h-6 rounded-lg bg-white hover:bg-gray-100 text-[#252825] flex items-center justify-center cursor-pointer transition-colors active:scale-95 border border-[#DEE3DE] shadow-2xs"
+                                        className="w-6 h-6 rounded-full bg-white hover:bg-gray-100 text-[#252825] flex items-center justify-center cursor-pointer transition-colors active:scale-95 border border-[#DEE3DE] shadow-2xs"
                                         aria-label={`Decrease ${p.name}`}
                                       >
                                         <Minus size={11} strokeWidth={2.5} />
@@ -1282,7 +1282,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleAddProductToCart(p)}
-                                        className="w-6 h-6 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
+                                        className="w-6 h-6 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
                                         aria-label={`Increase ${p.name}`}
                                       >
                                         <Plus size={11} strokeWidth={2.5} />
@@ -1292,20 +1292,20 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => handleAddProductToCart(p)}
-                                      className="h-7 px-2.5 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white font-semibold text-[11.5px] sm:text-[12px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                      className="w-7 h-7 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                       aria-label={`Add ${p.name}`}
                                     >
-                                      <Plus size={12} strokeWidth={2.5} />
-                                      <span>Add</span>
+                                      <Plus size={14} strokeWidth={2.5} />
                                     </button>
                                   )
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => handleAddProductToCart(p)}
-                                    className="h-7 px-2.5 rounded-lg bg-[#4F8065] hover:bg-[#3D684F] text-white font-semibold text-[11.5px] sm:text-[12px] flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                    className="w-7 h-7 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                    aria-label={`Select ${p.name}`}
                                   >
-                                    <span>Select</span>
+                                    <Plus size={14} strokeWidth={2.5} />
                                   </button>
                                 )}
                               </div>
@@ -1346,12 +1346,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Switcher Buttons: "Barcode" and "Key" */}
+                  {/* Switcher Buttons: "Barcode" and "All products" */}
                   <div className="flex items-center justify-center gap-3 pointer-events-auto">
                     <button
                       type="button"
                       onClick={() => handleSwitchInputMethod('barcode')}
-                      className="w-28 h-14 rounded-2xl bg-white hover:bg-[#F2F4F2] text-[#4B524D] border border-[#DEE3DE] shadow-xs flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      className="w-28 sm:w-30 h-14 rounded-2xl bg-white hover:bg-[#F2F4F2] text-[#4B524D] border border-[#DEE3DE] shadow-xs flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
                     >
                       <ScanLine size={18} strokeWidth={2.3} />
                       <span>Barcode</span>
@@ -1360,10 +1360,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSwitchInputMethod('key')}
-                      className="w-28 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
                     >
-                      <Keyboard size={18} strokeWidth={2.2} />
-                      <span>Key</span>
+                      <Package size={18} strokeWidth={2.2} />
+                      <span className="whitespace-nowrap">All products</span>
                     </button>
                   </div>
                 </div>
@@ -1625,12 +1625,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Switcher Buttons: "Barcode" and "Key" with Sage Green Active Variant */}
+                  {/* Switcher Buttons: "Barcode" and "All products" with Sage Green Active Variant */}
                   <div className="flex items-center justify-center gap-3">
                     <button
                       type="button"
                       onClick={() => handleSwitchInputMethod('barcode')}
-                      className="w-28 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
                     >
                       <ScanLine size={18} strokeWidth={2.3} />
                       <span>Barcode</span>
@@ -1639,10 +1639,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleSwitchInputMethod('key')}
-                      className="w-28 h-14 rounded-2xl bg-white/15 hover:bg-white/25 text-white/85 border border-white/15 backdrop-blur-md flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      className="w-28 sm:w-30 h-14 rounded-2xl bg-white/15 hover:bg-white/25 text-white/85 border border-white/15 backdrop-blur-md flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
                     >
-                      <Keyboard size={18} strokeWidth={2.2} />
-                      <span>Key</span>
+                      <Package size={18} strokeWidth={2.2} />
+                      <span className="whitespace-nowrap">All products</span>
                     </button>
                   </div>
 

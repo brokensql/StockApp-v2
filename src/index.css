@@ -162,6 +162,14 @@
     margin-right: 2px !important;
     flex-shrink: 0 !important;
   }
+
+  [data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+    color: #F87171 !important;
+  }
+
+  [data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+    color: #34D399 !important;
+  }
 }
 
 /* CamScanner Document Scanner Style Animations (Red Theme) */
