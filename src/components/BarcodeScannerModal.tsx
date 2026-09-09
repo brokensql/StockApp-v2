@@ -1346,26 +1346,28 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Switcher Buttons: "Barcode" and "All products" */}
-                  <div className="flex items-center justify-center gap-3 pointer-events-auto">
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchInputMethod('barcode')}
-                      className="w-28 sm:w-30 h-14 rounded-2xl bg-white hover:bg-[#F2F4F2] text-[#4B524D] border border-[#DEE3DE] shadow-xs flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
-                    >
-                      <ScanLine size={18} strokeWidth={2.3} />
-                      <span>Barcode</span>
-                    </button>
+                  {/* Switcher Buttons: "Barcode" and "All products" (Sales Mode only) */}
+                  {!isInventoryMode && (
+                    <div className="flex items-center justify-center gap-3 pointer-events-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchInputMethod('barcode')}
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-white hover:bg-[#F2F4F2] text-[#4B524D] border border-[#DEE3DE] shadow-xs flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      >
+                        <ScanLine size={18} strokeWidth={2.3} />
+                        <span>Barcode</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchInputMethod('key')}
-                      className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
-                    >
-                      <Package size={18} strokeWidth={2.2} />
-                      <span className="whitespace-nowrap">All products</span>
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchInputMethod('key')}
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
+                      >
+                        <Package size={18} strokeWidth={2.2} />
+                        <span className="whitespace-nowrap">All products</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ) : (
@@ -1625,26 +1627,28 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Switcher Buttons: "Barcode" and "All products" with Sage Green Active Variant */}
-                  <div className="flex items-center justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchInputMethod('barcode')}
-                      className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
-                    >
-                      <ScanLine size={18} strokeWidth={2.3} />
-                      <span>Barcode</span>
-                    </button>
+                  {/* Switcher Buttons: "Barcode" and "All products" with Sage Green Active Variant (Sales Mode only) */}
+                  {!isInventoryMode && (
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchInputMethod('barcode')}
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                      >
+                        <ScanLine size={18} strokeWidth={2.3} />
+                        <span>Barcode</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchInputMethod('key')}
-                      className="w-28 sm:w-30 h-14 rounded-2xl bg-white/15 hover:bg-white/25 text-white/85 border border-white/15 backdrop-blur-md flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
-                    >
-                      <Package size={18} strokeWidth={2.2} />
-                      <span className="whitespace-nowrap">All products</span>
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchInputMethod('key')}
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-white/15 hover:bg-white/25 text-white/85 border border-white/15 backdrop-blur-md flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
+                      >
+                        <Package size={18} strokeWidth={2.2} />
+                        <span className="whitespace-nowrap">All products</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Center Circle with Scanner Icon */}
                   <div className="flex items-center justify-center gap-4 mt-1">
