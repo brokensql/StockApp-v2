@@ -21,6 +21,7 @@ export interface Product {
   lowStockThreshold: number;
   sku?: string;
   unit?: string;
+  imageUrl?: string;
 }
 
 export interface LowStockItem {
