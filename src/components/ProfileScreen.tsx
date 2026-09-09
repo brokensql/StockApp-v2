@@ -561,61 +561,40 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </div>
           </section>
 
-          {onResetOnboarding && (
-            <div className="pt-1 space-y-2.5">
-              <button
-                type="button"
-                onClick={onResetOnboarding}
-                className="w-full py-3 bg-[#FAF9F6] hover:bg-gray-100 border border-[#DEE3DE] rounded-xl text-[#252825] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <Store size={16} className="text-[#4F8065]" />
-                Update Store Identity (Setup Wizard)
-              </button>
-
-              {onResetAllData && (
-                <div>
-                  {!confirmResetData ? (
+          {onResetAllData && (
+            <div className="pt-2">
+              {!confirmResetData ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetData(true)}
+                  className="w-full py-3 bg-white hover:bg-[#9F3F46]/5 border border-[#DEE3DE] hover:border-[#9F3F46]/40 rounded-xl text-[#9F3F46] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <span>Clear All Data (Start Fresh)</span>
+                </button>
+              ) : (
+                <div className="p-4 bg-[#9F3F46]/10 border border-[#9F3F46]/25 rounded-xl text-center">
+                  <p className="text-[13px] font-medium text-[#252825] mb-3">
+                    Are you sure? This removes all products and sales, and returns to setup.
+                  </p>
+                  <div className="flex gap-2 justify-center">
                     <button
                       type="button"
-                      onClick={() => setConfirmResetData(true)}
-                      className="w-full py-3 bg-white hover:bg-[#9F3F46]/5 border border-[#DEE3DE] hover:border-[#9F3F46]/40 rounded-xl text-[#9F3F46] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      onClick={() => setConfirmResetData(false)}
+                      className="px-4 py-2 bg-white border border-[#DEE3DE] rounded-lg text-[13px] font-medium text-[#252825] hover:bg-gray-50 cursor-pointer"
                     >
-                      <span>Clear All Data (Start Fresh)</span>
+                      Cancel
                     </button>
-                  ) : (
-                    <div className="p-4 bg-[#9F3F46]/10 border border-[#9F3F46]/25 rounded-xl text-center">
-                      <p className="text-[13px] font-medium text-[#252825] mb-3">
-                        Are you sure? This removes all current products and sales from your local storage.
-                      </p>
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setConfirmResetData(false)}
-                          className="px-4 py-2 bg-white border border-[#DEE3DE] rounded-lg text-[13px] font-medium text-[#252825] hover:bg-gray-50 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onResetAllData();
-                            setConfirmResetData(false);
-                            setResetSuccessMessage(true);
-                            setTimeout(() => setResetSuccessMessage(false), 3000);
-                          }}
-                          className="px-4 py-2 bg-[#9F3F46] text-white rounded-lg text-[13px] font-medium hover:bg-[#85343a] cursor-pointer"
-                        >
-                          Yes, Clear All
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {resetSuccessMessage && (
-                    <p className="text-center text-[12px] font-medium text-[#4F8065] mt-1.5">
-                      ✓ All products and sales have been cleared.
-                    </p>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onResetAllData();
+                        setConfirmResetData(false);
+                      }}
+                      className="px-4 py-2 bg-[#9F3F46] text-white rounded-lg text-[13px] font-medium hover:bg-[#85343a] cursor-pointer"
+                    >
+                      Yes, Clear All
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

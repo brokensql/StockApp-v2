@@ -300,9 +300,26 @@ export default function App() {
   const handleResetAllData = () => {
     setProducts([]);
     setSales([]);
+    const defaultProfile: UserProfile = {
+      ownerName: '',
+      storeName: '',
+      email: '',
+      phone: '',
+      address: '',
+      businessType: 'Retail & Grocery',
+      currency: 'PHP (₱)',
+    };
+    setUserProfile(defaultProfile);
+    setHasOnboarded(false);
     try {
+      localStorage.removeItem(ONBOARDED_STORAGE_KEY);
+      localStorage.removeItem(HAS_ENTERED_NAME_KEY);
+      localStorage.removeItem(OWNER_NAME_BACKUP_KEY);
+      localStorage.removeItem(STORE_NAME_BACKUP_KEY);
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
       localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(defaultProfile));
+      localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(defaultProfile));
     } catch (e) {
       console.error('Failed to clear products and sales in localStorage', e);
     }
