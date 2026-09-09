@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine, Loader2 } from 'lucide-react';
+import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine, Loader2, Upload } from 'lucide-react';
 import { Product } from '../types';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { STANDARD_CATEGORIES } from '../data/categories';
@@ -48,6 +48,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [isCompressingImage, setIsCompressingImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Standard category list, ensuring any existing product custom category is retained
   const categoryList = useMemo(() => {
@@ -114,6 +115,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       setHasImageChanged(false);
     }
   }, [product, isOpen, initialSku, products]);
+
+  // Open native camera outside the app
+  const triggerCamera = () => {
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+      cameraInputRef.current.click();
+    }
+  };
+
+  // Called when a photo is taken using the device camera outside the app
+  const handleCameraCaptureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      handleProcessFile(file);
+    }
+  };
 
   const handleProcessFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -250,16 +267,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       : `prod-${Date.now()}`;
 
     // Persist or delete image in offline IndexedDB
-    if (hasImageChanged) {
-      if (imagePreview) {
-        saveProductImage(targetId, imagePreview).catch((err) =>
-          console.error('Failed to save product image:', err)
-        );
-      } else {
-        deleteProductImage(targetId).catch((err) =>
-          console.error('Failed to delete product image:', err)
-        );
-      }
+    if (!imagePreview) {
+      deleteProductImage(targetId).catch((err) =>
+        console.error('Failed to delete product image from IDB:', err)
+      );
+    } else if (hasImageChanged) {
+      saveProductImage(targetId, imagePreview).catch((err) =>
+        console.error('Failed to save product image:', err)
+      );
     }
 
     const savedProduct: Product = {
@@ -348,6 +363,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   Product photo
                 </label>
 
+                {/* Direct native camera input (outside the app) */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCameraCaptureChange}
+                  className="hidden"
+                  id="input-product-camera-capture"
+                />
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -362,72 +388,70 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 />
 
                 {imagePreview ? (
-                  <div className="flex items-center gap-3 p-3 bg-[#FAFBFB] border border-[#DEE3DE] rounded-2xl">
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-[#DEE3DE] bg-white flex-shrink-0">
+                  <div className="relative w-48 h-48 aspect-square flex-shrink-0 mt-2">
+                    <div className="w-full h-full rounded-2xl overflow-hidden border border-[#DEE3DE] bg-[#F2F4F2] shadow-2xs">
                       <img
                         src={imagePreview}
                         alt="Product preview"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-semibold text-[#252825] truncate">
-                        Photo attached
-                      </p>
-                      <p className="text-[11px] text-[#6E746F] mt-0.5">
-                        Compressed & saved offline to device
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1 rounded-lg bg-white border border-[#DEE3DE] hover:bg-gray-100 text-[12px] font-medium text-[#252825] cursor-pointer transition-colors shadow-2xs"
-                        >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImagePreview(null);
-                            setHasImageChanged(true);
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                          }}
-                          className="px-2.5 py-1 rounded-lg text-[12px] font-medium text-[#9F3F46] hover:bg-[#9F3F46]/10 cursor-pointer transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = product?.id || matchingExistingProduct?.id;
+                        if (targetId) {
+                          deleteProductImage(targetId).catch((err) =>
+                            console.error('Failed to delete image on recycle click:', err)
+                          );
+                        }
+                        setImagePreview(null);
+                        setHasImageChanged(true);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                        if (cameraInputRef.current) cameraInputRef.current.value = '';
+                      }}
+                      className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-8 h-8 rounded-full bg-white hover:bg-[#9F3F46] text-[#9F3F46] hover:text-white border border-[#DEE3DE] hover:border-[#9F3F46] flex items-center justify-center transition-all cursor-pointer shadow-md z-10 active:scale-95"
+                      title="Delete photo"
+                      aria-label="Delete photo"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 ) : (
                   <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`relative w-full border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                    className={`relative w-48 h-48 aspect-square border-2 border-dashed rounded-2xl p-3 flex flex-col items-center justify-center text-center transition-all ${
                       isDraggingOver
                         ? 'border-[#4F8065] bg-[#EAF2ED]'
-                        : 'border-[#DEE3DE] hover:border-[#4F8065]/60 bg-[#FAFBFB] hover:bg-white'
+                        : 'border-[#DEE3DE] bg-[#FAFBFB]'
                     }`}
                   >
                     {isCompressingImage ? (
-                      <div className="flex items-center gap-2 py-2 text-[#4F8065]">
-                        <Loader2 size={20} className="animate-spin" />
-                        <span className="text-[13px] font-medium">Optimizing photo...</span>
+                      <div className="flex flex-col items-center gap-2 py-3 text-[#4F8065]">
+                        <Loader2 size={22} className="animate-spin" />
+                        <span className="text-[12px] font-medium">Optimizing...</span>
                       </div>
                     ) : (
-                      <>
-                        <div className="w-10 h-10 rounded-full bg-white border border-[#DEE3DE] flex items-center justify-center text-[#4F8065] mb-2 shadow-2xs">
-                          <Camera size={18} strokeWidth={2.2} />
-                        </div>
-                        <p className="text-[13px] font-semibold text-[#252825]">
-                          Take photo or upload image
-                        </p>
-                        <p className="text-[11px] text-[#6E746F] mt-0.5">
-                          Drag & drop or tap to browse • Stored offline
-                        </p>
-                      </>
+                      <div className="flex flex-col items-center justify-center gap-2.5 w-full">
+                        <button
+                          type="button"
+                          onClick={triggerCamera}
+                          className="w-36 h-9.5 px-3 rounded-xl bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#2A5C43] text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                        >
+                          <Camera size={15} strokeWidth={2.2} />
+                          <span>Take picture</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-36 h-9.5 px-3 rounded-xl bg-white hover:bg-[#F2F6F3] text-[#4F8065] border border-[#4F8065]/40 hover:border-[#4F8065] text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                        >
+                          <Upload size={15} strokeWidth={2.2} />
+                          <span>Upload image</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

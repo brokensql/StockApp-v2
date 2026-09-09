@@ -319,8 +319,61 @@ export async function deleteProductImage(productId: string): Promise<void> {
 }
 
 /**
+ * Clears all product images from IndexedDB and memory cache.
+ */
+export async function clearAllProductImages(): Promise<void> {
+  Object.keys(memoryCache).forEach((key) => delete memoryCache[key]);
+  try {
+    const db = await getDB();
+    if (db) {
+      await new Promise<void>((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => resolve();
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to clear product images from IndexedDB:', err);
+  }
+}
+
+/**
+ * Removes any images from IndexedDB that do not belong to active products.
+ * Prevents IndexedDB storage bloat and churn over time.
+ */
+export async function pruneOrphanProductImages(activeProductIds: string[]): Promise<void> {
+  try {
+    const validSet = new Set(activeProductIds);
+    const db = await getDB();
+    if (!db) return;
+
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAllKeys();
+      req.onsuccess = () => {
+        const keys = (req.result as string[]) || [];
+        keys.forEach((key) => {
+          if (!validSet.has(key)) {
+            store.delete(key);
+            delete memoryCache[key];
+          }
+        });
+        resolve();
+      };
+      req.onerror = () => resolve();
+    });
+  } catch (err) {
+    console.warn('Failed to prune orphan product images from IndexedDB:', err);
+  }
+}
+
+/**
  * Synchronous getter from in-memory cache (zero lag during render)
  */
 export function getCachedProductImage(productId: string): string | null {
   return memoryCache[productId] || null;
 }
+

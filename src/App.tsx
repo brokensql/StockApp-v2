@@ -18,6 +18,11 @@ import { User, ArrowLeft, Plus } from 'lucide-react';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SALES } from './data/initialSales';
+import {
+  deleteProductImage,
+  clearAllProductImages,
+  pruneOrphanProductImages,
+} from './utils/imageStorage';
 
 const PROFILE_STORAGE_KEY = 'store_user_profile';
 const PROFILE_BACKUP_KEY = 'sage_user_profile_backup';
@@ -200,6 +205,8 @@ export default function App() {
     if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
       navigator.storage.persist().catch(() => {});
     }
+    // Prune any orphan images in IDB that don't match any active products
+    pruneOrphanProductImages(products.map((p) => p.id)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -298,6 +305,9 @@ export default function App() {
   };
 
   const handleResetAllData = () => {
+    clearAllProductImages().catch((err) =>
+      console.error('Failed to clear product images from IDB on reset:', err)
+    );
     setProducts([]);
     setSales([]);
     const defaultProfile: UserProfile = {
@@ -403,6 +413,9 @@ export default function App() {
   };
 
   const handleDeleteProduct = (productId: string) => {
+    deleteProductImage(productId).catch((err) =>
+      console.error('Failed to delete product image from IDB:', err)
+    );
     setProducts((prev) => prev.filter((p) => p.id !== productId));
     toast.success('Deleted');
   };
