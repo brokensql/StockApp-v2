@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Plus,
@@ -9,11 +9,19 @@ import {
   X,
   Camera,
   ShoppingBag,
-  RotateCcw,
+  Download,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Product, SaleItem, SaleTransaction, PaymentMethod } from '../types';
 import { formatPHTTimestamp } from '../utils/philippineDate';
 import { getNextReceiptId } from '../utils/receiptNumber';
+import {
+  validateCartStock,
+  sanitizeCartStock,
+  getProductAvailableStock,
+} from '../utils/stockValidation';
+import { downloadReceiptTicket } from '../utils/downloadReceipt';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { ProductThumbnail } from './ProductThumbnail';
@@ -38,7 +46,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   onAddNewProductWithBarcode,
   existingSales = [],
 }) => {
-  const [cart, setCart] = useState<SaleItem[]>(() => initialItems || []);
+  const [cart, setCart] = useState<SaleItem[]>(() =>
+    sanitizeCartStock(initialItems || [], products)
+  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [cashTendered, setCashTendered] = useState<string>('');
   const [completedTx, setCompletedTx] = useState<SaleTransaction | null>(null);
@@ -48,14 +58,47 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
     initialUnrecognizedBarcode
   );
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const receiptContainerRef = useRef<HTMLDivElement>(null);
   const { images } = useProductImages();
+
+  const handleDownloadReceipt = async () => {
+    if (!completedTx || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const cardEl =
+        (receiptContainerRef.current?.querySelector('#receipt-ticket-card') as HTMLElement) ||
+        receiptContainerRef.current;
+      const result = await downloadReceiptTicket(
+        cardEl,
+        completedTx,
+        cashTendered,
+        changeAmount
+      );
+      if (result.success) {
+        toast.success('Receipt downloaded successfully');
+      } else {
+        toast.error(result.error || 'Failed to download receipt');
+      }
+    } catch (err) {
+      console.error('Download receipt error:', err);
+      toast.error('Could not download receipt');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Sync initialItems when prop changes from parent (e.g. from fresh barcode scan)
   useEffect(() => {
     if (initialItems) {
-      setCart(initialItems);
+      const sanitized = sanitizeCartStock(initialItems, products);
+      setCart(sanitized);
+      if (initialItems.length > 0 && sanitized.length < initialItems.length) {
+        setStockWarning('Some items were excluded because they are out of stock.');
+        setTimeout(() => setStockWarning(null), 3500);
+      }
     }
-  }, [initialItems]);
+  }, [initialItems, products]);
 
   useEffect(() => {
     if (initialUnrecognizedBarcode) {
@@ -65,27 +108,37 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
 
   // Quick lookup of available stock considering items currently in cart
   const getProductRemainingStock = (productId: string) => {
-    const prod = products.find((p) => p.id === productId);
-    if (!prod) return 0;
+    const available = getProductAvailableStock(productId, products);
+    if (available <= 0) return 0;
     const inCart = cart.find((item) => item.productId === productId)?.quantity || 0;
-    return Math.max(0, prod.stock - inCart);
+    return Math.max(0, available - inCart);
   };
 
   // Add product to cart
   const handleAddToCart = (product: Product) => {
-    const remainingStock = getProductRemainingStock(product.id);
+    const prod = products.find((p) => p.id === product.id) || product;
+    if (prod.stock <= 0) {
+      setStockWarning(`"${prod.name}" is out of stock (0 available).`);
+      setTimeout(() => setStockWarning(null), 3000);
+      return;
+    }
+
+    const remainingStock = getProductRemainingStock(prod.id);
     if (remainingStock <= 0) {
-      setStockWarning(`"${product.name}" has reached maximum available stock.`);
+      setStockWarning(`Only ${prod.stock} units available for "${prod.name}".`);
       setTimeout(() => setStockWarning(null), 3000);
       return;
     }
 
     setStockWarning(null);
     setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.id);
+      const existing = prev.find((item) => item.productId === prod.id);
       if (existing) {
+        if (existing.quantity >= prod.stock) {
+          return prev;
+        }
         return prev.map((item) =>
-          item.productId === product.id
+          item.productId === prod.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -93,11 +146,11 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       return [
         ...prev,
         {
-          productId: product.id,
-          name: product.name,
-          unitPrice: product.price,
+          productId: prod.id,
+          name: prod.name,
+          unitPrice: prod.price,
           quantity: 1,
-          category: product.category,
+          category: prod.category,
         },
       ];
     });
@@ -107,9 +160,14 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   const handleUpdateQuantity = (productId: string, delta: number) => {
     const prod = products.find((p) => p.id === productId);
     const existing = cart.find((item) => item.productId === productId);
-    if (!prod || !existing) return;
+    if (!existing) return;
 
     if (delta > 0) {
+      if (!prod || prod.stock <= 0) {
+        setStockWarning(`"${existing.name}" is out of stock.`);
+        setTimeout(() => setStockWarning(null), 3000);
+        return;
+      }
       if (existing.quantity >= prod.stock) {
         setStockWarning(`Only ${prod.stock} units available for ${prod.name}.`);
         setTimeout(() => setStockWarning(null), 3000);
@@ -127,7 +185,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       setStockWarning(null);
       if (existing.quantity <= 1) {
         // Show confirmation popup when drops to zero
-        setItemToDelete({ id: productId, name: prod.name || existing.name });
+        setItemToDelete({ id: productId, name: prod?.name || existing.name });
       } else {
         setCart((prev) =>
           prev.map((item) =>
@@ -143,6 +201,14 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   const handleRemoveItem = (productId: string) => {
     setCart((prev) => prev.filter((item) => item.productId !== productId));
   };
+
+  // Check for any cart items that are invalid (out of stock or exceeding stock)
+  const cartStockValidation = useMemo(() => {
+    return validateCartStock(cart, products);
+  }, [cart, products]);
+
+  const invalidCartItems = cartStockValidation.invalidItems;
+  const hasInvalidStock = !cartStockValidation.isValid;
 
   // Calculations
   const subtotal = useMemo(() => {
@@ -161,8 +227,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   const isShortCash = cashTendered !== '' && parsedTendered < total;
 
   // Format currency in Philippine Peso
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -171,6 +238,19 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   // Handle finalize sale
   const handleFinalizeSale = () => {
     if (cart.length === 0) return;
+
+    const freshValidation = validateCartStock(cart, products);
+    if (!freshValidation.isValid) {
+      const names = freshValidation.invalidItems.map((i) => `"${i.name}"`).join(', ');
+      setStockWarning(
+        `Cannot complete sale: ${names} ${
+          freshValidation.invalidItems.length === 1 ? 'is' : 'are'
+        } out of stock or exceed inventory.`
+      );
+      setTimeout(() => setStockWarning(null), 4000);
+      return;
+    }
+
     if (cashTendered !== '' && parsedTendered < total) {
       setStockWarning('Cash received is less than total amount due.');
       setTimeout(() => setStockWarning(null), 3000);
@@ -224,6 +304,11 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
     );
 
     if (matched) {
+      if (matched.stock <= 0) {
+        setStockWarning(`"${matched.name}" is out of stock (0 available).`);
+        setTimeout(() => setStockWarning(null), 3000);
+        return;
+      }
       handleAddToCart(matched);
       setUnrecognizedBarcode(null);
     } else {
@@ -246,9 +331,27 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         id="sale-success-full-page"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#f7f9fb] px-4 py-8 flex flex-col justify-between"
+        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F9FAF8] px-4 pt-4 pb-8 flex flex-col"
+        style={{
+          paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
+        }}
       >
-        <div className="w-full">
+        {/* Top Header with Back Button */}
+        <header className="mb-4 flex items-center justify-between">
+          <button
+            id="btn-receipt-back-to-home"
+            type="button"
+            onClick={onCancelSale}
+            className="p-1 -ml-1 text-[#202522] hover:text-[#68716C] active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+            aria-label="Back"
+          >
+            <ArrowLeft size={22} strokeWidth={2.2} />
+            <span className="text-[15px] font-semibold text-[#202522]">Back</span>
+          </button>
+        </header>
+
+        <div ref={receiptContainerRef} className="w-full flex-1 flex flex-col justify-start">
           <ReceiptTicketCard
             transaction={completedTx}
             cashTendered={cashTendered}
@@ -256,33 +359,30 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           />
         </div>
 
-        {/* Bottom Actions */}
+        {/* Bottom Download Receipt Action */}
         <div
-          className="pt-6 space-y-2.5"
+          className="pt-5 w-full"
           style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <button
-            id="btn-sale-receipt-new"
+            id="btn-download-receipt"
             type="button"
-            onClick={() => {
-              setCompletedTx(null);
-              setCart([]);
-              setCashTendered('');
-              setUnrecognizedBarcode(null);
-            }}
-            className="w-full h-13 bg-[#252825] active:bg-black text-white text-[15px] font-semibold rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+            onClick={handleDownloadReceipt}
+            disabled={isDownloading}
+            className="w-full h-13 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_4px_16px_rgba(100,163,14,0.28)] active:scale-[0.98] transition-all disabled:opacity-75 select-none"
+            aria-label="Download receipt"
           >
-            <RotateCcw size={18} />
-            <span>Start Another Sale</span>
-          </button>
-
-          <button
-            id="btn-sale-receipt-done"
-            type="button"
-            onClick={onCancelSale}
-            className="w-full h-12 bg-white border border-[#D5D9DE] active:bg-gray-100 text-[#252825] text-[14px] font-semibold rounded-2xl flex items-center justify-center cursor-pointer transition-colors"
-          >
-            Done (Return to Home)
+            {isDownloading ? (
+              <>
+                <Loader2 size={19} className="animate-spin" />
+                <span>Downloading receipt...</span>
+              </>
+            ) : (
+              <>
+                <Download size={19} strokeWidth={2.2} />
+                <span>Download receipt</span>
+              </>
+            )}
           </button>
         </div>
       </motion.div>
@@ -297,7 +397,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col justify-between"
+      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F9FAF8] flex flex-col justify-between"
     >
       <div
         className="px-5 pt-6"
@@ -313,15 +413,15 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               id="btn-back-to-home"
               type="button"
               onClick={onCancelSale}
-              className="w-9 h-9 rounded-full bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-gray-50 transition-colors cursor-pointer shadow-2xs"
+              className="p-1 -ml-1 text-[#202522] hover:text-[#68716C] flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Back"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={22} />
             </button>
             <div>
               <h1
                 id="active-sale-page-title"
-                className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-tight leading-tight"
+                className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-tight leading-tight"
               >
                 Sale Checkout
               </h1>
@@ -334,7 +434,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               id="btn-scan-more-header"
               type="button"
               onClick={() => setIsScannerOpen(true)}
-              className="h-9 px-3 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              className="h-9 px-3 rounded-full bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
               title="Scan barcode with camera"
             >
               <Camera size={15} />
@@ -347,9 +447,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         {stockWarning && (
           <div
             id="stock-warning-banner"
-            className="mb-3.5 p-3 bg-[#9F3F46]/10 border border-[#9F3F46]/25 rounded-2xl text-[13px] text-[#252825] flex items-center gap-2.5"
+            className="mb-3.5 p-3 bg-[#D94841]/10 border border-[#D94841]/25 rounded-2xl text-[13px] text-[#202522] flex items-center gap-2.5"
           >
-            <AlertCircle size={16} className="text-[#9F3F46] flex-shrink-0" />
+            <AlertCircle size={16} className="text-[#D94841] flex-shrink-0" />
             <span className="flex-1">{stockWarning}</span>
           </div>
         )}
@@ -358,16 +458,16 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         {unrecognizedBarcode && (
           <div
             id="unrecognized-barcode-card"
-            className="mb-4 p-4 bg-amber-50 border border-amber-200/80 rounded-2xl shadow-xs"
+            className="mb-4 p-4 bg-[#FAF7F2] border border-[#EADCC8] rounded-2xl shadow-xs"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-2.5 min-w-0 pr-2">
-                <AlertCircle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle size={18} className="text-[#B58A52] flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[13.5px] font-bold text-amber-900">
+                  <p className="text-[13.5px] font-bold text-[#6D532C]">
                     Barcode not registered
                   </p>
-                  <p className="text-[12px] text-amber-800/90 mt-0.5 font-mono">
+                  <p className="text-[12px] text-[#8C6B38] mt-0.5 font-mono">
                     "{unrecognizedBarcode}" is not yet in your inventory catalog.
                   </p>
                 </div>
@@ -375,7 +475,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setUnrecognizedBarcode(null)}
-                className="p-1 text-amber-700 hover:text-amber-900 cursor-pointer"
+                className="p-1 text-[#8C6B38] hover:text-[#6D532C] cursor-pointer"
                 aria-label="Dismiss barcode alert"
               >
                 <X size={15} />
@@ -387,7 +487,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => onAddNewProductWithBarcode(unrecognizedBarcode)}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[12px] font-bold cursor-pointer transition-colors shadow-2xs"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#B58A52] hover:bg-[#9B7440] text-white text-[12px] font-bold cursor-pointer transition-colors shadow-2xs"
                 >
                   Register as New Product
                 </button>
@@ -395,7 +495,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-[12px] font-semibold hover:bg-amber-100/50 cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-white border border-[#EADCC8] text-[#6D532C] text-[12px] font-semibold hover:bg-[#FAF7F2] cursor-pointer transition-colors"
               >
                 Scan Again
               </button>
@@ -406,7 +506,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         {/* Scanned Items in Current Sale - Clean, unboxed design */}
         <section aria-label="Current sale items" className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[16px] font-bold text-[#252825]">
+            <h2 className="text-[16px] font-bold text-[#202522]">
               Scanned products
             </h2>
           </div>
@@ -414,25 +514,32 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           {cart.length === 0 ? (
             <div
               id="empty-cart-state"
-              className="py-10 text-center"
+              className="py-10 text-center flex flex-col items-center"
             >
-              <p className="text-[14px] font-semibold text-[#252825]">
+              <ShoppingBag size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
+              <p className="text-[14px] font-semibold text-[#202522]">
                 No products in sale yet
               </p>
-              <p className="text-[14px] text-[#6E746F] mt-1 max-w-[240px] mx-auto">
+              <p className="text-[14px] text-[#68716C] mt-1 max-w-[240px] mx-auto">
                 Scan customer items using the camera scanner.
               </p>
             </div>
           ) : (
-            <div id="scanned-items-list" className="divide-y divide-[#DEE3DE]/70">
+            <div id="scanned-items-list" className="divide-y divide-[#E1E6E2]/70">
               {cart.map((item) => {
                 const prod = products.find((p) => p.id === item.productId);
+                const isOutOfStock = !prod || prod.stock <= 0;
+                const isExceedingStock = prod ? item.quantity > prod.stock : false;
 
                 return (
                   <div
                     key={item.productId}
                     id={`cart-item-${item.productId}`}
-                    className="py-3 select-none rounded-xl px-2 -mx-2 transition-all hover:bg-gray-50/50 flex items-center justify-between gap-3"
+                    className={`py-3 select-none rounded-xl px-2 -mx-2 transition-all flex items-center justify-between gap-3 ${
+                      isOutOfStock
+                        ? 'bg-red-50/40 border border-red-200/50'
+                        : 'hover:bg-gray-50/50'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <ProductThumbnail
@@ -441,10 +548,22 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                         size="sm"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14.5px] font-bold text-[#252825] truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-[12px] text-[#6E746F] tabular-nums mt-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[14.5px] font-bold text-[#202522] truncate">
+                            {item.name}
+                          </p>
+                          {isOutOfStock && (
+                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200/80 px-1.5 py-0.5 rounded shrink-0">
+                              Out of stock
+                            </span>
+                          )}
+                          {!isOutOfStock && isExceedingStock && (
+                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded shrink-0">
+                              Max {prod?.stock}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-[#68716C] tabular-nums mt-0.5">
                           {formatCurrency(item.unitPrice)} each
                         </p>
                       </div>
@@ -455,28 +574,28 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.productId, -1)}
-                          className="w-7 h-7 rounded-full bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
+                          className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] flex items-center justify-center text-[#202522] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
                           aria-label="Decrease quantity"
                         >
                           <Minus size={13} />
                         </button>
 
-                        <span className="w-6 text-center text-[13.5px] font-bold text-[#252825] tabular-nums">
+                        <span className="w-6 text-center text-[13.5px] font-bold text-[#202522] tabular-nums">
                           {item.quantity}
                         </span>
 
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.productId, 1)}
-                          disabled={prod && item.quantity >= prod.stock}
-                          className="w-7 h-7 rounded-full bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={!prod || prod.stock <= 0 || item.quantity >= prod.stock}
+                          className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] flex items-center justify-center text-[#202522] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label="Increase quantity"
                         >
                           <Plus size={13} />
                         </button>
                       </div>
 
-                      <span className="text-[14.5px] font-bold text-[#252825] tabular-nums text-right min-w-[60px]">
+                      <span className="text-[14.5px] font-bold text-[#202522] tabular-nums text-right min-w-[60px]">
                         {formatCurrency(item.quantity * item.unitPrice)}
                       </span>
                     </div>
@@ -489,21 +608,21 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
 
         {/* Subtotal, Total Due, Cash Received & Final CTA */}
         {cart.length > 0 && (
-          <div className="pt-5 border-t border-[#DEE3DE] space-y-5 mb-6">
+          <div className="pt-5 border-t border-[#E1E6E2] space-y-5 mb-6">
             {/* Subtotal & Total Due Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-center text-[13.5px]">
-                <span className="text-[#6E746F]">Subtotal</span>
-                <span className="text-[#252825] font-semibold tabular-nums">
+                <span className="text-[#68716C]">Subtotal</span>
+                <span className="text-[#202522] font-semibold tabular-nums">
                   {formatCurrency(subtotal)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-baseline pt-2 border-t border-[#DEE3DE]">
-                <span className="text-[15px] font-bold text-[#252825]">
+              <div className="flex justify-between items-baseline pt-2 border-t border-[#E1E6E2]">
+                <span className="text-[15px] font-bold text-[#202522]">
                   Total Due
                 </span>
-                <span className="text-[26px] font-black text-[#252825] tabular-nums">
+                <span className="text-[26px] font-black text-[#202522] tabular-nums">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -513,12 +632,12 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
             <div className="pt-2 space-y-2">
               <label
                 htmlFor="cash-tendered-input"
-                className="block text-[13px] font-bold text-[#252825]"
+                className="block text-[13px] font-bold text-[#202522]"
               >
                 Cash received
               </label>
-              <div className="flex items-center gap-1.5 pb-2 border-b border-[#DEE3DE] focus-within:border-[#252825] transition-colors">
-                <span className="text-[15px] font-bold text-[#252825]">₱</span>
+              <div className="flex items-center gap-1.5 pb-2 border-b border-[#E1E6E2] focus-within:border-[#202522] transition-colors">
+                <span className="text-[15px] font-bold text-[#202522]">₱</span>
                 <input
                   id="cash-tendered-input"
                   type="number"
@@ -527,7 +646,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   placeholder={total.toFixed(2)}
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
-                  className="w-full text-[15px] font-bold bg-transparent focus:outline-none text-[#252825] placeholder:text-[#6E746F]/40"
+                  className="w-full text-[15px] font-bold bg-transparent focus:outline-none text-[#202522] placeholder:text-[#68716C]/40"
                 />
               </div>
 
@@ -537,15 +656,15 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   <span
                     className={
                       isShortCash
-                        ? 'text-[#9F3F46] font-medium'
-                        : 'text-[#252825] font-semibold'
+                        ? 'text-[#D94841] font-medium'
+                        : 'text-[#202522] font-semibold'
                     }
                   >
                     {isShortCash ? 'Short by:' : 'Change due:'}
                   </span>
                   <span
                     className={`tabular-nums font-bold text-[15px] ${
-                      isShortCash ? 'text-[#9F3F46]' : 'text-[#252825]'
+                      isShortCash ? 'text-[#D94841]' : 'text-[#202522]'
                     }`}
                   >
                     {isShortCash
@@ -562,8 +681,8 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                 id="btn-complete-sale"
                 type="button"
                 onClick={handleFinalizeSale}
-                disabled={isShortCash}
-                className="w-full h-12 bg-[#4F8065] active:bg-[#3D684F] hover:bg-[#437258] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[15px] font-bold rounded-full flex items-center justify-center cursor-pointer shadow-sm transition-all"
+                disabled={isShortCash || hasInvalidStock || cart.length === 0}
+                className="w-full h-12 bg-[#64A30E] active:bg-[#477309] hover:bg-[#54890B] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[15px] font-bold rounded-full flex items-center justify-center cursor-pointer shadow-sm transition-all"
               >
                 <span>Complete Sale</span>
               </button>
@@ -584,14 +703,20 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               const map = new Map<string, SaleItem>();
               prev.forEach((item) => map.set(item.productId, { ...item }));
               items.forEach((item) => {
+                const prod = products.find((p) => p.id === item.productId);
+                const maxStock = prod ? prod.stock : 0;
+                if (maxStock <= 0) return;
                 if (map.has(item.productId)) {
                   const existing = map.get(item.productId)!;
                   map.set(item.productId, {
                     ...existing,
-                    quantity: existing.quantity + item.quantity,
+                    quantity: Math.min(existing.quantity + item.quantity, maxStock),
                   });
                 } else {
-                  map.set(item.productId, { ...item });
+                  map.set(item.productId, {
+                    ...item,
+                    quantity: Math.min(item.quantity, maxStock),
+                  });
                 }
               });
               return Array.from(map.values());
@@ -615,15 +740,15 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           onClick={() => setItemToDelete(null)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-2xl p-6 border border-[#DEE3DE] shadow-xl space-y-4"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 border border-[#E1E6E2] shadow-xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-1.5">
-              <h3 className="text-[17px] font-bold text-[#252825]">
+              <h3 className="text-[17px] font-bold text-[#202522]">
                 Remove item
               </h3>
-              <p className="text-[13.5px] text-[#555A55] leading-relaxed">
-                Do you want to remove <span className="font-semibold text-[#252825]">{itemToDelete.name}</span> from this sale?
+              <p className="text-[13.5px] text-[#68716C] leading-relaxed">
+                Do you want to remove <span className="font-semibold text-[#202522]">{itemToDelete.name}</span> from this sale?
               </p>
             </div>
 
@@ -632,7 +757,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                 type="button"
                 id="btn-cancel-remove"
                 onClick={() => setItemToDelete(null)}
-                className="h-10 px-4 rounded-xl border border-[#DEE3DE] text-[13.5px] font-semibold text-[#252825] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
+                className="h-10 px-4 rounded-xl border border-[#E1E6E2] text-[13.5px] font-semibold text-[#202522] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -643,7 +768,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   handleRemoveItem(itemToDelete.id);
                   setItemToDelete(null);
                 }}
-                className="h-10 px-4 rounded-xl bg-[#252825] text-white text-[13.5px] font-semibold hover:bg-black active:scale-95 transition-all cursor-pointer"
+                className="h-10 px-4 rounded-xl bg-[#202522] text-white text-[13.5px] font-semibold hover:bg-black active:scale-95 transition-all cursor-pointer"
               >
                 Remove
               </button>

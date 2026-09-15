@@ -3,7 +3,7 @@
   "name": "StockApp",
   "short_name": "StockApp",
   "description": "A simple way to manage your inventory and sales.",
-  "theme_color": "#4F8065",
+  "theme_color": "#64A30E",
   "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait",

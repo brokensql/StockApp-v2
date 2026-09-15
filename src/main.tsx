@@ -12,7 +12,7 @@ const isNative =
     .Capacitor?.isNativePlatform?.() === true;
 
 if (isNative) {
-  StatusBar.setBackgroundColor({ color: '#F7F9FB' }).catch(() => {});
+  StatusBar.setBackgroundColor({ color: '#F9FAF8' }).catch(() => {});
   StatusBar.setStyle({ style: Style.Light }).catch(() => {});
 }
 

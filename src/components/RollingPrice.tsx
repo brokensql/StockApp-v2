@@ -70,7 +70,8 @@ export const RollingPrice: React.FC<RollingPriceProps> = ({
     );
   }
 
-  const formatted = `${prefix}${displayValue.toLocaleString('en-PH', {
+  const safeVal = typeof displayValue === 'number' && !isNaN(displayValue) ? displayValue : 0;
+  const formatted = `${prefix}${safeVal.toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

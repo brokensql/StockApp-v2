@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
+import { ReceiptCheckmark } from "../ReceiptCheckmark";
 
 // --- SVG Icons ---
 
@@ -206,8 +207,8 @@ const AnimatedTicket = React.forwardRef<HTMLDivElement, TicketProps>(
           <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background" />
 
           <div className="p-8 flex flex-col items-center text-center">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full animate-in zoom-in-50 delay-300 duration-500">
-              <CheckCircleIcon className="w-10 h-10 text-emerald-600 animate-in zoom-in-75 delay-500 duration-500" />
+            <div className="w-16 h-16 mx-auto mb-1 flex items-center justify-center">
+              <ReceiptCheckmark size={64} className="w-16 h-16" />
             </div>
             <h1 className="text-2xl font-semibold mt-4">Thank you!</h1>
             <p className="text-muted-foreground mt-1">

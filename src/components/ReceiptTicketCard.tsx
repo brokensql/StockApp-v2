@@ -1,7 +1,8 @@
 import React from 'react';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from '../utils/philippineDate';
-import { CheckCircleIcon, ConfettiExplosion } from './ui/ticket-confirmation-card';
+import { ConfettiExplosion } from './ui/ticket-confirmation-card';
+import { ReceiptCheckmark } from './ReceiptCheckmark';
 
 interface ReceiptTicketCardProps {
   transaction: SaleTransaction;
@@ -9,6 +10,9 @@ interface ReceiptTicketCardProps {
   changeAmount?: number;
   hideThankYou?: boolean;
   maxItems?: number;
+  enableConfetti?: boolean;
+  hideBrokenLine?: boolean;
+  isPeekingShadow?: boolean;
 }
 
 export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
@@ -17,11 +21,18 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
   changeAmount,
   hideThankYou = false,
   maxItems,
+  enableConfetti = true,
+  hideBrokenLine = false,
+  isPeekingShadow = false,
 }) => {
   const [showConfetti, setShowConfetti] = React.useState(false);
 
+  // Soft gray card background for peeking shadow receipt, white for active front receipt
+  const cardBgClass = isPeekingShadow ? 'bg-[#E3E8E4]' : 'bg-white';
+  const cardSvgFill = isPeekingShadow ? '#E3E8E4' : '#FFFFFF';
+
   React.useEffect(() => {
-    if (!hideThankYou) {
+    if (!hideThankYou && enableConfetti) {
       const mountTimer = setTimeout(() => setShowConfetti(true), 100);
       const unmountTimer = setTimeout(() => setShowConfetti(false), 6000);
       return () => {
@@ -29,11 +40,12 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
         clearTimeout(unmountTimer);
       };
     }
-  }, [hideThankYou]);
+  }, [hideThankYou, enableConfetti]);
 
   // Format currency strictly in Philippine Peso
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -98,12 +110,18 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             >
               <path
                 d="M 16,0 A 16 16 0 0 1 0,16 L 0,18 L 16,18 Z"
-                fill="#FFFFFF"
+                fill={cardSvgFill}
               />
             </svg>
 
-            {/* Middle Broken / Dashed Cut Line along the top edge */}
-            <div className="flex-1 bg-white border-t-2 border-dashed border-[#D5D9DE]" />
+            {/* Middle Top Cut Line: much softer gray line on peeking shadows, transforms into broken/dashed line once in front */}
+            <div
+              className={`flex-1 ${cardBgClass} border-t ${
+                hideBrokenLine
+                  ? 'border-solid border-[#D4DBD5]'
+                  : 'border-dashed border-[#DCE1DC] border-t-2'
+              }`}
+            />
 
             {/* Right Quarter-Circle Notch: Exactly the lower quarter of the semi-circle cutout */}
             <svg
@@ -117,24 +135,24 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             >
               <path
                 d="M 0,0 A 16 16 0 0 0 16,16 L 16,18 L 0,18 Z"
-                fill="#FFFFFF"
+                fill={cardSvgFill}
               />
             </svg>
           </div>
         ) : (
           <>
             {/* Top Header Section */}
-            <div className="bg-white rounded-t-[28px] pt-8 px-6 pb-2 text-center">
-              {/* Success Checkmark Icon */}
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center animate-in zoom-in-50 delay-300 duration-500 shadow-xs">
-                <CheckCircleIcon className="w-10 h-10 text-emerald-600 animate-in zoom-in-75 delay-500 duration-500" />
+            <div className={`${cardBgClass} rounded-t-[28px] pt-8 px-6 pb-2 text-center`}>
+              {/* Success Checkmark Animated Lottie */}
+              <div className="w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <ReceiptCheckmark size={64} className="w-16 h-16" />
               </div>
 
               {/* Heading */}
-              <h2 className="text-[23px] font-bold text-[#1C1E21] tracking-tight">
+              <h2 className="text-[23px] font-bold text-[#202522] tracking-tight">
                 Thank you
               </h2>
-              <p className="text-[13.5px] text-[#6E746F] mt-1 max-w-[260px] mx-auto leading-relaxed">
+              <p className="text-[13.5px] text-[#68716C] mt-1 max-w-[260px] mx-auto leading-relaxed">
                 Your payment has been processed successfully.
               </p>
             </div>
@@ -151,16 +169,16 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
             >
-              {/* White shape with concave semicircle arc carved out */}
+              {/* Card shape with concave semicircle arc carved out */}
               <path
                 d="M 0,0 A 16 16 0 0 1 0,32 L 16,32 L 16,0 Z"
-                fill="#FFFFFF"
+                fill={cardSvgFill}
               />
             </svg>
 
             {/* Middle Dashed Divider */}
-            <div className="flex-1 bg-white flex items-center justify-center">
-              <div className="w-full border-b-2 border-dashed border-[#D5D9DE]" />
+            <div className={`flex-1 ${cardBgClass} flex items-center justify-center`}>
+              <div className="w-full border-b-2 border-dashed border-[#DCE1DC]" />
             </div>
 
             {/* Right Notch: 100% transparent cutout hole, seamlessly revealing the background */}
@@ -173,10 +191,10 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
             >
-              {/* White shape with concave semicircle arc carved out */}
+              {/* Card shape with concave semicircle arc carved out */}
               <path
                 d="M 16,0 A 16 16 0 0 0 16,32 L 0,32 L 0,0 Z"
-                fill="#FFFFFF"
+                fill={cardSvgFill}
               />
             </svg>
           </div>
@@ -185,7 +203,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
 
       {/* Bottom Section */}
       <div
-        className={`bg-white px-5 sm:px-6 ${
+        className={`${cardBgClass} px-5 sm:px-6 ${
           hideThankYou
             ? 'flex-1 flex flex-col justify-between pt-3 pb-2.5 space-y-2'
             : 'pt-4 pb-4 space-y-4'
@@ -194,18 +212,18 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
         {/* Receipt ID & Amount Row */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="block text-[11px] font-medium text-[#7A807B]">
+            <span className="block text-[11px] font-medium text-[#68716C]">
               Receipt ID
             </span>
-            <span className="text-[14px] font-bold text-[#252825] font-mono tracking-tight">
+            <span className="text-[14px] font-bold text-[#202522] font-mono tracking-tight">
               {transaction.transactionNumber}
             </span>
           </div>
           <div className="text-right">
-            <span className="block text-[11px] font-medium text-[#7A807B]">
+            <span className="block text-[11px] font-medium text-[#68716C]">
               Amount
             </span>
-            <span className="text-[15.5px] font-bold text-[#252825] tabular-nums">
+            <span className="text-[15.5px] font-bold text-[#202522] tabular-nums">
               {formatCurrency(transaction.total)}
             </span>
           </div>
@@ -213,38 +231,38 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
 
         {/* Date & Time Row */}
         <div>
-          <span className="block text-[11px] font-medium text-[#7A807B]">
+          <span className="block text-[11px] font-medium text-[#68716C]">
             Date & time
           </span>
-          <span className="text-[13px] font-bold text-[#252825] tabular-nums">
+          <span className="text-[13px] font-bold text-[#202522] tabular-nums">
             {formatReceiptDateTime(transaction.createdAt || transaction.timestamp)}
           </span>
         </div>
 
         {/* Bought Products List */}
         <div className={hideThankYou ? 'pt-0.5' : 'pt-2'}>
-          <div className="flex items-center justify-between pb-1.5 border-b border-[#F0F2F4]">
-            <span className="text-[11px] font-medium text-[#7A807B]">
+          <div className="flex items-center justify-between pb-1.5 border-b border-[#F1F3F0]">
+            <span className="text-[11px] font-medium text-[#68716C]">
               Bought products ({transaction.itemCount} {transaction.itemCount === 1 ? 'item' : 'items'})
             </span>
-            <span className="text-[11px] font-medium text-[#7A807B]">
+            <span className="text-[11px] font-medium text-[#68716C]">
               Total
             </span>
           </div>
 
-          <div className={`divide-y divide-[#F0F2F4] ${hideThankYou ? 'max-h-40 my-0.5' : 'max-h-52 my-1'} overflow-y-auto pr-1`}>
+          <div className={`divide-y divide-[#F1F3F0] ${hideThankYou ? 'max-h-40 my-0.5' : 'max-h-52 my-1'} overflow-y-auto pr-1`}>
             {(maxItems && transaction.items.length > maxItems
               ? transaction.items.slice(0, maxItems)
               : transaction.items
             ).map((item, idx) => (
               <div key={idx} className={`${hideThankYou ? 'py-1.5' : 'py-2.5'} flex items-center justify-between text-[13px]`}>
                 <div className="min-w-0 pr-3 flex-1">
-                  <p className="font-semibold text-[#252825] truncate leading-snug">{item.name}</p>
-                  <p className="text-[11.5px] text-[#6E746F] mt-0.5 tabular-nums">
+                  <p className="font-semibold text-[#202522] truncate leading-snug">{item.name}</p>
+                  <p className="text-[11.5px] text-[#68716C] mt-0.5 tabular-nums">
                     {item.quantity} × {formatCurrency(item.unitPrice)}
                   </p>
                 </div>
-                <span className="font-bold text-[#252825] tabular-nums flex-shrink-0">
+                <span className="font-bold text-[#202522] tabular-nums flex-shrink-0">
                   {formatCurrency(item.quantity * item.unitPrice)}
                 </span>
               </div>
@@ -253,7 +271,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             {/* 3rd section: 3 dots indicating continuation if items exceed maxItems */}
             {maxItems && transaction.items.length > maxItems && (
               <div className="py-1 flex items-center justify-center select-none" aria-label="More items">
-                <span className="text-[14px] font-black tracking-[0.35em] text-[#9EA39F] pl-1 leading-none">
+                <span className="text-[14px] font-black tracking-[0.35em] text-[#929A95] pl-1 leading-none">
                   •••
                 </span>
               </div>
@@ -261,24 +279,24 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
           </div>
 
           {/* Subtotal, Cash Received & Change Due Summary */}
-          <div className={`${hideThankYou ? 'pt-1.5 space-y-1' : 'pt-3 space-y-1.5'} border-t border-[#EEF0F2] text-[12.5px]`}>
-            <div className="flex justify-between text-[#6E746F]">
+          <div className={`${hideThankYou ? 'pt-1.5 space-y-1' : 'pt-3 space-y-1.5'} border-t border-[#E1E6E2] text-[12.5px]`}>
+            <div className="flex justify-between text-[#68716C]">
               <span>Subtotal</span>
-              <span className="font-semibold text-[#252825] tabular-nums">
+              <span className="font-semibold text-[#202522] tabular-nums">
                 {formatCurrency(transaction.subtotal)}
               </span>
             </div>
             {parsedCash > 0 && (
               <>
-                <div className="flex justify-between text-[#6E746F]">
+                <div className="flex justify-between text-[#68716C]">
                   <span>Cash received</span>
-                  <span className="font-semibold text-[#252825] tabular-nums">
+                  <span className="font-semibold text-[#202522] tabular-nums">
                     {formatCurrency(parsedCash)}
                   </span>
                 </div>
-                <div className="flex justify-between text-[#252825] font-semibold pt-1 border-t border-[#F0F2F4]">
+                <div className="flex justify-between text-[#202522] font-semibold pt-1 border-t border-[#F1F3F0]">
                   <span>Change due</span>
-                  <span className="font-bold text-[#252825] tabular-nums text-[13.5px]">
+                  <span className="font-bold text-[#202522] tabular-nums text-[13.5px]">
                     {formatCurrency(actualChange)}
                   </span>
                 </div>
@@ -289,7 +307,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
 
         {/* Bottom Horizontal Broken Line */}
         <div className={hideThankYou ? 'pt-0.5' : 'pt-2'}>
-          <div className="w-full border-b-2 border-dashed border-[#D5D9DE]" />
+          <div className="w-full border-b-2 border-dashed border-[#DCE1DC]" />
         </div>
 
         {/* Barcode Section */}
@@ -301,52 +319,52 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
           >
-            <rect x="2" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="7" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="10" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="17" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="21" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="25" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="31" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="38" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="43" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="47" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="53" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="58" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="64" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="68" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="75" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="79" y="0" width="5" height="46" fill="#1C1E21" />
-            <rect x="87" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="91" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="96" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="100" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="107" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="111" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="116" y="0" width="5" height="46" fill="#1C1E21" />
-            <rect x="124" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="128" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="135" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="139" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="145" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="150" y="0" width="5" height="46" fill="#1C1E21" />
-            <rect x="158" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="162" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="169" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="174" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="179" y="0" width="5" height="46" fill="#1C1E21" />
-            <rect x="187" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="191" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="195" y="0" width="4" height="46" fill="#1C1E21" />
-            <rect x="202" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="207" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="213" y="0" width="5" height="46" fill="#1C1E21" />
-            <rect x="221" y="0" width="1" height="46" fill="#1C1E21" />
-            <rect x="225" y="0" width="3" height="46" fill="#1C1E21" />
-            <rect x="231" y="0" width="2" height="46" fill="#1C1E21" />
-            <rect x="236" y="0" width="3" height="46" fill="#1C1E21" />
+            <rect x="2" y="0" width="3" height="46" fill="#202522" />
+            <rect x="7" y="0" width="1" height="46" fill="#202522" />
+            <rect x="10" y="0" width="4" height="46" fill="#202522" />
+            <rect x="17" y="0" width="2" height="46" fill="#202522" />
+            <rect x="21" y="0" width="1" height="46" fill="#202522" />
+            <rect x="25" y="0" width="3" height="46" fill="#202522" />
+            <rect x="31" y="0" width="4" height="46" fill="#202522" />
+            <rect x="38" y="0" width="2" height="46" fill="#202522" />
+            <rect x="43" y="0" width="1" height="46" fill="#202522" />
+            <rect x="47" y="0" width="4" height="46" fill="#202522" />
+            <rect x="53" y="0" width="2" height="46" fill="#202522" />
+            <rect x="58" y="0" width="3" height="46" fill="#202522" />
+            <rect x="64" y="0" width="1" height="46" fill="#202522" />
+            <rect x="68" y="0" width="4" height="46" fill="#202522" />
+            <rect x="75" y="0" width="2" height="46" fill="#202522" />
+            <rect x="79" y="0" width="5" height="46" fill="#202522" />
+            <rect x="87" y="0" width="1" height="46" fill="#202522" />
+            <rect x="91" y="0" width="3" height="46" fill="#202522" />
+            <rect x="96" y="0" width="2" height="46" fill="#202522" />
+            <rect x="100" y="0" width="4" height="46" fill="#202522" />
+            <rect x="107" y="0" width="1" height="46" fill="#202522" />
+            <rect x="111" y="0" width="3" height="46" fill="#202522" />
+            <rect x="116" y="0" width="5" height="46" fill="#202522" />
+            <rect x="124" y="0" width="2" height="46" fill="#202522" />
+            <rect x="128" y="0" width="4" height="46" fill="#202522" />
+            <rect x="135" y="0" width="1" height="46" fill="#202522" />
+            <rect x="139" y="0" width="3" height="46" fill="#202522" />
+            <rect x="145" y="0" width="2" height="46" fill="#202522" />
+            <rect x="150" y="0" width="5" height="46" fill="#202522" />
+            <rect x="158" y="0" width="1" height="46" fill="#202522" />
+            <rect x="162" y="0" width="4" height="46" fill="#202522" />
+            <rect x="169" y="0" width="2" height="46" fill="#202522" />
+            <rect x="174" y="0" width="3" height="46" fill="#202522" />
+            <rect x="179" y="0" width="5" height="46" fill="#202522" />
+            <rect x="187" y="0" width="2" height="46" fill="#202522" />
+            <rect x="191" y="0" width="1" height="46" fill="#202522" />
+            <rect x="195" y="0" width="4" height="46" fill="#202522" />
+            <rect x="202" y="0" width="2" height="46" fill="#202522" />
+            <rect x="207" y="0" width="3" height="46" fill="#202522" />
+            <rect x="213" y="0" width="5" height="46" fill="#202522" />
+            <rect x="221" y="0" width="1" height="46" fill="#202522" />
+            <rect x="225" y="0" width="3" height="46" fill="#202522" />
+            <rect x="231" y="0" width="2" height="46" fill="#202522" />
+            <rect x="236" y="0" width="3" height="46" fill="#202522" />
           </svg>
-          <span className="text-[10px] tracking-[0.2em] font-mono text-[#252825] font-semibold mt-1">
+          <span className="text-[10px] tracking-[0.2em] font-mono text-[#202522] font-semibold mt-1">
             {barcodeNumber}
           </span>
         </div>
@@ -355,7 +373,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
       {/* Exactly 6 Semi-Circle Holes along the bottom edge with 100% transparent cutout background */}
       <div className="flex items-stretch h-[18px] w-full select-none -mt-[1px]">
         {/* Far left corner segment */}
-        <div className="flex-1 bg-white rounded-bl-[24px]" />
+        <div className={`flex-1 ${cardBgClass} rounded-bl-[24px]`} />
 
         {Array.from({ length: 6 }).map((_, idx) => (
           <React.Fragment key={idx}>
@@ -369,15 +387,15 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
             >
-              {/* White shape that carves out an authentic empty transparent semi-circle hole */}
+              {/* Shape that carves out an authentic empty transparent semi-circle hole */}
               <path
                 d="M 0,0 L 32,0 L 32,18 A 16 16 0 0 0 0,18 L 0,0 Z"
-                fill="#FFFFFF"
+                fill={cardSvgFill}
               />
             </svg>
-            {/* White segment between holes */}
+            {/* Segment between holes */}
             <div
-              className={`flex-1 bg-white ${
+              className={`flex-1 ${cardBgClass} ${
                 idx === 5 ? 'rounded-br-[24px]' : ''
               }`}
             />

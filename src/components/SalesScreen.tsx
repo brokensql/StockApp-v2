@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Receipt, ChevronRight, Search, X } from 'lucide-react';
+import { Plus, Receipt, ChevronRight, Search, X, SearchX } from 'lucide-react';
 import { Product, SaleTransaction } from '../types';
 import { ActiveSaleScreen } from './ActiveSaleScreen';
 import { TransactionDetailModal } from './TransactionDetailModal';
@@ -43,8 +43,9 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
   const todaySalesTotal = growthMetrics.todayTotal;
   const todaySalesCount = growthMetrics.todayCount;
 
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -52,6 +53,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
 
   const handleSaleCompleted = (transaction: SaleTransaction, updatedProducts: Product[]) => {
     onCompleteSale(transaction, updatedProducts);
+    setIsActiveSaleOpen(false);
   };
 
   const handleStartSale = () => {
@@ -89,6 +91,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
     return (
       <ActiveSaleScreen
         products={products}
+        existingSales={sales}
         onCompleteSale={handleSaleCompleted}
         onCancelSale={() => setIsActiveSaleOpen(false)}
       />
@@ -102,14 +105,14 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto px-5 pt-3.5"
+      className="w-full max-w-[430px] mx-auto px-5 pt-0.5"
       style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
     >
       {/* Sales Count Subtitle */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2.5 flex items-center justify-between">
         <p
           id="sales-subtitle"
-          className="text-[13px] font-medium text-[#6E746F] tabular-nums"
+          className="text-[13px] font-medium text-[#68716C] tabular-nums"
         >
           {sales.length} {sales.length === 1 ? 'sale' : 'sales'} recorded
         </p>
@@ -119,20 +122,20 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
       <section aria-label="Today's sales summary" className="mb-5">
         <div
           id="today-sales-card"
-          className="bg-white border border-[#DEE3DE] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(37,40,37,0.02)]"
+          className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[#6E746F]">
+            <span className="text-[13px] font-medium text-[#68716C]">
               Today's sales
             </span>
-            <span className="text-[11.5px] font-medium px-2.5 py-0.5 rounded-full bg-[#f7f9fb] border border-[#DEE3DE] text-[#6E746F] tabular-nums">
+            <span className="text-[11.5px] font-medium px-2.5 py-0.5 rounded-full bg-[#FAFBFB] border border-[#E1E6E2] text-[#68716C] tabular-nums">
               {todaySalesCount} {todaySalesCount === 1 ? 'transaction' : 'transactions'}
             </span>
           </div>
 
           <p
             id="today-sales-amount"
-            className="text-[26px] font-semibold text-[#252825] mt-1 tabular-nums"
+            className="text-[26px] font-semibold text-[#202522] mt-1 tabular-nums"
           >
             {formatCurrency(todaySalesTotal)}
           </p>
@@ -145,20 +148,20 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
           <div className="relative w-full">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8F9690] pointer-events-none"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#68716C]/60 pointer-events-none"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search product or transaction..."
-              className="w-full h-10 pl-9.5 pr-8 bg-white border border-[#DEE3DE] rounded-xl text-[13.5px] text-[#252825] placeholder:text-[#8F9690] focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] transition-all shadow-xs"
+              className="w-full h-10 pl-9.5 pr-8 bg-white border border-[#E1E6E2] rounded-xl text-[13.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] transition-all shadow-2xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#DEE3DE]/60 flex items-center justify-center text-[#6E746F] hover:text-[#252825] cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#E1E6E2]/70 flex items-center justify-center text-[#68716C] hover:text-[#202522] cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={12} strokeWidth={2.5} />
@@ -179,8 +182,8 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 onClick={() => setFilterMethod(f.id as any)}
                 className={`px-3 py-1 text-[12px] font-medium rounded-lg transition-all cursor-pointer ${
                   filterMethod === f.id
-                    ? 'bg-[#252825] text-white shadow-xs'
-                    : 'bg-white border border-[#DEE3DE] text-[#6E746F] hover:text-[#252825]'
+                    ? 'bg-[#202522] text-white shadow-2xs'
+                    : 'bg-white border border-[#E1E6E2] text-[#68716C] hover:text-[#202522]'
                 }`}
               >
                 {f.label}
@@ -195,11 +198,11 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
         <div className="flex items-center justify-between mb-2.5 px-0.5">
           <h2
             id="recent-sales-heading"
-            className="text-[17px] font-bold text-[#252825]"
+            className="text-[17px] font-bold text-[#202522]"
           >
             All sales
           </h2>
-          <span className="text-[12.5px] text-[#6E746F] tabular-nums">
+          <span className="text-[12.5px] text-[#68716C] tabular-nums">
             {filteredSales.length} of {sales.length}
           </span>
         </div>
@@ -208,18 +211,19 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
           /* Empty Sales State */
           <div
             id="empty-sales-state"
-            className="py-10 sm:py-12 text-center my-2"
+            className="py-10 sm:py-12 text-center my-2 flex flex-col items-center"
           >
-            <h3 className="text-[14px] font-semibold text-[#252825] mb-1.5">
+            <Receipt size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
+            <h3 className="text-[14px] font-semibold text-[#202522] mb-1.5">
               No sales yet
             </h3>
-            <p className="text-[14px] leading-relaxed text-[#6E746F] mb-5 max-w-[260px] mx-auto">
+            <p className="text-[14px] leading-relaxed text-[#68716C] mb-5 max-w-[260px] mx-auto">
               Completed transactions will appear here. Click any sold item to view its receipt.
             </p>
             <button
               type="button"
               onClick={handleStartSale}
-              className="h-11 px-5 bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#3D684F] text-white text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              className="h-11 px-5 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
             >
               <Plus size={17} strokeWidth={2.2} />
               <span>Record first sale</span>
@@ -227,8 +231,9 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
           </div>
         ) : filteredSales.length === 0 ? (
           /* Filter No Match */
-          <div className="py-10 sm:py-12 text-center my-2">
-            <p className="text-[14px] font-semibold text-[#252825] mb-1.5">
+          <div className="py-10 sm:py-12 text-center my-2 flex flex-col items-center">
+            <SearchX size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
+            <p className="text-[14px] font-semibold text-[#202522] mb-1.5">
               No matching sales found
             </p>
             <p className="text-[14px] text-[#6E746F] mb-4">
@@ -240,7 +245,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 setSearchQuery('');
                 setFilterMethod('all');
               }}
-              className="h-10 px-4 bg-white border border-[#DEE3DE] text-[#252825] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="h-10 px-4 bg-white border border-[#E1E6E2] text-[#202522] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F6F4] transition-colors"
             >
               <span>Reset filters</span>
             </button>
@@ -249,14 +254,14 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
           /* Sales Rows */
           <div
             id="recent-sales-list-card"
-            className="bg-white border border-[#DEE3DE] rounded-2xl divide-y divide-[#DEE3DE] overflow-hidden shadow-[0_2px_8px_rgba(37,40,37,0.02)]"
+            className="bg-white border border-[#E1E6E2] rounded-2xl divide-y divide-[#E1E6E2] overflow-hidden shadow-[0_2px_8px_rgba(32,37,34,0.02)]"
           >
             {filteredSales.map((sale) => (
               <div
                 key={sale.id}
                 id={`sale-row-${sale.id}`}
                 onClick={() => setSelectedTransaction(sale)}
-                className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-[#FAF9F6] active:bg-gray-100 transition-colors group"
+                className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-[#FAFBFB] active:bg-[#F4F6F4] transition-colors group"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -268,15 +273,15 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               >
                 {/* Left: Product/Transaction description */}
                 <div className="min-w-0 pr-3 flex-1">
-                  <p className="text-[14.5px] font-semibold text-[#252825] truncate group-hover:text-[#4F8065] transition-colors">
+                  <p className="text-[14.5px] font-semibold text-[#202522] truncate group-hover:text-[#64A30E] transition-colors">
                     {sale.primaryItemName}
                     {sale.items.length > 1 && (
-                      <span className="text-[12.5px] font-normal text-[#6E746F] ml-1">
+                      <span className="text-[12.5px] font-normal text-[#68716C] ml-1">
                         +{sale.items.length - 1} more
                       </span>
                     )}
                   </p>
-                  <p className="text-[12.5px] text-[#6E746F] mt-0.5 tabular-nums">
+                  <p className="text-[12.5px] text-[#68716C] mt-0.5 tabular-nums">
                     {formatPHTTimestamp(getTransactionTimestamp(sale))} · {sale.itemCount} {sale.itemCount === 1 ? 'unit' : 'units'}
                   </p>
                 </div>
@@ -284,14 +289,14 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 {/* Right: Amount and subtle chevron */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-[15px] font-semibold text-[#252825] tabular-nums">
+                    <p className="text-[15px] font-semibold text-[#202522] tabular-nums">
                       {formatCurrency(sale.total)}
                     </p>
-                    <span className="inline-block text-[11px] font-medium uppercase px-1.5 py-0.2 rounded text-[#6E746F] bg-[#f7f9fb] border border-[#DEE3DE]">
+                    <span className="inline-block text-[11px] font-medium uppercase px-1.5 py-0.2 rounded text-[#68716C] bg-[#FAFBFB] border border-[#E1E6E2]">
                       {sale.paymentMethod}
                     </span>
                   </div>
-                  <ChevronRight size={16} className="text-[#8F9690] group-hover:text-[#4F8065] transition-colors" />
+                  <ChevronRight size={16} className="text-[#68716C]/60 group-hover:text-[#64A30E] transition-colors" />
                 </div>
               </div>
             ))}

@@ -151,12 +151,12 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
     <div className="w-full select-none mb-6">
       {/* 1. Today's Sales Header & Prominent Figures */}
       <div className="mb-2">
-        <p className="text-[13px] font-medium text-[#6E746F] mb-1">
+        <p className="text-[13px] font-medium text-[#68716C] mb-1">
           Today's sales
         </p>
 
         <div className="flex items-center gap-2.5">
-          <span className="text-[32px] sm:text-[34px] font-semibold text-[#252825] tabular-nums leading-none tracking-tight flex items-center">
+          <span className="text-[32px] sm:text-[34px] font-semibold text-[#202522] tabular-nums leading-none tracking-tight flex items-center">
             <RollingPrice
               value={effectiveTodayTotal}
               triggerKey={triggerKey}
@@ -171,7 +171,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
             onClick={handleToggleHidden}
             aria-label={activeIsHidden ? 'Show sales amount' : 'Hide sales amount'}
             title={activeIsHidden ? 'Show sales amount' : 'Hide sales amount'}
-            className="p-1.5 text-[#6E746F] hover:text-[#252825] transition-colors rounded-lg hover:bg-black/5 active:bg-black/10 cursor-pointer focus:outline-none"
+            className="p-1.5 text-[#68716C] hover:text-[#202522] transition-colors rounded-lg hover:bg-black/5 active:bg-black/10 cursor-pointer focus:outline-none"
           >
             {activeIsHidden ? (
               <EyeOff size={20} strokeWidth={1.8} />
@@ -186,7 +186,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
           <div className="flex items-center gap-1.5 mt-2">
             <div
               className={`inline-flex items-center gap-1 text-[13px] font-medium ${
-                growthMetrics.isPositive ? 'text-[#4F8065]' : 'text-[#9F3F46]'
+                growthMetrics.isPositive ? 'text-[#64A30E]' : 'text-[#D94841]'
               }`}
             >
               {growthMetrics.isPositive ? (
@@ -203,7 +203,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
                 ({growthMetrics.isPositive ? '+' : '-'}
                 {growthMetrics.changePercentage.toFixed(1)}%)
               </span>
-              <span className="text-[#6E746F] font-normal ml-0.5">vs yesterday</span>
+              <span className="text-[#68716C] font-normal ml-0.5">vs yesterday</span>
             </div>
           </div>
         )}
@@ -228,7 +228,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
               transition={{ duration: 0.12, ease: 'easeOut' }}
               className="absolute z-20 pointer-events-none"
             >
-              <div className="bg-[#252825] text-white px-2.5 py-1 rounded-lg text-[11px] shadow-md flex items-center gap-1.5 whitespace-nowrap">
+              <div className="bg-[#202522] text-white px-2.5 py-1 rounded-lg text-[11px] shadow-md flex items-center gap-1.5 whitespace-nowrap">
                 <span className="font-normal text-white/80">{activePoint.pt.fullDate}:</span>
                 <span className="font-semibold tabular-nums text-white">
                   ₱{activePoint.pt.value.toLocaleString('en-PH', {
@@ -251,31 +251,37 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4F8065" stopOpacity="0.14" />
-              <stop offset="100%" stopColor="#4F8065" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#64A30E" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="#64A30E" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
-          {/* Area Fill beneath curve */}
+          {/* Area Fill beneath curve with smooth transition */}
           <motion.path
             d={areaPath}
             fill={`url(#${gradientId})`}
-            initial={false}
-            animate={{ d: areaPath }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            initial={{ opacity: 0.8 }}
+            animate={{ d: areaPath, opacity: 1 }}
+            transition={{
+              d: { duration: 0.45, ease: [0.25, 1, 0.5, 1] },
+              opacity: { duration: 0.3 },
+            }}
           />
 
-          {/* Single Minimal Trend Line */}
+          {/* Single Minimal Trend Line with smooth curve transition */}
           <motion.path
             d={linePath}
             fill="none"
-            stroke="#4F8065"
+            stroke="#64A30E"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            initial={false}
-            animate={{ d: linePath }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            initial={{ opacity: 0.8 }}
+            animate={{ d: linePath, opacity: 1 }}
+            transition={{
+              d: { duration: 0.45, ease: [0.25, 1, 0.5, 1] },
+              opacity: { duration: 0.3 },
+            }}
           />
 
           {/* Vertical indicator guide line when hovering */}
@@ -285,7 +291,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
               y1={paddingTop}
               x2={activePoint.x}
               y2={chartHeight - paddingBottom}
-              stroke="#4F8065"
+              stroke="#64A30E"
               strokeWidth="1.2"
               strokeDasharray="3 3"
               opacity="0.6"
@@ -299,7 +305,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
                 cx={activePoint.x}
                 cy={activePoint.y}
                 r="5.5"
-                fill="#4F8065"
+                fill="#64A30E"
                 stroke="#FFFFFF"
                 strokeWidth="2"
               />
@@ -309,11 +315,21 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
 
         {/* Timeframe Selector Pill Tabs & Real Total */}
         <div className="flex items-center justify-between mt-2 px-5">
-          <span className="text-[12px] font-medium text-[#6E746F] tabular-nums">
-            {timeframe === '7d' ? '7-day' : timeframe === '30d' ? '30-day' : '90-day'} total: <span className="font-semibold text-[#252825]">₱{timeframeTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </span>
+          <div className="text-[12px] font-medium text-[#68716C] tabular-nums flex items-center">
+            <span className="inline-block">
+              {timeframe === '7d' ? '7-day' : timeframe === '30d' ? '30-day' : '90-day'} total:&nbsp;
+            </span>
+            <span className="font-semibold text-[#202522]">
+              <RollingPrice
+                value={timeframeTotal}
+                duration={450}
+                prefix="₱"
+                className="font-semibold text-[#202522]"
+              />
+            </span>
+          </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 bg-black/[0.03] p-0.5 rounded-xl">
             {(['7d', '30d', '90d'] as Timeframe[]).map((tf) => {
               const isSelected = timeframe === tf;
               const labelMap: Record<Timeframe, string> = {
@@ -327,13 +343,20 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
                   key={tf}
                   type="button"
                   onClick={() => setTimeframe(tf)}
-                  className={`px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+                  className={`relative px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-[#4F8065]/12 text-[#4F8065] font-semibold'
-                      : 'text-[#6E746F] hover:text-[#252825] hover:bg-gray-100/60'
+                      ? 'text-[#64A30E] font-semibold'
+                      : 'text-[#68716C] hover:text-[#202522]'
                   }`}
                 >
-                  {labelMap[tf]}
+                  {isSelected && (
+                    <motion.div
+                      layoutId="active-timeframe-pill"
+                      className="absolute inset-0 bg-[#F0F7E6] rounded-lg shadow-2xs z-0"
+                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{labelMap[tf]}</span>
                 </button>
               );
             })}

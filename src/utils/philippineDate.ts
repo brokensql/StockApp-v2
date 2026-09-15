@@ -148,31 +148,51 @@ export interface SalesGrowthMetrics {
   hasSalesYesterday: boolean;
   todayCount: number;
   yesterdayCount: number;
+  thisWeekTotal: number;
+  lastWeekTotal: number;
+  growthDiff: number;
+  weekGrowthPercentage: number;
 }
 
 /**
  * Calculates genuine sales growth comparing Today (PHT) vs Yesterday (PHT)
- * strictly derived from the store's recorded transactions.
+ * and This Week vs Last Week strictly derived from the store's recorded transactions.
  */
 export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMetrics {
-  const todayParts = getPHTParts(new Date());
+  const now = new Date();
+  const todayParts = getPHTParts(now);
   const midnightToday = getPHTTodayMidnightEpoch();
   const yesterdayParts = getPHTParts(midnightToday - 12 * 3600 * 1000);
+
+  // 7 days window (today back 6 days)
+  const sevenDaysAgoMidnight = midnightToday - 6 * 24 * 3600 * 1000;
+  // 14 to 7 days window
+  const fourteenDaysAgoMidnight = midnightToday - 13 * 24 * 3600 * 1000;
 
   let todayTotal = 0;
   let todayCount = 0;
   let yesterdayTotal = 0;
   let yesterdayCount = 0;
+  let thisWeekTotal = 0;
+  let lastWeekTotal = 0;
 
-  for (const s of sales) {
+  for (const s of sales || []) {
     const epoch = getTransactionTimestamp(s);
     const p = getPHTParts(epoch);
+    const total = typeof s.total === 'number' && !isNaN(s.total) ? s.total : 0;
+
     if (p.dateKey === todayParts.dateKey) {
-      todayTotal += s.total;
+      todayTotal += total;
       todayCount += 1;
     } else if (p.dateKey === yesterdayParts.dateKey) {
-      yesterdayTotal += s.total;
+      yesterdayTotal += total;
       yesterdayCount += 1;
+    }
+
+    if (epoch >= sevenDaysAgoMidnight) {
+      thisWeekTotal += total;
+    } else if (epoch >= fourteenDaysAgoMidnight && epoch < sevenDaysAgoMidnight) {
+      lastWeekTotal += total;
     }
   }
 
@@ -189,6 +209,14 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
     changePercentage = 0.0;
   }
 
+  const growthDiff = thisWeekTotal - lastWeekTotal;
+  let weekGrowthPercentage = 0;
+  if (lastWeekTotal > 0) {
+    weekGrowthPercentage = Math.round((Math.abs(growthDiff) / lastWeekTotal) * 1000) / 10;
+  } else if (thisWeekTotal > 0) {
+    weekGrowthPercentage = 100.0;
+  }
+
   return {
     todayTotal,
     yesterdayTotal,
@@ -199,6 +227,10 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
     hasSalesYesterday: yesterdayTotal > 0,
     todayCount,
     yesterdayCount,
+    thisWeekTotal,
+    lastWeekTotal,
+    growthDiff,
+    weekGrowthPercentage,
   };
 }
 
