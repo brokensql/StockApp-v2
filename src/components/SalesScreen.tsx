@@ -144,52 +144,74 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
 
       {/* Search and Filters */}
       {sales.length > 0 && (
-        <section aria-label="Search and filter sales" className="mb-4 space-y-2.5">
-          <div className="relative w-full">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#68716C]/60 pointer-events-none"
-            />
+        <section aria-label="Search and filter sales" className="mb-4">
+          {/* Curvy Search Bar */}
+          <div className="relative mb-2.5">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#68716C]">
+              <Search size={18} strokeWidth={2} />
+            </div>
             <input
+              id="sales-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search product or transaction..."
-              className="w-full h-10 pl-9.5 pr-8 bg-white border border-[#E1E6E2] rounded-xl text-[13.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] transition-all shadow-2xs"
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#E1E6E2]/70 flex items-center justify-center text-[#68716C] hover:text-[#202522] cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#68716C] hover:text-[#202522] cursor-pointer"
                 aria-label="Clear search"
               >
-                <X size={12} strokeWidth={2.5} />
+                <X size={16} />
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {/* Filter Tabs / Buttons */}
+          <nav
+            aria-label="Payment method filters"
+            className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full py-0.5 select-none"
+          >
             {[
               { id: 'all', label: 'All' },
               { id: 'cash', label: 'Cash' },
               { id: 'gcash', label: 'GCash' },
               { id: 'card', label: 'Card' },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilterMethod(f.id as any)}
-                className={`px-3 py-1 text-[12px] font-medium rounded-lg transition-all cursor-pointer ${
-                  filterMethod === f.id
-                    ? 'bg-[#202522] text-white shadow-2xs'
-                    : 'bg-white border border-[#E1E6E2] text-[#68716C] hover:text-[#202522]'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+            ].map((filter) => {
+              const isSelected = filterMethod === filter.id;
+              return (
+                <button
+                  key={filter.id}
+                  id={`sales-filter-${filter.id}`}
+                  type="button"
+                  onClick={() => setFilterMethod(filter.id as any)}
+                  className="relative h-9.5 sm:h-10 px-1 sm:px-2 rounded-full text-[12px] min-[390px]:text-[12.5px] sm:text-[13px] font-medium whitespace-nowrap cursor-pointer flex items-center justify-center border border-[#E1E6E2] bg-white focus:outline-none"
+                >
+                  {isSelected && (
+                    <motion.div
+                      layoutId="sales-filter-active-pill"
+                      className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
+                      transition={{
+                        type: 'tween',
+                        ease: [0.25, 0.1, 0.25, 1],
+                        duration: 0.2,
+                      }}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 transition-colors duration-150 text-center ${
+                      isSelected ? 'text-white font-semibold' : 'text-[#68716C] hover:text-[#202522]'
+                    }`}
+                  >
+                    {filter.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
         </section>
       )}
 

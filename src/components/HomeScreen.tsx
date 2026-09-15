@@ -303,7 +303,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Hero Balance Section */}
         <div className="px-5 pt-5 pb-3 flex flex-col items-center text-center relative z-10">
           <span className="text-[13.5px] font-medium text-white/85 tracking-wide">
-            Current Balance
+            Current sales
           </span>
 
           {/* Large Main Balance Figure */}
@@ -496,7 +496,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </button>
             </div>
           ) : (
-            <div className="w-full pt-[84px] pb-1">
+            <div className="w-full pt-[50px] pb-1">
               <SwipeDeck
                 items={sales}
                 itemKey={(sale) => sale.id || sale.transactionNumber}

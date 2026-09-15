@@ -11,6 +11,10 @@ import {
   ShoppingBag,
   Download,
   Loader2,
+  Banknote,
+  Smartphone,
+  CreditCard,
+  Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Product, SaleItem, SaleTransaction, PaymentMethod } from '../types';
@@ -224,7 +228,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   // Cash calculation
   const parsedTendered = parseFloat(cashTendered) || 0;
   const changeAmount = Math.max(0, parsedTendered - total);
-  const isShortCash = cashTendered !== '' && parsedTendered < total;
+  const isShortCash = paymentMethod === 'cash' && cashTendered !== '' && parsedTendered < total;
 
   // Format currency in Philippine Peso
   const formatCurrency = (val?: number | null) => {
@@ -251,7 +255,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       return;
     }
 
-    if (cashTendered !== '' && parsedTendered < total) {
+    if (paymentMethod === 'cash' && cashTendered !== '' && parsedTendered < total) {
       setStockWarning('Cash received is less than total amount due.');
       setTimeout(() => setStockWarning(null), 3000);
       return;
@@ -272,7 +276,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       items: cart,
       subtotal,
       total,
-      paymentMethod: 'cash',
+      paymentMethod,
       itemCount: totalItemsCount,
       primaryItemName: cart[0].name,
     };
@@ -628,51 +632,234 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               </div>
             </div>
 
-            {/* Cash Received Stacked Section */}
-            <div className="pt-2 space-y-2">
-              <label
-                htmlFor="cash-tendered-input"
-                className="block text-[13px] font-bold text-[#202522]"
-              >
-                Cash received
-              </label>
-              <div className="flex items-center gap-1.5 pb-2 border-b border-[#E1E6E2] focus-within:border-[#202522] transition-colors">
-                <span className="text-[15px] font-bold text-[#202522]">₱</span>
-                <input
-                  id="cash-tendered-input"
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder={total.toFixed(2)}
-                  value={cashTendered}
-                  onChange={(e) => setCashTendered(e.target.value)}
-                  className="w-full text-[15px] font-bold bg-transparent focus:outline-none text-[#202522] placeholder:text-[#68716C]/40"
-                />
+            {/* Payment Method Selector */}
+            <div className="pt-2 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[13px] font-bold text-[#202522]">
+                  Payment Method
+                </label>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={paymentMethod}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15 }}
+                    className="text-[11px] font-semibold text-[#68716C] uppercase tracking-wider"
+                  >
+                    {paymentMethod === 'cash'
+                      ? 'Cash Tender'
+                      : paymentMethod === 'gcash'
+                      ? 'E-Wallet'
+                      : 'Card POS'}
+                  </motion.span>
+                </AnimatePresence>
               </div>
 
-              {/* Real-time Change Due / Short Info - text color is black, no green shades */}
-              {parsedTendered > 0 && (
-                <div className="pt-1.5 flex items-center justify-between text-[13.5px]">
-                  <span
-                    className={
-                      isShortCash
-                        ? 'text-[#D94841] font-medium'
-                        : 'text-[#202522] font-semibold'
-                    }
-                  >
-                    {isShortCash ? 'Short by:' : 'Change due:'}
-                  </span>
-                  <span
-                    className={`tabular-nums font-bold text-[15px] ${
-                      isShortCash ? 'text-[#D94841]' : 'text-[#202522]'
-                    }`}
-                  >
-                    {isShortCash
-                      ? formatCurrency(total - parsedTendered)
-                      : formatCurrency(changeAmount)}
-                  </span>
-                </div>
-              )}
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                {[
+                  {
+                    id: 'cash' as PaymentMethod,
+                    label: 'Cash',
+                    subtitle: 'Bills & coins',
+                    icon: Banknote,
+                    activeIconBg: 'bg-[#E5F4CF]',
+                    activeIconColor: 'text-[#457508]',
+                  },
+                  {
+                    id: 'gcash' as PaymentMethod,
+                    label: 'GCash',
+                    subtitle: 'E-Wallet QR',
+                    icon: Smartphone,
+                    activeIconBg: 'bg-[#E0F2FE]',
+                    activeIconColor: 'text-[#0284C7]',
+                  },
+                  {
+                    id: 'card' as PaymentMethod,
+                    label: 'Cards',
+                    subtitle: 'Debit / Credit',
+                    icon: CreditCard,
+                    activeIconBg: 'bg-[#F3E8FF]',
+                    activeIconColor: 'text-[#7E22CE]',
+                  },
+                ].map((method) => {
+                  const isSelected = paymentMethod === method.id;
+                  const IconComp = method.icon;
+                  return (
+                    <motion.button
+                      key={method.id}
+                      type="button"
+                      id={`payment-method-${method.id}`}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => {
+                        setPaymentMethod(method.id);
+                        if (method.id !== 'cash') {
+                          setCashTendered('');
+                        }
+                      }}
+                      className={`relative p-2.5 sm:p-3 rounded-2xl border transition-colors duration-200 cursor-pointer flex flex-col items-center text-center gap-1.5 select-none focus:outline-none ${
+                        isSelected
+                          ? 'bg-[#F0F7E6] border-[#64A30E] shadow-2xs ring-1 ring-[#64A30E]'
+                          : 'bg-white border-[#E1E6E2] hover:border-[#D0D7D2] hover:bg-[#FAFBFB]'
+                      }`}
+                    >
+                      {/* Curated color shade icon container */}
+                      <motion.div
+                        layout
+                        transition={{ duration: 0.2 }}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+                          isSelected
+                            ? `${method.activeIconBg} ${method.activeIconColor}`
+                            : 'bg-[#F4F6F4] text-[#68716C]'
+                        }`}
+                      >
+                        <IconComp size={19} strokeWidth={2.2} />
+                      </motion.div>
+
+                      <div className="min-w-0 w-full">
+                        <p
+                          className={`text-[12.5px] sm:text-[13px] font-bold truncate transition-colors duration-200 ${
+                            isSelected ? 'text-[#202522]' : 'text-[#68716C]'
+                          }`}
+                        >
+                          {method.label}
+                        </p>
+                        <span
+                          className={`text-[10px] sm:text-[10.5px] font-medium block truncate transition-colors duration-200 ${
+                            isSelected ? 'text-[#457508]' : 'text-[#8E948F]'
+                          }`}
+                        >
+                          {method.subtitle}
+                        </span>
+                      </div>
+
+                      {/* Selected check pill with micro spring animation */}
+                      <AnimatePresence>
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -30, opacity: 0 }}
+                            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                            exit={{ scale: 0, rotate: 30, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+                            className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#64A30E] text-white flex items-center justify-center shadow-2xs"
+                          >
+                            <Check size={9} strokeWidth={3} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Method Specific Details with Smooth AnimatePresence Transition */}
+            <div className="overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={paymentMethod}
+                  initial={{ opacity: 0, y: 8, filter: 'blur(3px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {paymentMethod === 'cash' ? (
+                    /* Cash Received Stacked Section */
+                    <div className="pt-1 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label
+                          htmlFor="cash-tendered-input"
+                          className="block text-[13px] font-bold text-[#202522]"
+                        >
+                          Cash received
+                        </label>
+                        {cashPresets.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            {cashPresets.map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setCashTendered(preset.toString())}
+                                className="px-2 py-0.5 rounded-md bg-[#F4F6F4] hover:bg-[#EAEAEA] active:scale-95 text-[11px] font-bold text-[#202522] transition-all cursor-pointer border border-[#E1E6E2]"
+                              >
+                                ₱{preset}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pb-2 border-b border-[#E1E6E2] focus-within:border-[#202522] transition-colors">
+                        <span className="text-[15px] font-bold text-[#202522]">₱</span>
+                        <input
+                          id="cash-tendered-input"
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder={total.toFixed(2)}
+                          value={cashTendered}
+                          onChange={(e) => setCashTendered(e.target.value)}
+                          className="w-full text-[15px] font-bold bg-transparent focus:outline-none text-[#202522] placeholder:text-[#68716C]/40"
+                        />
+                      </div>
+
+                      {/* Real-time Change Due / Short Info */}
+                      {parsedTendered > 0 && (
+                        <div className="pt-1 flex items-center justify-between text-[13.5px]">
+                          <span
+                            className={
+                              isShortCash
+                                ? 'text-[#D94841] font-medium'
+                                : 'text-[#202522] font-semibold'
+                            }
+                          >
+                            {isShortCash ? 'Short by:' : 'Change due:'}
+                          </span>
+                          <span
+                            className={`tabular-nums font-bold text-[15px] ${
+                              isShortCash ? 'text-[#D94841]' : 'text-[#202522]'
+                            }`}
+                          >
+                            {isShortCash
+                              ? formatCurrency(total - parsedTendered)
+                              : formatCurrency(changeAmount)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : paymentMethod === 'gcash' ? (
+                    /* GCash Info Container */
+                    <div className="p-3.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl flex items-center gap-3 shadow-2xs">
+                      <div className="w-9 h-9 rounded-xl bg-[#DBEAFE] text-[#0284C7] flex items-center justify-center shrink-0">
+                        <Smartphone size={18} strokeWidth={2.2} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-bold text-[#1E3A8A]">
+                          GCash Payment
+                        </p>
+                        <p className="text-[11.5px] text-[#3B82F6] leading-snug mt-0.5">
+                          Collect exact amount of <strong className="font-bold text-[#1E3A8A]">{formatCurrency(total)}</strong> via store QR or transfer.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Card Info Container */
+                    <div className="p-3.5 bg-[#F5F3FF] border border-[#DDD6FE] rounded-2xl flex items-center gap-3 shadow-2xs">
+                      <div className="w-9 h-9 rounded-xl bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center shrink-0">
+                        <CreditCard size={18} strokeWidth={2.2} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-bold text-[#4C1D95]">
+                          Card Payment
+                        </p>
+                        <p className="text-[11.5px] text-[#7C3AED] leading-snug mt-0.5">
+                          Tap or swipe card on POS terminal for <strong className="font-bold text-[#4C1D95]">{formatCurrency(total)}</strong>.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Complete Sale CTA */}
