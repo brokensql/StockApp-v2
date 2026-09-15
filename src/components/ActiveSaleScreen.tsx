@@ -80,7 +80,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         changeAmount
       );
       if (result.success) {
-        toast.success('Receipt downloaded successfully');
+        toast.success(result.message || 'Receipt saved to StockApp album in gallery!');
       } else {
         toast.error(result.error || 'Failed to download receipt');
       }

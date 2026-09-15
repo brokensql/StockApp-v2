@@ -32,7 +32,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
   sales = [],
   onNavigateToStore,
 }) => {
-  const [timeframe, setTimeframe] = useState<RevenueTimeframe>('week');
+  const [timeframe, setTimeframe] = useState<RevenueTimeframe>('day');
 
   // Filter sales based on selected timeframe in Philippine Time
   const filteredSales = useMemo(() => {
