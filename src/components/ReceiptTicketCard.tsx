@@ -278,7 +278,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             )}
           </div>
 
-          {/* Subtotal, Cash Received & Change Due Summary */}
+          {/* Subtotal, Payment Method, Cash Received & Change Due Summary */}
           <div className={`${hideThankYou ? 'pt-1.5 space-y-1' : 'pt-3 space-y-1.5'} border-t border-[#E1E6E2] text-[12.5px]`}>
             <div className="flex justify-between text-[#68716C]">
               <span>Subtotal</span>
@@ -286,7 +286,17 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
                 {formatCurrency(transaction.subtotal)}
               </span>
             </div>
-            {parsedCash > 0 && (
+            <div className="flex justify-between text-[#68716C]">
+              <span>Payment method</span>
+              <span className="font-semibold text-[#202522] uppercase">
+                {transaction.paymentMethod === 'gcash'
+                  ? 'GCash'
+                  : transaction.paymentMethod === 'card'
+                  ? 'Card'
+                  : 'Cash'}
+              </span>
+            </div>
+            {transaction.paymentMethod === 'cash' && parsedCash > 0 && (
               <>
                 <div className="flex justify-between text-[#68716C]">
                   <span>Cash received</span>

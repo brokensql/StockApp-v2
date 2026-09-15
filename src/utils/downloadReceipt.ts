@@ -240,10 +240,27 @@ function generateCanvasReceipt(
   ctx.font = 'bold 12.5px system-ui, -apple-system, sans-serif';
   ctx.fillText(formatPHP(transaction.subtotal), rightX, currentY);
 
+  currentY += 18;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#68716C';
+  ctx.font = '12.5px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Payment method', leftX, currentY);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#202522';
+  ctx.font = 'bold 12.5px system-ui, -apple-system, sans-serif';
+  const methodLabel =
+    transaction.paymentMethod === 'gcash'
+      ? 'GCash'
+      : transaction.paymentMethod === 'card'
+      ? 'Card'
+      : 'Cash';
+  ctx.fillText(methodLabel, rightX, currentY);
+
   const parsedCash = typeof cashTendered === 'string' ? parseFloat(cashTendered) || 0 : (cashTendered || 0);
   const actualChange = changeAmount !== undefined ? changeAmount : Math.max(0, parsedCash - transaction.total);
 
-  if (parsedCash > 0) {
+  if (transaction.paymentMethod === 'cash' && parsedCash > 0) {
     currentY += 18;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#68716C';
