@@ -388,11 +388,46 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
       // --- SALES MODE LOGIC (Add to Customer Sales Cart) ---
       if (matched) {
+        // Stock validation: prevent adding out-of-stock items or exceeding available inventory
+        if (matched.stock <= 0) {
+          playBeep();
+          setScanToast({
+            id: Date.now(),
+            type: 'warning',
+            title: matched.name,
+            subtitle: 'Out of stock (0 available)',
+          });
+          if (toastDismissTimerRef.current) {
+            clearTimeout(toastDismissTimerRef.current);
+          }
+          toastDismissTimerRef.current = window.setTimeout(() => {
+            setScanToast(null);
+          }, 3000);
+          return;
+        }
+
+        const existingIdx = scannedCart.findIndex((item) => item.productId === matched.id);
+        if (existingIdx >= 0 && scannedCart[existingIdx].quantity >= matched.stock) {
+          playBeep();
+          setScanToast({
+            id: Date.now(),
+            type: 'warning',
+            title: matched.name,
+            subtitle: `Max stock reached (${matched.stock} in stock)`,
+          });
+          if (toastDismissTimerRef.current) {
+            clearTimeout(toastDismissTimerRef.current);
+          }
+          toastDismissTimerRef.current = window.setTimeout(() => {
+            setScanToast(null);
+          }, 3000);
+          return;
+        }
+
         if (currentOnItemScanned) {
           currentOnItemScanned(matched);
         }
 
-        const existingIdx = scannedCart.findIndex((item) => item.productId === matched.id);
         let updatedCart: SaleItem[];
         if (existingIdx >= 0) {
           updatedCart = [...scannedCart];
@@ -447,7 +482,29 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
   // Checkout handler: only goes to sales checkout when Checkout is clicked
   const handleCheckout = useCallback(() => {
-    if (scannedCart.length === 0 && !unrecognizedBarcode) return;
+    // Sanitize cart against products stock: filter out out-of-stock items, clamp quantities to available stock
+    const sanitizedCart = scannedCart
+      .map((item) => {
+        const prod = products.find((p) => p.id === item.productId);
+        if (!prod || prod.stock <= 0) return null;
+        return {
+          ...item,
+          quantity: Math.max(1, Math.min(item.quantity, prod.stock)),
+        };
+      })
+      .filter(Boolean) as SaleItem[];
+
+    if (sanitizedCart.length === 0 && !unrecognizedBarcode) {
+      setScanToast({
+        id: Date.now(),
+        type: 'warning',
+        title: 'Cart is empty or out of stock',
+        subtitle: 'Please select in-stock products to proceed',
+      });
+      if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+      toastDismissTimerRef.current = window.setTimeout(() => setScanToast(null), 3000);
+      return;
+    }
 
     const {
       onProceedToActiveSale: currentOnProceedToActiveSale,
@@ -456,13 +513,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     } = propsRef.current;
 
     if (currentOnProceedToActiveSale) {
-      currentOnProceedToActiveSale(scannedCart, unrecognizedBarcode);
+      currentOnProceedToActiveSale(sanitizedCart, unrecognizedBarcode);
     } else if (currentOnScanSuccess) {
-      const firstCode = scannedCart[0]?.productId || unrecognizedBarcode || '';
+      const firstCode = sanitizedCart[0]?.productId || unrecognizedBarcode || '';
       currentOnScanSuccess(firstCode);
     }
     currentOnClose();
-  }, [scannedCart, unrecognizedBarcode]);
+  }, [scannedCart, unrecognizedBarcode, products]);
 
   // Trigger a maximum 5-second scan session on button click
   const triggerScanSession = useCallback(() => {
@@ -920,12 +977,37 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         return;
       }
 
+      // Stock validation in Sales mode: prevent adding out-of-stock items or exceeding inventory
+      if (product.stock <= 0) {
+        setScanToast({
+          id: Date.now(),
+          type: 'warning',
+          title: product.name,
+          subtitle: 'Out of stock (0 available)',
+        });
+        if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+        toastDismissTimerRef.current = window.setTimeout(() => setScanToast(null), 2500);
+        return;
+      }
+
+      const existingIdx = scannedCart.findIndex((item) => item.productId === product.id);
+      if (existingIdx >= 0 && scannedCart[existingIdx].quantity >= product.stock) {
+        setScanToast({
+          id: Date.now(),
+          type: 'warning',
+          title: product.name,
+          subtitle: `Max stock reached (${product.stock} in stock)`,
+        });
+        if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+        toastDismissTimerRef.current = window.setTimeout(() => setScanToast(null), 2500);
+        return;
+      }
+
       playBeep();
       if (currentOnItemScanned) {
         currentOnItemScanned(product);
       }
 
-      const existingIdx = scannedCart.findIndex((item) => item.productId === product.id);
       let updatedCart: SaleItem[];
       if (existingIdx >= 0) {
         updatedCart = [...scannedCart];
@@ -1078,13 +1160,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         <button
                           type="button"
                           onClick={onClose}
-                          className="w-9 h-9 rounded-full bg-white border border-[#DEE3DE] hover:bg-gray-100 text-[#161816] flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                          className="p-1 text-[#202522] hover:text-[#68716C] flex items-center justify-center transition-colors cursor-pointer"
                           aria-label="Close"
                         >
-                          <X size={17} strokeWidth={2.5} />
+                          <X size={20} strokeWidth={2} />
                         </button>
                         <div>
-                          <h2 className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-tight text-left leading-tight">
+                          <h2 className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-tight text-left leading-tight">
                             {isInventoryMode ? 'Select Product' : 'Product Inventory'}
                           </h2>
                           <p className="text-[12px] text-[#6E746F] text-left leading-none mt-0.5">
@@ -1143,7 +1225,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             {isSelected && (
                               <motion.div
                                 layoutId="key-barcode-filter-active-pill"
-                                className="absolute -inset-px bg-[#4F8065] rounded-full shadow-xs"
+                                className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
                                 transition={{
                                   type: 'tween',
                                   ease: [0.25, 0.1, 0.25, 1],
@@ -1200,16 +1282,20 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         const cartItem = scannedCart.find((i) => i.productId === p.id);
                         const qty = cartItem ? cartItem.quantity : 0;
                         const imgSrc = p.imageUrl || images[p.id];
+                        const isOutOfStock = !isInventoryMode && p.stock <= 0;
+                        const isMaxReached = !isInventoryMode && qty >= p.stock;
 
                         return (
                           <div
                             key={p.id}
                             id={`key-product-card-${p.id}`}
-                            onClick={() => handleAddProductToCart(p)}
-                            className={`group bg-white rounded-2xl border transition-all cursor-pointer flex flex-col overflow-hidden select-none ${
-                              qty > 0
-                                ? 'border-[#4F8065] shadow-xs ring-1 ring-[#4F8065]'
-                                : 'border-[#DEE3DE] hover:border-[#4F8065]/50 shadow-2xs hover:shadow-xs active:scale-[0.99]'
+                            onClick={() => !isOutOfStock && handleAddProductToCart(p)}
+                            className={`group bg-white rounded-2xl border transition-all flex flex-col overflow-hidden select-none ${
+                              isOutOfStock
+                                ? 'opacity-60 border-[#DEE3DE] cursor-not-allowed bg-gray-50/40'
+                                : qty > 0
+                                ? 'border-[#64A30E] shadow-xs ring-1 ring-[#64A30E] cursor-pointer'
+                                : 'border-[#DEE3DE] hover:border-[#64A30E]/50 shadow-2xs hover:shadow-xs active:scale-[0.99] cursor-pointer'
                             }`}
                           >
                             {/* Top Product Photo Container (prominent picture centered on clean white canvas) */}
@@ -1225,13 +1311,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                       : 'bg-amber-50 text-amber-800 border border-amber-200/60'
                                   }`}
                                 >
-                                  {p.stock <= 0 ? 'Out' : `${p.stock} left`}
+                                  {p.stock <= 0 ? 'Out of stock' : `${p.stock} left`}
                                 </span>
                               )}
 
                               {/* Cart Quantity Badge (Pop-up number with green container & crisp white ring) */}
                               {qty > 0 && (
-                                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#4F8065] text-white text-[11px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white animate-in zoom-in-75 duration-150">
+                                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#64A30E] text-white text-[11px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white animate-in zoom-in-75 duration-150">
                                   {qty}
                                 </span>
                               )}
@@ -1266,7 +1352,11 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                 </span>
 
                                 {!isInventoryMode ? (
-                                  qty > 0 ? (
+                                  isOutOfStock ? (
+                                    <span className="text-[10.5px] font-semibold text-red-600 bg-red-50 border border-red-200/60 px-2 py-0.5 rounded-full">
+                                      Out
+                                    </span>
+                                  ) : qty > 0 ? (
                                     <div className="flex items-center gap-1 shrink-0">
                                       <button
                                         type="button"
@@ -1282,7 +1372,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleAddProductToCart(p)}
-                                        className="w-6 h-6 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
+                                        disabled={isMaxReached}
+                                        className="w-6 h-6 rounded-full bg-[#64A30E] hover:bg-[#54890B] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
                                         aria-label={`Increase ${p.name}`}
                                       >
                                         <Plus size={11} strokeWidth={2.5} />
@@ -1292,7 +1383,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => handleAddProductToCart(p)}
-                                      className="w-7 h-7 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                      disabled={isOutOfStock}
+                                      className="w-7 h-7 rounded-full bg-[#64A30E] hover:bg-[#54890B] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                       aria-label={`Add ${p.name}`}
                                     >
                                       <Plus size={14} strokeWidth={2.5} />
@@ -1302,7 +1394,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleAddProductToCart(p)}
-                                    className="w-7 h-7 rounded-full bg-[#4F8065] hover:bg-[#3D684F] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                    className="w-7 h-7 rounded-full bg-[#64A30E] hover:bg-[#54890B] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                     aria-label={`Select ${p.name}`}
                                   >
                                     <Plus size={14} strokeWidth={2.5} />
@@ -1338,7 +1430,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#4F8065] hover:bg-[#3D684F] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#64A30E] hover:bg-[#54890B] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
                       >
                         <span>Checkout</span>
                         <ChevronRight size={15} strokeWidth={2.5} />
@@ -1361,7 +1453,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSwitchInputMethod('key')}
-                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#64A30E] text-white shadow-[0_4px_16px_rgba(100,163,14,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
                       >
                         <Package size={18} strokeWidth={2.2} />
                         <span className="whitespace-nowrap">All products</span>
@@ -1619,7 +1711,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#4F8065] hover:bg-[#3D684F] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#64A30E] hover:bg-[#54890B] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
                       >
                         <span>Checkout</span>
                         <ChevronRight size={15} strokeWidth={2.5} />
@@ -1633,7 +1725,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSwitchInputMethod('barcode')}
-                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#4F8065] text-white shadow-[0_4px_16px_rgba(79,128,101,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#64A30E] text-white shadow-[0_4px_16px_rgba(100,163,14,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
                       >
                         <ScanLine size={18} strokeWidth={2.3} />
                         <span>Barcode</span>
@@ -1677,10 +1769,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         onClick={triggerScanSession}
                         aria-label="Scan Barcode"
                         title="Scan Barcode"
-                        className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full text-white flex items-center justify-center shadow-[0_5px_16px_rgba(79,128,101,0.38)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none ${
+                        className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full text-white flex items-center justify-center shadow-[0_5px_16px_rgba(100,163,14,0.38)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none ${
                           isScanningActive
-                            ? 'bg-[#3D684F] ring-4 ring-[#4F8065]/40 shadow-[0_0_20px_rgba(79,128,101,0.6)]'
-                            : 'bg-[#4F8065] hover:bg-[#3D684F] hover:shadow-[0_6px_20px_rgba(79,128,101,0.48)]'
+                            ? 'bg-[#54890B] ring-4 ring-[#64A30E]/40 shadow-[0_0_20px_rgba(100,163,14,0.6)]'
+                            : 'bg-[#64A30E] hover:bg-[#54890B] hover:shadow-[0_6px_20px_rgba(100,163,14,0.48)]'
                         }`}
                       >
                         <ScanLine size={27} strokeWidth={2.3} className="sm:w-7 sm:h-7 text-white" />

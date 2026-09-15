@@ -290,6 +290,7 @@ type DeckCardProps = {
   cardClassName?: string;
   showBadges?: boolean;
   transformOrigin?: string;
+  stackPosition?: 'top' | 'bottom';
   children: React.ReactNode;
 };
 
@@ -309,6 +310,7 @@ function DeckCard({
   cardClassName,
   showBadges = true,
   transformOrigin,
+  stackPosition = 'bottom',
   children,
 }: DeckCardProps) {
   const x = useMotionValue(entryX);
@@ -325,8 +327,10 @@ function DeckCard({
   }, [x, entryX]);
 
   const commit = active ? 0 : depth === 1 ? intent.step / steps : 0;
-  const y = depth * 10 - commit * 10;
-  const scale = 1 - depth * 0.045 + commit * 0.045;
+  // If stackPosition is 'top', stack cards peek upward behind the front card with prominent height
+  const yOffset = stackPosition === 'top' ? -28 : 10;
+  const y = depth * yOffset - commit * yOffset;
+  const scale = 1 - depth * 0.04 + commit * 0.04;
 
   const badge = (side: -1 | 1, text: string, place: string) => {
     if (!showBadges) return null;
@@ -382,9 +386,7 @@ function DeckCard({
       transition={
         reduced
           ? { duration: 0 }
-          : active
-            ? { ...CROSSFADE, delay: 0.1 }
-            : CROSSFADE
+          : CROSSFADE
       }
       drag={active ? "x" : false}
       dragDirectionLock
@@ -401,7 +403,7 @@ function DeckCard({
         opacity: fade,
         height,
         zIndex: 10 - depth,
-        transformOrigin: transformOrigin || "50% 100%",
+        transformOrigin: transformOrigin || (stackPosition === 'top' ? '50% 100%' : '50% 0%'),
         touchAction: "pan-y",
       }}
       className={cardClassName !== undefined ? cardClassName : defaultClasses}
@@ -417,7 +419,7 @@ export type SwipeDeckProps<T> = {
   items: readonly T[];
   itemKey: (item: T) => string;
   itemLabel: (item: T) => string;
-  children: (item: T) => React.ReactNode;
+  children: (item: T, meta: { active: boolean; depth: number }) => React.ReactNode;
   onDecide?: (item: T, choice: SwipeChoice) => void;
   onUndo?: (item: T) => void;
   label?: string;
@@ -436,6 +438,7 @@ export type SwipeDeckProps<T> = {
   hideActionButtons?: boolean;
   transformOrigin?: string;
   enableMask?: boolean;
+  stackPosition?: 'top' | 'bottom';
 };
 
 export function SwipeDeck<T>({
@@ -461,6 +464,7 @@ export function SwipeDeck<T>({
   hideActionButtons = false,
   transformOrigin,
   enableMask = false,
+  stackPosition = 'bottom',
 }: SwipeDeckProps<T>) {
   const hintId = useId();
   const reduced = useReducedMotion() === true;
@@ -493,7 +497,7 @@ export function SwipeDeck<T>({
         aria-label={label}
         aria-describedby={hintId}
         style={{ height: numericHeight }}
-        className="relative w-full overflow-visible outline-none focus-visible:shadow-[0_0_0_1px_#4F8065]"
+        className="relative w-full overflow-visible outline-none focus-visible:shadow-[0_0_0_1px_#64A30E]"
         {...deck.deckProps}
       >
         <div
@@ -517,7 +521,7 @@ export function SwipeDeck<T>({
                 <button
                   type="button"
                   onClick={deck.reset}
-                  className="text-[12px] font-medium text-[#4F8065] hover:underline cursor-pointer"
+                  className="text-[12px] font-medium text-[#64A30E] hover:underline cursor-pointer"
                 >
                   Browse again
                 </button>
@@ -547,8 +551,9 @@ export function SwipeDeck<T>({
                 cardClassName={cardClassName}
                 showBadges={showBadges}
                 transformOrigin={transformOrigin}
+                stackPosition={stackPosition}
               >
-                {children(item)}
+                {children(item, { active: depth === 0, depth })}
               </DeckCard>
             ))}
           </AnimatePresence>

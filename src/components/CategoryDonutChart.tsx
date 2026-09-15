@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { PieChart } from 'lucide-react';
 import { Product, SaleTransaction } from '../types';
 import { getProductColor } from '../utils/productColors';
 
@@ -214,13 +215,14 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
   return (
     <section aria-label="Top 5 product sales" className="select-none">
-      <h2 className="text-[17px] font-bold text-[#252825] mb-4">
+      <h2 className="text-[17px] font-bold text-[#202522] mb-4">
         Top 5 product sales
       </h2>
 
       {chartItems.length === 0 ? (
-        <div className="py-8 text-center text-[14px] text-[#6E746F]">
-          No sales recorded for this timeframe yet.
+        <div className="py-8 text-center text-[14px] text-[#68716C] flex flex-col items-center">
+          <PieChart size={32} strokeWidth={1.5} className="text-[#68716C]/60 mb-2" />
+          <span>No sales recorded for this timeframe yet.</span>
         </div>
       ) : (
         <div className="flex items-center gap-4 sm:gap-8 justify-between">
@@ -256,10 +258,10 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
             {/* Center Revenue metric */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-              <span className="text-[16.5px] sm:text-[18px] font-bold text-[#252825] tracking-tight tabular-nums leading-none">
-                ₱{Math.round(totalRevenue).toLocaleString('en-PH')}
+              <span className="text-[16.5px] sm:text-[18px] font-bold text-[#202522] tracking-tight tabular-nums leading-none">
+                ₱{Math.round(totalRevenue || 0).toLocaleString('en-PH')}
               </span>
-              <span className="text-[10px] sm:text-[10.5px] font-medium text-[#6E746F] mt-1 leading-none">
+              <span className="text-[10px] sm:text-[10.5px] font-medium text-[#68716C] mt-1 leading-none">
                 Total Revenue
               </span>
             </div>
@@ -275,16 +277,16 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                     style={{ backgroundColor: item.color }}
                   />
                   <div className="min-w-0">
-                    <span className="text-[13.5px] sm:text-[14px] font-semibold text-[#252825] block truncate leading-snug">
+                    <span className="text-[13.5px] sm:text-[14px] font-semibold text-[#202522] block truncate leading-snug">
                       {item.name}
                     </span>
-                    <span className="text-[11.5px] text-[#8F9690] block tabular-nums leading-none mt-0.5">
+                    <span className="text-[11.5px] text-[#929A95] block tabular-nums leading-none mt-0.5">
                       {item.formattedValue}
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[13.5px] font-semibold text-[#252825] tabular-nums flex-shrink-0 ml-2">
+                <span className="text-[13.5px] font-semibold text-[#202522] tabular-nums flex-shrink-0 ml-2">
                   {Math.round(item.percentage)}%
                 </span>
               </div>

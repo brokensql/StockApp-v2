@@ -206,8 +206,9 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
     return { total, inStock, lowStock, outOfStock, inStockPct, lowStockPct, outOfStockPct };
   }, [products]);
 
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -240,36 +241,36 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         {/* 2-Column Horizontal KPI Metrics (Total Revenue & Items Sold, resized) */}
         <section
           aria-label="Key Performance Indicators"
-          className="grid grid-cols-2 divide-x divide-[#DEE3DE] py-5 mb-7 select-none"
+          className="grid grid-cols-2 divide-x divide-[#E1E6E2] py-5 mb-7 select-none"
         >
           {/* 1. Total Revenue */}
           <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#EBF4EE] text-[#2E7D5B] flex items-center justify-center mb-2.5 flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#F0F7E6] text-[#64A30E] flex items-center justify-center mb-2.5 flex-shrink-0">
               <TrendingUp size={20} strokeWidth={2.2} />
             </div>
-            <span className="text-[13px] font-medium text-[#6E746F] leading-tight block truncate">
+            <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
               Total Revenue
             </span>
-            <span className="text-[18px] sm:text-[20px] font-bold text-[#252825] tabular-nums mt-1.5 block tracking-tight leading-none">
+            <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1.5 block tracking-tight leading-none">
               {formatCurrency(totalRevenue)}
             </span>
-            <span className="text-[11.5px] text-[#8F9690] mt-1.5 block leading-tight">
+            <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
               {activeDaysInPeriod} {activeDaysInPeriod === 1 ? 'day' : 'days'} in period
             </span>
           </div>
 
           {/* 2. Items Sold */}
           <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#EBF4EE] text-[#2E7D5B] flex items-center justify-center mb-2.5 flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#F0F7E6] text-[#64A30E] flex items-center justify-center mb-2.5 flex-shrink-0">
               <Package size={20} strokeWidth={2.2} />
             </div>
-            <span className="text-[13px] font-medium text-[#6E746F] leading-tight block truncate">
+            <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
               Items Sold
             </span>
-            <span className="text-[18px] sm:text-[20px] font-bold text-[#252825] tabular-nums mt-1.5 block tracking-tight leading-none">
+            <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1.5 block tracking-tight leading-none">
               {totalItemsSold}
             </span>
-            <span className="text-[11.5px] text-[#8F9690] mt-1.5 block leading-tight">
+            <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
               {products.length} catalog products
             </span>
           </div>
@@ -278,14 +279,14 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
       {/* Top Selling Products Leaderboard */}
       <section aria-label="Top Products" className="mb-8">
         <div className="flex items-center justify-between mb-4 px-0.5">
-          <h2 className="text-[17px] font-bold text-[#252825]">
+          <h2 className="text-[17px] font-bold text-[#202522]">
             Top selling products
           </h2>
           {onNavigateToStore && (
             <button
               type="button"
               onClick={() => onNavigateToStore('inventory')}
-              className="text-[13px] font-medium text-[#4F8065] hover:underline cursor-pointer"
+              className="text-[13px] font-medium text-[#202522] hover:text-black hover:underline transition-colors cursor-pointer"
             >
               View catalog →
             </button>
@@ -293,8 +294,9 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         </div>
 
         {topProducts.length === 0 ? (
-          <div className="py-6 text-center text-[14px] text-[#6E746F]">
-            No sales recorded for this timeframe yet.
+          <div className="py-8 text-center text-[14px] text-[#68716C] flex flex-col items-center">
+            <BarChart2 size={32} strokeWidth={1.5} className="text-[#68716C]/60 mb-2" />
+            <span>No sales recorded for this timeframe yet.</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -313,21 +315,21 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
                       >
                         <Gem size={17} strokeWidth={2.2} />
                       </div>
-                      <span className="font-semibold text-[#252825] truncate text-[14.5px] sm:text-[15px]">
+                      <span className="font-semibold text-[#202522] truncate text-[14.5px] sm:text-[15px]">
                         {prod.name}
                       </span>
                     </div>
                     <div className="text-right flex-shrink-0 tabular-nums">
-                      <span className="font-semibold text-[#252825] text-[14.5px] sm:text-[15px] block leading-snug">
+                      <span className="font-semibold text-[#202522] text-[14.5px] sm:text-[15px] block leading-snug">
                         {formatCurrency(prod.revenue)}
                       </span>
-                      <span className="text-[11.5px] text-[#8F9690] block mt-0.5 leading-tight">
+                      <span className="text-[11.5px] text-[#929A95] block mt-0.5 leading-tight">
                         {prod.quantity} sold
                       </span>
                     </div>
                   </div>
                   {/* Visual Progress Bar matching product color */}
-                  <div className="w-full bg-[#F0F2F0] h-1.5 rounded-full overflow-hidden mt-2.5">
+                  <div className="w-full bg-[#F1F3F0] h-1.5 rounded-full overflow-hidden mt-2.5">
                     <div
                       className="h-full rounded-full transition-all duration-300"
                       style={{ width: `${fillPct}%`, backgroundColor: prodColor }}
@@ -354,14 +356,14 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
       {/* Inventory Health Section - container-less flat layout matching screenshot */}
       <section aria-label="Inventory Health" className="mb-6">
         <div className="flex items-center justify-between mb-3 px-0.5">
-          <h2 className="text-[17px] font-bold text-[#252825]">
+          <h2 className="text-[17px] font-bold text-[#202522]">
             Inventory health
           </h2>
           {onNavigateToStore && (
             <button
               type="button"
               onClick={() => onNavigateToStore('inventory')}
-              className="text-[13px] font-medium text-[#4F8065] hover:underline cursor-pointer"
+              className="text-[13px] font-medium text-[#202522] hover:text-black hover:underline transition-colors cursor-pointer"
             >
               Manage stock →
             </button>
@@ -369,19 +371,19 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         </div>
 
         {/* Multi-segment bar directly on screen */}
-        <div className="w-full bg-[#EBEFEA] h-2.5 sm:h-3 rounded-full overflow-hidden flex my-3.5">
+        <div className="w-full bg-[#E1E6E2] h-2.5 sm:h-3 rounded-full overflow-hidden flex my-3.5">
           <div
-            className="bg-[#4F8065] h-full transition-all"
+            className="bg-[#64A30E] h-full transition-all"
             style={{ width: `${stockHealth.inStockPct}%` }}
             title={`In Stock: ${stockHealth.inStock}`}
           />
           <div
-            className="bg-[#F5B853] h-full transition-all"
+            className="bg-[#D99426] h-full transition-all"
             style={{ width: `${stockHealth.lowStockPct}%` }}
             title={`Low Stock: ${stockHealth.lowStock}`}
           />
           <div
-            className="bg-[#F06560] h-full transition-all"
+            className="bg-[#D94841] h-full transition-all"
             style={{ width: `${stockHealth.outOfStockPct}%` }}
             title={`Out of Stock: ${stockHealth.outOfStock}`}
           />
@@ -389,29 +391,29 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
 
         <div className="grid grid-cols-3 gap-2 text-center pt-1">
           <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#6E746F]">
-              <span className="w-2 h-2 rounded-full bg-[#4F8065]" />
+            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
+              <span className="w-2 h-2 rounded-full bg-[#64A30E]" />
               <span>In Stock</span>
             </div>
-            <p className="text-[16px] font-bold text-[#252825] tabular-nums mt-1">
+            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
               {stockHealth.inStock}
             </p>
           </div>
           <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#6E746F]">
-              <span className="w-2 h-2 rounded-full bg-[#F5B853]" />
+            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
+              <span className="w-2 h-2 rounded-full bg-[#D99426]" />
               <span>Low Stock</span>
             </div>
-            <p className="text-[16px] font-bold text-[#252825] tabular-nums mt-1">
+            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
               {stockHealth.lowStock}
             </p>
           </div>
           <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#6E746F]">
-              <span className="w-2 h-2 rounded-full bg-[#F06560]" />
+            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
+              <span className="w-2 h-2 rounded-full bg-[#D94841]" />
               <span>Out of Stock</span>
             </div>
-            <p className="text-[16px] font-bold text-[#252825] tabular-nums mt-1">
+            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
               {stockHealth.outOfStock}
             </p>
           </div>

@@ -119,7 +119,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                         ? 'text-red-600'
                         : product.stock <= product.lowStockThreshold
                         ? 'text-amber-600'
-                        : 'text-[#4F8065]'
+                        : 'text-[#64A30E]'
                     }`}
                   >
                     <span
@@ -128,7 +128,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                           ? 'bg-red-500'
                           : product.stock <= product.lowStockThreshold
                           ? 'bg-amber-500'
-                          : 'bg-[#4F8065]'
+                          : 'bg-[#64A30E]'
                       }`}
                     />
                     {isOutOfStock
@@ -166,7 +166,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                         type="button"
                         disabled={quantity <= 1}
                         onClick={handleDecrement}
-                        className="w-12 h-12 rounded-full border border-[#DEE3DE] text-[#252825] hover:border-[#4F8065] hover:text-[#4F8065] active:scale-95 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer"
+                        className="w-12 h-12 rounded-full border border-[#DEE3DE] text-[#252825] hover:border-[#64A30E] hover:text-[#64A30E] active:scale-95 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Decrease quantity"
                       >
                         <Minus size={20} strokeWidth={2.2} />
@@ -195,7 +195,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                         type="button"
                         disabled={quantity >= maxStock}
                         onClick={handleIncrement}
-                        className="w-12 h-12 rounded-full border border-[#DEE3DE] text-[#252825] hover:border-[#4F8065] hover:text-[#4F8065] active:scale-95 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer"
+                        className="w-12 h-12 rounded-full border border-[#DEE3DE] text-[#252825] hover:border-[#64A30E] hover:text-[#64A30E] active:scale-95 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all cursor-pointer"
                         aria-label="Increase quantity"
                       >
                         <Plus size={20} strokeWidth={2.2} />
@@ -262,7 +262,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                   type="button"
                   disabled={isOutOfStock}
                   onClick={handleConfirm}
-                  className="w-full h-12 bg-[#4F8065] hover:bg-[#3D684F] active:scale-[0.99] disabled:opacity-40 disabled:pointer-events-none text-white text-[15px] font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-[0_2px_10px_rgba(79,128,101,0.25)] transition-all cursor-pointer"
+                  className="w-full h-12 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] active:scale-[0.99] disabled:opacity-40 disabled:pointer-events-none text-white text-[15px] font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-[0_2px_10px_rgba(100,163,14,0.25)] transition-all cursor-pointer"
                 >
                   <Check size={18} strokeWidth={2.4} />
                   <span>Confirm Sale • ₱{totalPrice.toFixed(2)}</span>
@@ -272,7 +272,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                   <button
                     type="button"
                     onClick={onScanAgain}
-                    className="text-[#4F8065] hover:text-[#3D684F] font-semibold transition-colors cursor-pointer"
+                    className="text-[#64A30E] hover:text-[#54890B] font-semibold transition-colors cursor-pointer"
                   >
                     Scan Next Item
                   </button>
@@ -311,7 +311,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onAddAsNewProduct(scannedBarcode)}
-                  className="w-full h-12 bg-[#4F8065] hover:bg-[#3D684F] text-white text-[14px] font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                  className="w-full h-12 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[14px] font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                 >
                   <Plus size={16} strokeWidth={2.4} />
                   <span>Add to Inventory</span>
@@ -321,7 +321,7 @@ export const QuickSaleModal: React.FC<QuickSaleModalProps> = ({
                   <button
                     type="button"
                     onClick={onScanAgain}
-                    className="text-[#4F8065] hover:text-[#3D684F] font-semibold transition-colors cursor-pointer"
+                    className="text-[#64A30E] hover:text-[#54890B] font-semibold transition-colors cursor-pointer"
                   >
                     Scan Another Barcode
                   </button>

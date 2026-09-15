@@ -319,8 +319,9 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
     return `₱${val}`;
   };
 
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -435,7 +436,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
               {isActive && (
                 <motion.div
                   layoutId="activeTimeframePill"
-                  className="absolute inset-0 bg-[#4F8065] rounded-full shadow-[0_2px_8px_rgba(79,128,101,0.28)]"
+                  className="absolute inset-0 bg-[#64A30E] rounded-full shadow-[0_2px_8px_rgba(100,163,14,0.25)]"
                   transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                 />
               )}
@@ -443,7 +444,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 className={`relative z-10 transition-colors duration-200 ${
                   isActive
                     ? 'text-white font-semibold'
-                    : 'text-[#6E746F] hover:text-[#252825] font-medium'
+                    : 'text-[#68716C] hover:text-[#202522] font-medium'
                 }`}
               >
                 {label}
@@ -457,7 +458,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
       <div className="flex items-center justify-between mb-3 px-1">
         {/* Date Range with Calendar Icon & Smooth Cross-fade */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="text-[#252825] flex-shrink-0">
+          <div className="text-[#202522] flex-shrink-0">
             <Calendar size={18} strokeWidth={2} />
           </div>
           <div className="overflow-hidden min-w-0">
@@ -469,7 +470,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 exit={{ opacity: 0, y: -4 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
                 id="revenue-date-range-text"
-                className="text-[14px] sm:text-[15px] font-bold text-[#252825] tracking-tight truncate block"
+                className="text-[14px] sm:text-[15px] font-bold text-[#202522] tracking-tight truncate block"
               >
                 {dateRangeText}
               </motion.span>
@@ -507,7 +508,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                       x={padLeft - 8}
                       y={y + 3.5}
                       textAnchor="end"
-                      className="text-[11px] fill-[#8F9690] font-medium select-none"
+                      className="text-[11px] fill-[#929A95] font-medium select-none"
                       style={{ fontSize: '10.5px' }}
                     >
                       {formatYTick(val)}
@@ -519,7 +520,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                       y1={y}
                       x2={svgWidth - padRight}
                       y2={y}
-                      stroke="#DEE3DE"
+                      stroke="#E1E6E2"
                       strokeWidth={1}
                       strokeDasharray="4 4"
                     />
@@ -548,7 +549,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 <motion.path
                   d={currentPath}
                   fill="none"
-                  stroke="#2E7D5B"
+                  stroke="#64A30E"
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -572,7 +573,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                     y1={activePoint.y}
                     x2={activePoint.x}
                     y2={padTop + plotHeight}
-                    stroke="#2E7D5B"
+                    stroke="#64A30E"
                     strokeWidth={1.5}
                     strokeDasharray="3 3"
                   />
@@ -582,10 +583,10 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                     cx={activePoint.x}
                     cy={activePoint.y}
                     r={4.5}
-                    fill="#2E7D5B"
+                    fill="#64A30E"
                     stroke="#FFFFFF"
                     strokeWidth={2}
-                    className="shadow-sm filter drop-shadow-[0_1px_2px_rgba(46,125,91,0.4)]"
+                    className="shadow-sm filter drop-shadow-[0_1px_2px_rgba(100,163,14,0.4)]"
                   />
 
                   {/* Optional previous period dot on gold line */}
@@ -615,8 +616,8 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                     textAnchor="middle"
                     className={`text-[11.5px] select-none transition-colors cursor-pointer ${
                       isSelected
-                        ? 'fill-[#252825] font-bold'
-                        : 'fill-[#8F9690] font-medium hover:fill-[#252825]'
+                        ? 'fill-[#202522] font-bold'
+                        : 'fill-[#929A95] font-medium hover:fill-[#202522]'
                     }`}
                     style={{ fontSize: '11px' }}
                     onClick={() => setSelectedIndex(idx)}
@@ -632,12 +633,12 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
         {/* 4. Legend directly under chart */}
         <div className="flex items-center justify-center gap-6 mt-4 mb-3.5 text-[12.5px]">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2E7D5B] inline-block" />
-            <span className="font-medium text-[#6E746F]">Current Revenue</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#64A30E] inline-block" />
+            <span className="font-medium text-[#68716C]">Current Revenue</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#E5A020] inline-block" />
-            <span className="font-medium text-[#6E746F]">Previous Period</span>
+            <span className="font-medium text-[#68716C]">Previous Period</span>
           </div>
         </div>
 
@@ -655,13 +656,13 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="bg-white border border-[#DEE3DE] rounded-2xl p-4 sm:p-5 shadow-[0_2px_8px_rgba(37,40,37,0.03)] flex items-center justify-between"
+              className="bg-white border border-[#E1E6E2] rounded-2xl p-4 sm:p-5 shadow-[0_2px_8px_rgba(32,37,34,0.03)] flex items-center justify-between"
             >
               <div>
-                <span className="text-[13px] sm:text-[14px] font-medium text-[#6E746F] block">
+                <span className="text-[13px] sm:text-[14px] font-medium text-[#68716C] block">
                   {activePoint.pt.fullDate}
                 </span>
-                <div className="text-[24px] sm:text-[26px] font-bold text-[#252825] tracking-tight tabular-nums mt-0.5">
+                <div className="text-[24px] sm:text-[26px] font-bold text-[#202522] tracking-tight tabular-nums mt-0.5">
                   {formatCurrency(curVal)}
                 </div>
               </div>
@@ -670,8 +671,8 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold ${
                     isUp
-                      ? 'bg-[#E8F3ED] text-[#2E7D5B]'
-                      : 'bg-[#FDE8E8] text-[#9F3F46]'
+                      ? 'bg-[#F0F7E6] text-[#64A30E]'
+                      : 'bg-[#FDF0EE] text-[#D94841]'
                   }`}
                 >
                   {isUp ? (
@@ -681,7 +682,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                   )}
                   <span>{diffPct}%</span>
                 </span>
-                <span className="text-[11px] text-[#8F9690] mt-1 block text-right">
+                <span className="text-[11px] text-[#929A95] mt-1 block text-right">
                   vs previous period
                 </span>
               </div>

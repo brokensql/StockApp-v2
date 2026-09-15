@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { NavTab, Product, SaleItem, SaleTransaction } from '../types';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
+import { toast } from 'sonner';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -70,6 +71,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
       if (onOpenActiveSale) {
         if (matched) {
+          if (Number(matched.stock) <= 0) {
+            toast.error(`"${matched.name}" is out of stock (0 available)`);
+            return;
+          }
+
           onOpenActiveSale({
             items: [
               {
@@ -96,11 +102,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   const handleProceedToSale = useCallback(
     (items: SaleItem[], unrecognizedBarcode?: string | null) => {
       setIsScannerOpen(false);
+      const validItems = items.filter((item) => {
+        const prod = products.find((p) => p.id === item.productId);
+        return prod && Number(prod.stock) > 0;
+      });
       if (onOpenActiveSale) {
-        onOpenActiveSale({ items, unrecognizedBarcode });
+        onOpenActiveSale({ items: validItems, unrecognizedBarcode });
       }
     },
-    [onOpenActiveSale]
+    [onOpenActiveSale, products]
   );
 
   return (
@@ -124,7 +134,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <div className="w-full max-w-[430px] relative pointer-events-auto">
           <div
             id="bottom-nav-bar"
-            className="bg-white border-x border-t border-[#DEE3DE] rounded-t-[24px] sm:rounded-t-[28px] shadow-[0_-4px_24px_rgba(37,40,37,0.06)] px-2 pt-1.5 pb-2.5 sm:pb-3 flex items-center justify-between relative z-40"
+            className="bg-white border-x border-t border-[#E1E6E2] rounded-t-[24px] sm:rounded-t-[28px] shadow-[0_-4px_24px_rgba(32,37,34,0.06)] px-2 pt-1.5 pb-2.5 sm:pb-3 flex items-center justify-between relative z-40"
             style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))' }}
           >
             {/* Left Navigation Items */}
@@ -151,15 +161,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       strokeWidth={isActive ? 2.3 : 1.8}
                       className={`transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#4F8065]'
-                          : 'text-[#8F9690] hover:text-[#252825]'
+                          ? 'text-[#64A30E]'
+                          : 'text-[#929A95] hover:text-[#202522]'
                       }`}
                     />
                     <span
                       className={`text-[11px] mt-1 leading-none tracking-tight transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#4F8065] font-semibold'
-                          : 'text-[#8F9690] font-medium'
+                          ? 'text-[#64A30E] font-semibold'
+                          : 'text-[#929A95] font-medium'
                       }`}
                     >
                       {item.label}
@@ -172,14 +182,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             {/* Center Quick Scan Shortcut Button */}
             <div className="flex-shrink-0 flex items-center justify-center px-1.5 sm:px-2 relative">
               <div className="relative -top-6 flex items-center justify-center">
-                <div className="p-1.5 rounded-full bg-white shadow-[0_4px_16px_rgba(37,40,37,0.10)] border border-[#DEE3DE]/70">
+                <div className="p-1.5 rounded-full bg-white shadow-[0_4px_16px_rgba(32,37,34,0.10)] border border-[#E1E6E2]/70">
                   <button
                     id="nav-center-action-btn"
                     type="button"
                     onClick={handleCenterButtonClick}
                     aria-label="Scan Barcode"
                     title="Scan Barcode"
-                    className="w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#4F8065] text-white flex items-center justify-center shadow-[0_5px_16px_rgba(79,128,101,0.38)] hover:bg-[#3D684F] hover:shadow-[0_6px_20px_rgba(79,128,101,0.48)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none"
+                    className="w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#64A30E] text-white flex items-center justify-center shadow-[0_5px_16px_rgba(100,163,14,0.35)] hover:bg-[#54890B] hover:shadow-[0_6px_20px_rgba(100,163,14,0.45)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none"
                   >
                     <ScanLine size={27} strokeWidth={2.3} className="sm:w-7 sm:h-7" />
                   </button>
@@ -208,15 +218,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       strokeWidth={isActive ? 2.3 : 1.8}
                       className={`transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#4F8065]'
-                          : 'text-[#8F9690] hover:text-[#252825]'
+                          ? 'text-[#64A30E]'
+                          : 'text-[#929A95] hover:text-[#202522]'
                       }`}
                     />
                     <span
                       className={`text-[11px] mt-1 leading-none tracking-tight transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#4F8065] font-semibold'
-                          : 'text-[#8F9690] font-medium'
+                          ? 'text-[#64A30E] font-semibold'
+                          : 'text-[#929A95] font-medium'
                       }`}
                     >
                       {item.label}

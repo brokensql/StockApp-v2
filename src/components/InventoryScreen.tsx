@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Search, Plus, X, Package } from 'lucide-react';
+import { Search, Plus, X, Package, PackageOpen, SearchX } from 'lucide-react';
 import { Product, InventoryFilter } from '../types';
 import { ProductDetailModal } from './ProductDetailModal';
 import { useProductImages } from '../hooks/useProductImages';
@@ -138,8 +138,9 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
     }
   };
 
-  const formatCurrency = (val: number) => {
-    return `₱${val.toLocaleString('en-PH', {
+  const formatCurrency = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : 0;
+    return `₱${num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -165,7 +166,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons */}
       <header
         id="page-header"
-        className="sticky top-0 z-30 w-full bg-[#f7f9fb]/90 backdrop-blur-md border-b border-transparent select-none"
+        className="sticky top-0 z-30 w-full bg-[#F9FAF8]/90 backdrop-blur-md border-b border-transparent select-none"
         style={{
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
@@ -177,7 +178,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           <div className="h-10 sm:h-11 flex items-center justify-start mb-2">
             <h1
               id="page-header-title"
-              className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
+              className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left"
             >
               Inventory
             </h1>
@@ -185,7 +186,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
 
           {/* Curvy Search Bar (rounded-full, scanner removed) */}
           <div className="relative mb-2.5">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#6E746F]">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#68716C]">
               <Search size={18} strokeWidth={2} />
             </div>
             <input
@@ -194,13 +195,13 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#DEE3DE] rounded-full text-[14.5px] text-[#252825] placeholder:text-[#6E746F]/60 focus:outline-none focus:border-[#4F8065] focus:ring-1 focus:ring-[#4F8065] shadow-[0_2px_6px_rgba(37,40,37,0.02)] transition-colors"
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#6E746F] hover:text-[#252825] cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#68716C] hover:text-[#202522] cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={16} />
@@ -221,12 +222,12 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   id={`filter-${filter.id}`}
                   type="button"
                   onClick={() => setActiveFilter(filter.id)}
-                  className="relative h-9.5 sm:h-10 px-1 sm:px-2 rounded-full text-[12px] min-[390px]:text-[12.5px] sm:text-[13px] font-medium whitespace-nowrap cursor-pointer flex items-center justify-center border border-[#DEE3DE] bg-white focus:outline-none"
+                  className="relative h-9.5 sm:h-10 px-1 sm:px-2 rounded-full text-[12px] min-[390px]:text-[12.5px] sm:text-[13px] font-medium whitespace-nowrap cursor-pointer flex items-center justify-center border border-[#E1E6E2] bg-white focus:outline-none"
                 >
                   {isSelected && (
                     <motion.div
                       layoutId="inventory-filter-active-pill"
-                      className="absolute -inset-px bg-[#4F8065] rounded-full shadow-xs"
+                      className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
                       transition={{
                         type: 'tween',
                         ease: [0.25, 0.1, 0.25, 1],
@@ -236,7 +237,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   )}
                   <span
                     className={`relative z-10 transition-colors duration-150 text-center ${
-                      isSelected ? 'text-white' : 'text-[#6E746F] hover:text-[#252825]'
+                      isSelected ? 'text-white font-semibold' : 'text-[#68716C] hover:text-[#202522]'
                     }`}
                   >
                     {filter.label}
@@ -254,12 +255,13 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           /* Global Empty State */
           <div
             id="empty-inventory-state"
-            className="py-10 sm:py-12 text-center my-2"
+            className="py-10 sm:py-12 text-center my-2 flex flex-col items-center"
           >
-            <h2 className="text-[14px] font-semibold text-[#252825] mb-1.5">
+            <PackageOpen size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
+            <h2 className="text-[14px] font-semibold text-[#202522] mb-1.5">
               No products yet
             </h2>
-            <p className="text-[14px] leading-relaxed text-[#6E746F] max-w-[260px] mx-auto">
+            <p className="text-[14px] leading-relaxed text-[#68716C] max-w-[260px] mx-auto">
               Add your first product to start managing your inventory.
             </p>
           </div>
@@ -267,12 +269,13 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           /* Search / Filter Empty State */
           <div
             id="empty-search-state"
-            className="py-10 sm:py-12 text-center my-2"
+            className="py-10 sm:py-12 text-center my-2 flex flex-col items-center"
           >
-            <h2 className="text-[14px] font-semibold text-[#252825] mb-1.5">
+            <SearchX size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
+            <h2 className="text-[14px] font-semibold text-[#202522] mb-1.5">
               No products found
             </h2>
-            <p className="text-[14px] text-[#6E746F] mb-5 max-w-[260px] mx-auto">
+            <p className="text-[14px] text-[#68716C] mb-5 max-w-[260px] mx-auto">
               {searchQuery
                 ? `No products matching "${searchQuery}" in this filter.`
                 : 'No products currently match this filter.'}
@@ -283,7 +286,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                 setSearchQuery('');
                 setActiveFilter('all');
               }}
-              className="h-10 px-4 bg-white border border-[#DEE3DE] text-[#252825] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="h-10 px-4 bg-white border border-[#E1E6E2] text-[#202522] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F6F4] transition-colors"
             >
               <span>Reset filters</span>
             </button>
@@ -296,11 +299,11 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
               className="flex items-center justify-between px-1 pt-0.5 pb-0.5"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[13.5px] font-bold text-[#252825]">
+                <span className="text-[13.5px] font-bold text-[#202522]">
                   {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
                 </span>
                 {searchQuery && (
-                  <span className="text-[12px] text-[#8E948F]">
+                  <span className="text-[12px] text-[#929A95]">
                     matching &ldquo;{searchQuery}&rdquo;
                   </span>
                 )}
@@ -321,7 +324,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   key={product.id}
                   id={`product-card-${product.id}`}
                   onClick={() => handleOpenEditModal(product)}
-                  className="group bg-white rounded-2xl border border-[#DEE3DE] hover:border-[#4F8065]/50 shadow-2xs hover:shadow-xs transition-all cursor-pointer overflow-hidden flex items-stretch h-[104px] sm:h-[112px] active:scale-[0.995]"
+                  className="group bg-white rounded-2xl border border-[#E1E6E2] hover:border-[#64A30E]/50 shadow-2xs hover:shadow-xs transition-all cursor-pointer overflow-hidden flex items-stretch h-[104px] sm:h-[112px] active:scale-[0.995]"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
@@ -332,7 +335,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   aria-label={`View or edit ${product.name}`}
                 >
                   {/* Left: Product Image Container (strictly fixed dimensions, matching reference) */}
-                  <div className="w-24 sm:w-28 h-full min-w-[96px] sm:min-w-[112px] max-w-[96px] sm:max-w-[112px] bg-[#FAFBFB] relative overflow-hidden flex-shrink-0 flex items-center justify-center border-r border-[#F0F2F0]">
+                  <div className="w-24 sm:w-28 h-full min-w-[96px] sm:min-w-[112px] max-w-[96px] sm:max-w-[112px] bg-[#FAFBFB] relative overflow-hidden flex-shrink-0 flex items-center justify-center border-r border-[#E1E6E2]/70">
                     <InventoryCardImage
                       src={product.imageUrl || images[product.id]}
                       alt={product.name}
@@ -344,13 +347,13 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                     {/* Top: Product Name & Category */}
                     <div className="min-w-0">
                       <h3
-                        className="text-[14.5px] sm:text-[15.5px] font-semibold text-[#252825] leading-snug truncate"
+                        className="text-[14.5px] sm:text-[15.5px] font-semibold text-[#202522] leading-snug truncate"
                         title={product.name}
                       >
                         {product.name}
                       </h3>
                       {product.category ? (
-                        <p className="text-[12px] text-[#6E746F] truncate mt-0.5">
+                        <p className="text-[12px] text-[#68716C] truncate mt-0.5">
                           {product.category}
                         </p>
                       ) : (
@@ -362,21 +365,21 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
 
                     {/* Bottom: Price & Units */}
                     <div className="flex items-baseline justify-between gap-x-2 pt-1 mt-auto">
-                      <span className="text-[15.5px] sm:text-[17px] font-bold text-[#252825] tabular-nums shrink-0">
+                      <span className="text-[15.5px] sm:text-[17px] font-bold text-[#202522] tabular-nums shrink-0">
                         {formatCurrency(product.price)}
                       </span>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11.5px] sm:text-[12px] text-[#6E746F] tabular-nums font-medium">
+                        <span className="text-[11.5px] sm:text-[12px] text-[#68716C] tabular-nums font-medium">
                           {product.stock} {product.stock === 1 ? 'unit' : 'units'}
                         </span>
 
                         {isOutOfStock ? (
-                          <span className="text-[10.5px] font-semibold text-red-700 bg-red-50 border border-red-200/60 px-1.5 py-0.5 rounded-md">
+                          <span className="text-[10.5px] font-semibold text-[#D94841] bg-[#FDF0EE] border border-[#FADCDA] px-1.5 py-0.5 rounded-md">
                             Out
                           </span>
                         ) : isLowStock ? (
-                          <span className="text-[10.5px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md">
+                          <span className="text-[10.5px] font-semibold text-[#B87A1B] bg-[#FEF7EB] border border-[#FBE6C2] px-1.5 py-0.5 rounded-md">
                             Low
                           </span>
                         ) : null}
@@ -410,7 +413,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                 whileTap={{ scale: 0.92 }}
                 whileHover={{ scale: 1.05 }}
                 onClick={handleOpenAddModal}
-                className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#3D684F] text-white flex items-center justify-center shadow-[0_6px_22px_rgba(79,128,101,0.45)] transition-colors cursor-pointer border border-white/20 focus-visible:outline-none focus:ring-2 focus:ring-[#4F8065] focus:ring-offset-2"
+                className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white flex items-center justify-center shadow-[0_6px_22px_rgba(100,163,14,0.4)] transition-colors cursor-pointer border border-white/20 focus-visible:outline-none focus:ring-2 focus:ring-[#64A30E] focus:ring-offset-2"
                 aria-label="Add product"
                 title="Add product"
               >

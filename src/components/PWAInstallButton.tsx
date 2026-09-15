@@ -68,7 +68,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={handleInstallClick}
-              className="px-3 py-1.5 rounded-lg bg-[#4F8065] text-white text-[12px] font-semibold hover:bg-[#3E6751] active:scale-95 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-[#64A30E] text-white text-[12px] font-semibold hover:bg-[#54890B] active:scale-95 transition-all cursor-pointer"
             >
               {isIOS ? 'Instructions' : 'Install'}
             </button>
@@ -111,13 +111,13 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
 
               <div className="space-y-3 text-[13px] text-[#424743] mb-5">
                 <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                  <Share2 size={18} className="text-[#4F8065] mt-0.5 flex-shrink-0" />
+                  <Share2 size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
                   <p>
                     <strong>1.</strong> Tap the <strong>Share</strong> icon in the Safari navigation bar at the bottom.
                   </p>
                 </div>
                 <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                  <PlusSquare size={18} className="text-[#4F8065] mt-0.5 flex-shrink-0" />
+                  <PlusSquare size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
                   <p>
                     <strong>2.</strong> Scroll down and select <strong>Add to Home Screen</strong>.
                   </p>
@@ -127,7 +127,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
-                className="w-full py-2.5 rounded-xl bg-[#4F8065] text-white text-[13px] font-semibold hover:bg-[#3E6751] active:scale-98 transition-all cursor-pointer text-center"
+                className="w-full py-2.5 rounded-xl bg-[#64A30E] text-white text-[13px] font-semibold hover:bg-[#54890B] active:scale-98 transition-all cursor-pointer text-center"
               >
                 Got It
               </button>
@@ -147,7 +147,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         className="h-9 px-3 rounded-full bg-[#F0F5F2] hover:bg-[#E2EBE5] text-[#252825] border border-[#DEE3DE] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
         title="Install StockApp to Home Screen"
       >
-        <Download size={14} className="text-[#4F8065]" />
+        <Download size={14} className="text-[#64A30E]" />
         <span>Install App</span>
       </button>
 
@@ -178,13 +178,13 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
 
             <div className="space-y-3 text-[13px] text-[#424743] mb-5">
               <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                <Share2 size={18} className="text-[#4F8065] mt-0.5 flex-shrink-0" />
+                <Share2 size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
                 <p>
                   <strong>1.</strong> Tap the <strong>Share</strong> icon in the Safari navigation bar at the bottom.
                 </p>
               </div>
               <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                <PlusSquare size={18} className="text-[#4F8065] mt-0.5 flex-shrink-0" />
+                <PlusSquare size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
                 <p>
                   <strong>2.</strong> Scroll down and select <strong>Add to Home Screen</strong>.
                 </p>
@@ -194,7 +194,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={() => setShowIOSGuide(false)}
-              className="w-full py-2.5 rounded-xl bg-[#4F8065] text-white text-[13px] font-semibold hover:bg-[#3E6751] active:scale-98 transition-all cursor-pointer text-center"
+              className="w-full py-2.5 rounded-xl bg-[#64A30E] text-white text-[13px] font-semibold hover:bg-[#54890B] active:scale-98 transition-all cursor-pointer text-center"
             >
               Got It
             </button>

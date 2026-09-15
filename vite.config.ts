@@ -24,7 +24,7 @@ export default defineConfig(() => {
           name: 'StockApp',
           short_name: 'StockApp',
           description: 'A simple way to manage your inventory and sales.',
-          theme_color: '#4F8065',
+          theme_color: '#64A30E',
           background_color: '#ffffff',
           display: 'standalone',
           start_url: '/',
@@ -107,6 +107,17 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+      },
+    },
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'zxing-vendor': ['@zxing/browser', '@zxing/library'],
+            'motion-vendor': ['motion', 'framer-motion'],
+          },
+        },
       },
     },
     server: {

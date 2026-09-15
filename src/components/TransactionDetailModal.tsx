@@ -56,7 +56,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
             {/* Authentic Receipt Ticket Card */}
             <div className="w-full shadow-2xl rounded-2xl overflow-hidden">
-              <ReceiptTicketCard transaction={transaction} />
+              <ReceiptTicketCard transaction={transaction} enableConfetti={false} />
             </div>
 
             {/* Bottom Dismiss */}

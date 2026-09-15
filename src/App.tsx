@@ -18,6 +18,7 @@ import { User, ArrowLeft, Plus } from 'lucide-react';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SALES } from './data/initialSales';
+import { validateCartStock } from './utils/stockValidation';
 import {
   deleteProductImage,
   clearAllProductImages,
@@ -424,9 +425,17 @@ export default function App() {
     newTransaction: SaleTransaction,
     updatedProducts: Product[]
   ) => {
+    // Robust centralized validation: verify that no item in transaction was out of stock or exceeds stock
+    const validation = validateCartStock(newTransaction.items, products);
+    if (!validation.isValid) {
+      const names = validation.invalidItems.map((i) => `"${i.name}"`).join(', ');
+      toast.error(`Cannot complete sale: ${names} ${validation.invalidItems.length === 1 ? 'is' : 'are'} out of stock.`);
+      return;
+    }
+
     setSales((prev) => [newTransaction, ...prev]);
     setProducts(updatedProducts);
-    toast.success('Completed');
+    toast.success('Sale completed');
   };
 
   const getHeaderTitle = (tab: NavTab): string => {
@@ -448,7 +457,7 @@ export default function App() {
   };
 
   return (
-    <div id="app-root" className="w-full min-h-[100dvh] bg-[#f7f9fb] font-sans antialiased text-[#252825] flex flex-col items-center">
+    <div id="app-root" className="w-full min-h-[100dvh] bg-[#F9FAF8] font-sans antialiased text-[#202522] flex flex-col items-center">
       <Toaster
         position="top-center"
         toastOptions={{
@@ -483,7 +492,7 @@ export default function App() {
         />
       ) : activeSaleSession.isOpen ? (
         /* Dedicated 1 Whole Page Sale / Checkout Screen */
-        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#f7f9fb]">
+        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F9FAF8]">
           <ActiveSaleScreen
             products={products}
             existingSales={sales}
@@ -511,82 +520,40 @@ export default function App() {
           />
         </div>
       ) : (
-        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#f7f9fb]">
+        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F9FAF8]">
           {/* Glassmorphic Page Header */}
-          {activeTab !== 'store' && activeTab !== 'inventory' && (
+          {activeTab !== 'home' && activeTab !== 'store' && activeTab !== 'inventory' && (
             <header
               id="page-header"
-              className="sticky top-0 z-30 w-full bg-[#f7f9fb]/80 backdrop-blur-md select-none border-b border-transparent"
+              className="sticky top-0 z-30 w-full bg-[#F9FAF8]/85 backdrop-blur-md select-none border-b border-transparent"
               style={{
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
             >
-              {activeTab === 'home' ? (
-                <div
-                  id="home-header"
-                  className="h-16 sm:h-[68px] px-5 flex items-center justify-between"
-                >
+              {activeTab === 'sales' ? (
+                <div className="px-5 pt-2 pb-0 flex flex-col items-start relative">
                   <button
-                    id="home-header-profile-button"
                     type="button"
-                    onClick={() => handleSelectTab('profile')}
-                    className="flex items-center gap-3 text-left cursor-pointer group focus:outline-none"
+                    onClick={() => handleSelectTab('home')}
+                    className="p-1 -ml-1 text-[#202522] hover:text-[#68716C] active:scale-95 transition-all cursor-pointer flex items-center justify-center rounded-full hover:bg-black/5"
+                    aria-label="Back to home"
                   >
-                    {/* Circular Profile Container */}
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#4F8065]/12 border border-[#4F8065]/20 flex items-center justify-center text-[#4F8065] flex-shrink-0 shadow-xs group-hover:opacity-90 transition-opacity">
-                      <User size={20} strokeWidth={1.8} />
-                    </div>
-
-                    <div>
-                      <span className="text-[12px] sm:text-[13px] font-medium text-[#6E746F] block leading-tight">
-                        Welcome Back
-                      </span>
-                      <h1
-                        id="home-greeting"
-                        className="text-[18px] sm:text-[20px] font-bold text-[#252825] tracking-[-0.01em] leading-snug mt-0.5 truncate max-w-[280px]"
-                      >
-                        {userProfile?.ownerName || 'Store Owner'}
-                      </h1>
-                    </div>
+                    <ArrowLeft size={24} strokeWidth={2.2} />
                   </button>
-                </div>
-              ) : activeTab === 'sales' ? (
-                <div className="h-16 sm:h-[68px] px-5 flex items-center justify-between relative">
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectTab('home')}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-[#DEE3DE] flex items-center justify-center text-[#252825] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer shadow-xs"
-                      aria-label="Back to home"
-                    >
-                      <ArrowLeft size={18} strokeWidth={2.2} />
-                    </button>
-                    <h1
-                      id="page-header-title"
-                      className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
-                    >
-                      Sales
-                    </h1>
-                  </div>
-
-                  <button
-                    id="btn-new-sale-header"
-                    type="button"
-                    onClick={handleQuickNewSale}
-                    className="h-9 sm:h-10 px-3 sm:px-3.5 bg-[#4F8065] hover:bg-[#3D684F] active:bg-[#3D684F] text-white text-[13px] sm:text-[13.5px] font-medium rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
-                    aria-label="Start new sale"
+                  <h1
+                    id="page-header-title"
+                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left leading-tight mt-0.5"
                   >
-                    <Plus size={16} strokeWidth={2.2} />
-                    <span>New sale</span>
-                  </button>
+                    Sales
+                  </h1>
                 </div>
               ) : (
                 <div className="h-16 sm:h-[68px] px-5 flex items-center justify-start relative">
                   <h1
                     id="page-header-title"
-                    className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-[-0.015em] text-left"
+                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left"
                   >
                     {getHeaderTitle(activeTab)}
                   </h1>
@@ -657,14 +624,11 @@ export default function App() {
 
             {activeTab === 'profile' && (
               <ProfileScreen
-                products={products}
-                sales={sales}
                 profile={userProfile}
                 onUpdateProfile={(updated) => {
                   setUserProfile(updated);
                   toast.success('Saved');
                 }}
-                onResetOnboarding={handleOpenStoreProfileSetup}
                 onResetAllData={handleResetAllData}
               />
             )}
