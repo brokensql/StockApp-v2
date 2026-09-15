@@ -141,6 +141,7 @@ export function formatPHTTimestamp(dateInput: Date | number | string): string {
 export interface SalesGrowthMetrics {
   todayTotal: number;
   yesterdayTotal: number;
+  dayGrowthDiff: number;
   changeAmount: number;
   changePercentage: number;
   isPositive: boolean;
@@ -152,17 +153,28 @@ export interface SalesGrowthMetrics {
   lastWeekTotal: number;
   growthDiff: number;
   weekGrowthPercentage: number;
+  thisMonthTotal: number;
+  lastMonthTotal: number;
+  monthGrowthDiff: number;
+  thisMonthCount: number;
+  lastMonthCount: number;
 }
 
 /**
- * Calculates genuine sales growth comparing Today (PHT) vs Yesterday (PHT)
- * and This Week vs Last Week strictly derived from the store's recorded transactions.
+ * Calculates genuine sales growth comparing Today vs Yesterday,
+ * This Week vs Last Week, and This Month vs Last Month strictly derived from PHT transactions.
  */
 export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMetrics {
   const now = new Date();
   const todayParts = getPHTParts(now);
   const midnightToday = getPHTTodayMidnightEpoch();
   const yesterdayParts = getPHTParts(midnightToday - 12 * 3600 * 1000);
+
+  // Month prefixes
+  const thisYearMonth = `${todayParts.year}-${String(todayParts.month).padStart(2, '0')}`;
+  const prevMonth = todayParts.month === 1 ? 12 : todayParts.month - 1;
+  const prevMonthYear = todayParts.month === 1 ? todayParts.year - 1 : todayParts.year;
+  const lastYearMonth = `${prevMonthYear}-${String(prevMonth).padStart(2, '0')}`;
 
   // 7 days window (today back 6 days)
   const sevenDaysAgoMidnight = midnightToday - 6 * 24 * 3600 * 1000;
@@ -175,6 +187,10 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
   let yesterdayCount = 0;
   let thisWeekTotal = 0;
   let lastWeekTotal = 0;
+  let thisMonthTotal = 0;
+  let thisMonthCount = 0;
+  let lastMonthTotal = 0;
+  let lastMonthCount = 0;
 
   for (const s of sales || []) {
     const epoch = getTransactionTimestamp(s);
@@ -193,6 +209,14 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
       thisWeekTotal += total;
     } else if (epoch >= fourteenDaysAgoMidnight && epoch < sevenDaysAgoMidnight) {
       lastWeekTotal += total;
+    }
+
+    if (p.dateKey.startsWith(thisYearMonth)) {
+      thisMonthTotal += total;
+      thisMonthCount += 1;
+    } else if (p.dateKey.startsWith(lastYearMonth)) {
+      lastMonthTotal += total;
+      lastMonthCount += 1;
     }
   }
 
@@ -217,9 +241,12 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
     weekGrowthPercentage = 100.0;
   }
 
+  const monthGrowthDiff = thisMonthTotal - lastMonthTotal;
+
   return {
     todayTotal,
     yesterdayTotal,
+    dayGrowthDiff: diff,
     changeAmount,
     changePercentage,
     isPositive,
@@ -231,6 +258,11 @@ export function calculatePHTSalesGrowth(sales: SaleTransaction[]): SalesGrowthMe
     lastWeekTotal,
     growthDiff,
     weekGrowthPercentage,
+    thisMonthTotal,
+    lastMonthTotal,
+    monthGrowthDiff,
+    thisMonthCount,
+    lastMonthCount,
   };
 }
 
