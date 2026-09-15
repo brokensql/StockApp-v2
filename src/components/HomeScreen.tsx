@@ -16,6 +16,7 @@ import {
   ArrowDownLeft,
   X,
   TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { NavTab, Product, SaleTransaction, UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -130,9 +131,46 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         return 'All Time';
       case 'month':
       default:
-        return currentMonthName;
+        return 'This month';
     }
   };
+
+  // Derive relative comparison diff and label based on activeTimeframe
+  const comparisonData = useMemo(() => {
+    switch (activeTimeframe) {
+      case 'today': {
+        const diff = growthMetrics?.dayGrowthDiff ?? 0;
+        return {
+          diff,
+          suffix: 'than last day',
+          isAllTime: false,
+        };
+      }
+      case 'week': {
+        const diff = growthMetrics?.growthDiff ?? 0;
+        return {
+          diff,
+          suffix: 'than last week',
+          isAllTime: false,
+        };
+      }
+      case 'month': {
+        const diff = growthMetrics?.monthGrowthDiff ?? 0;
+        return {
+          diff,
+          suffix: 'than last month',
+          isAllTime: false,
+        };
+      }
+      case 'all':
+      default:
+        return {
+          diff: 0,
+          suffix: '',
+          isAllTime: true,
+        };
+    }
+  }, [activeTimeframe, growthMetrics]);
 
   return (
     <motion.div
@@ -143,7 +181,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="w-full max-w-[430px] mx-auto min-h-screen flex flex-col bg-[#F9FAF8]"
       style={{
-        paddingBottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'calc(5.75rem + env(safe-area-inset-bottom, 8px))',
       }}
     >
       {/* ============================================================ */}
@@ -218,7 +256,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   >
                     {(
                       [
-                        { id: 'month', label: currentMonthName },
+                        { id: 'month', label: 'This month' },
                         { id: 'today', label: 'Today' },
                         { id: 'week', label: 'This Week' },
                         { id: 'all', label: 'All Time' },
@@ -282,13 +320,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {/* Comparison / Growth Pill */}
-          <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 border border-white/15 backdrop-blur-md text-[12px] font-medium text-white/95">
-            <TrendingUp size={13} strokeWidth={2.4} className="text-[#E7F8C4]" />
-            <span>
-              {(growthMetrics?.growthDiff ?? 0) >= 0 ? '+' : '-'}
-              {formatCurrency(Math.abs(growthMetrics?.growthDiff ?? 0))} than last week
-            </span>
-          </div>
+          {comparisonData.isAllTime ? (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 border border-white/15 backdrop-blur-md text-[12px] font-medium text-white/95">
+              <Receipt size={13} strokeWidth={2.2} className="text-[#E7F8C4]" />
+              <span>
+                {sales.length} total {sales.length === 1 ? 'sale' : 'sales'} recorded
+              </span>
+            </div>
+          ) : (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 border border-white/15 backdrop-blur-md text-[12px] font-medium text-white/95">
+              {comparisonData.diff >= 0 ? (
+                <TrendingUp size={13} strokeWidth={2.4} className="text-[#E7F8C4]" />
+              ) : (
+                <TrendingDown size={13} strokeWidth={2.4} className="text-[#FFA4A4]" />
+              )}
+              <span>
+                {comparisonData.diff >= 0 ? '+' : '-'}
+                {formatCurrency(Math.abs(comparisonData.diff))} {comparisonData.suffix}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -342,7 +393,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 ? `${sales.length} ${sales.length === 1 ? 'sale' : 'sales'} recorded`
                 : "Good start, don't stop"
             }
-            badgeIcon={<Banknote size={29} strokeWidth={2.4} />}
+            badgeIcon={<Banknote size={22} strokeWidth={2.2} />}
             badgeVariant="blue"
             onClick={() => onNavigate && onNavigate('sales')}
             onInfoClick={() =>
@@ -365,7 +416,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 ? `${totalProducts} ${totalProducts === 1 ? 'item' : 'items'} in stock`
                 : "Good start, don't stop"
             }
-            badgeIcon={<Wallet size={29} strokeWidth={2.4} />}
+            badgeIcon={<Wallet size={22} strokeWidth={2.2} />}
             badgeVariant="amber"
             onClick={() => onNavigate && onNavigate('store')}
             onInfoClick={() =>
@@ -445,14 +496,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </button>
             </div>
           ) : (
-            <div className="w-full pt-10 pb-2">
+            <div className="w-full pt-[84px] pb-1">
               <SwipeDeck
                 items={sales}
                 itemKey={(sale) => sale.id || sale.transactionNumber}
                 itemLabel={(sale) => `Receipt ${sale.transactionNumber || sale.id}`}
                 label="Transaction receipts deck"
                 emptyLabel="All transactions reviewed"
-                height={300}
+                height="auto"
                 peek={3}
                 threshold={88}
                 stackPosition="top"

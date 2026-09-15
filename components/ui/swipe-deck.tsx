@@ -287,6 +287,7 @@ type DeckCardProps = {
   steps: number;
   onMove: (dx: number) => void;
   onRelease: (dx: number, vx: number) => void;
+  onHeightMeasure?: (height: number) => void;
   cardClassName?: string;
   showBadges?: boolean;
   transformOrigin?: string;
@@ -307,6 +308,7 @@ function DeckCard({
   steps,
   onMove,
   onRelease,
+  onHeightMeasure,
   cardClassName,
   showBadges = true,
   transformOrigin,
@@ -316,6 +318,27 @@ function DeckCard({
   const x = useMotionValue(entryX);
   const rotate = useTransform(x, [-200, 0, 200], [-8, 0, 8], { clamp: false });
   const fade = useTransform(x, [-340, -150, 0, 150, 340], [0, 1, 1, 1, 0]);
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!active || !cardRef.current || !onHeightMeasure) return;
+    const el = cardRef.current;
+    const measure = () => {
+      if (el) {
+        const h = el.offsetHeight || el.getBoundingClientRect().height;
+        if (h > 60) {
+          onHeightMeasure(h);
+        }
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(() => {
+      measure();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [active, onHeightMeasure, children]);
 
   const skip = useRef(reduced);
   skip.current = reduced;
@@ -328,9 +351,9 @@ function DeckCard({
 
   const commit = active ? 0 : depth === 1 ? intent.step / steps : 0;
   // If stackPosition is 'top', stack cards peek upward behind the front card with prominent height
-  const yOffset = stackPosition === 'top' ? -28 : 10;
+  const yOffset = stackPosition === 'top' ? -38 : 10;
   const y = depth * yOffset - commit * yOffset;
-  const scale = 1 - depth * 0.04 + commit * 0.04;
+  const scale = 1 - depth * 0.035 + commit * 0.035;
 
   const badge = (side: -1 | 1, text: string, place: string) => {
     if (!showBadges) return null;
@@ -363,6 +386,7 @@ function DeckCard({
 
   return (
     <motion.div
+      ref={cardRef}
       role="group"
       aria-label={label}
       aria-hidden={!active}
@@ -401,7 +425,7 @@ function DeckCard({
         x,
         rotate,
         opacity: fade,
-        height,
+        height: height === 'auto' ? undefined : height,
         zIndex: 10 - depth,
         transformOrigin: transformOrigin || (stackPosition === 'top' ? '50% 100%' : '50% 0%'),
         touchAction: "pan-y",
@@ -453,7 +477,7 @@ export function SwipeDeck<T>({
   rightLabel = "Keep",
   undoLabel = "Undo",
   emptyLabel = "Deck cleared",
-  height = 180,
+  height = "auto",
   threshold = 92,
   steps = 6,
   peek = 3,
@@ -468,6 +492,19 @@ export function SwipeDeck<T>({
 }: SwipeDeckProps<T>) {
   const hintId = useId();
   const reduced = useReducedMotion() === true;
+
+  const [measuredHeight, setMeasuredHeight] = useState<number>(() =>
+    typeof height === "number" ? height : 340
+  );
+
+  const handleHeightMeasure = useCallback((h: number) => {
+    setMeasuredHeight((prev) => {
+      if (Math.abs(prev - h) > 2) {
+        return Math.round(h);
+      }
+      return prev;
+    });
+  }, []);
 
   const deck = useSwipeDeck({
     count: items.length,
@@ -489,15 +526,15 @@ export function SwipeDeck<T>({
   const control =
     "inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-stone-200 bg-white px-2.5 text-[12px] font-medium text-stone-700 outline-none transition-[background-color,border-color,opacity] duration-150 hover:bg-stone-100 focus-visible:border-[#4568FF] dark:border-white/[0.16] dark:bg-[#1D1D1A] dark:text-stone-200 dark:hover:bg-white/10 dark:focus-visible:border-[#93B0FF]";
 
-  const numericHeight = typeof height === "number" ? height : 360;
+  const containerHeight = typeof height === "number" ? height : measuredHeight;
 
   return (
     <div className={`w-full ${className}`}>
       <div
         aria-label={label}
         aria-describedby={hintId}
-        style={{ height: numericHeight }}
-        className="relative w-full overflow-visible outline-none focus-visible:shadow-[0_0_0_1px_#64A30E]"
+        style={{ height: containerHeight }}
+        className="relative w-full overflow-visible outline-none focus-visible:shadow-[0_0_0_1px_#64A30E] transition-[height] duration-200 ease-out"
         {...deck.deckProps}
       >
         <div
@@ -512,7 +549,7 @@ export function SwipeDeck<T>({
             initial={false}
             animate={{ opacity: deck.done ? 1 : 0 }}
             transition={reduced ? { duration: 0 } : CROSSFADE}
-            style={{ height }}
+            style={{ height: containerHeight }}
             className="absolute inset-x-5 top-0 z-0 grid place-items-center bg-transparent px-4 text-center text-[14px] text-stone-500"
           >
             <div className="flex flex-col items-center gap-2">
@@ -548,6 +585,7 @@ export function SwipeDeck<T>({
                 steps={deck.steps}
                 onMove={deck.report}
                 onRelease={deck.release}
+                onHeightMeasure={handleHeightMeasure}
                 cardClassName={cardClassName}
                 showBadges={showBadges}
                 transformOrigin={transformOrigin}

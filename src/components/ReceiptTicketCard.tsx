@@ -91,7 +91,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
           id="receipt-ticket-card"
           className={`w-full relative flex flex-col ${
             hideThankYou
-              ? 'min-h-[340px] drop-shadow-[0_12px_14px_rgba(37,40,37,0.09)]'
+              ? 'drop-shadow-[0_12px_14px_rgba(37,40,37,0.09)]'
               : 'drop-shadow-[0_12px_28px_rgba(0,0,0,0.07)]'
           }`}
         >
