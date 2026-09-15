@@ -48,7 +48,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNewSaleClick,
 }) => {
   const [isPriceHidden, setIsPriceHidden] = useState<boolean>(false);
-  const [activeTimeframe, setActiveTimeframe] = useState<TimeframeFilter>('month');
+  const [activeTimeframe, setActiveTimeframe] = useState<TimeframeFilter>('today');
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState<boolean>(false);
   const [infoModalContent, setInfoModalContent] = useState<{
     title: string;

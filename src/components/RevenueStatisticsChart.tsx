@@ -136,10 +136,8 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
         const prevParts = getPHTParts(previousEpoch);
 
         const curVal = salesByDate[curParts.dateKey] || 0;
-        // Previous period real sales or realistic comparative baseline
-        const prevVal = salesByDate[prevParts.dateKey] !== undefined
-          ? salesByDate[prevParts.dateKey]
-          : curVal > 0 ? Math.round(curVal * 0.78) : 0;
+        // Previous period real sales from stored transaction history
+        const prevVal = salesByDate[prevParts.dateKey] || 0;
 
         currentSum += curVal;
         prevSum += prevVal;
@@ -172,11 +170,6 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
           curVal += salesByHourToday[h] || 0;
           prevVal += salesByHourYesterday[h] || 0;
         });
-
-        // Fallback comparative value if yesterday had no sales
-        if (prevVal === 0 && curVal > 0) {
-          prevVal = Math.round(curVal * 0.82);
-        }
 
         currentSum += curVal;
         prevSum += prevVal;
@@ -214,10 +207,6 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
           prevVal += salesByDate[prevKey] || 0;
         }
 
-        if (prevVal === 0 && curVal > 0) {
-          prevVal = Math.round(curVal * 0.85);
-        }
-
         currentSum += curVal;
         prevSum += prevVal;
 
@@ -252,10 +241,6 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
             prevVal += numVal;
           }
         });
-
-        if (prevVal === 0 && curVal > 0) {
-          prevVal = Math.round(curVal * 0.88);
-        }
 
         currentSum += curVal;
         prevSum += prevVal;
@@ -649,7 +634,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
           const isUp = curVal >= prevVal;
           const diffPct = prevVal > 0
             ? Math.abs(Math.round(((curVal - prevVal) / prevVal) * 100))
-            : (curVal > 0 ? 28 : 0);
+            : (curVal > 0 ? 100 : 0);
 
           return (
             <motion.div

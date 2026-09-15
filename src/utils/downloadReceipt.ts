@@ -1,4 +1,7 @@
 import { toPng } from 'html-to-image';
+import { Capacitor } from '@capacitor/core';
+import { Media } from '@capacitor-community/media';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from './philippineDate';
 
@@ -323,14 +326,14 @@ function generateCanvasReceipt(
 }
 
 /**
- * Downloads receipt as a PNG image directly onto the user's mobile device or browser.
+ * Downloads receipt as a PNG image directly onto the user's mobile phone gallery (under "StockApp" album when in Capacitor) or browser downloads.
  */
 export async function downloadReceiptTicket(
   receiptElement: HTMLElement | null,
   transaction: SaleTransaction,
   cashTendered?: number | string,
   changeAmount?: number
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     let dataUrl = '';
 
@@ -360,14 +363,75 @@ export async function downloadReceiptTicket(
       dataUrl = generateCanvasReceipt(transaction, cashTendered, changeAmount);
     }
 
-    // Convert dataURL to Blob
+    const txNum = transaction.transactionNumber || 'sale';
+    const filename = `receipt-${txNum}.png`;
+
+    // Detect native Capacitor environment (Android / iOS)
+    const isNative =
+      typeof window !== 'undefined' &&
+      (Capacitor.isNativePlatform() ||
+        (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+
+    if (isNative) {
+      try {
+        // Step A: Search for or create "StockApp" album
+        let albumIdentifier: string | undefined;
+        try {
+          const { albums } = await Media.getAlbums();
+          let stockAppAlbum = albums.find(
+            (a) => a.name && a.name.trim().toLowerCase() === 'stockapp'
+          );
+          if (!stockAppAlbum) {
+            await Media.createAlbum({ name: 'StockApp' });
+            const { albums: updatedAlbums } = await Media.getAlbums();
+            stockAppAlbum = updatedAlbums.find(
+              (a) => a.name && a.name.trim().toLowerCase() === 'stockapp'
+            );
+          }
+          if (stockAppAlbum) {
+            albumIdentifier = stockAppAlbum.identifier;
+          }
+        } catch (albumErr) {
+          console.warn('Could not query or create StockApp album, default gallery used:', albumErr);
+        }
+
+        // Step B: Save receipt photo directly to the phone gallery under "StockApp" album
+        await Media.savePhoto({
+          path: dataUrl,
+          albumIdentifier: albumIdentifier,
+          fileName: `Receipt_${txNum}`,
+        });
+
+        return {
+          success: true,
+          message: 'Saved to StockApp album in phone gallery!',
+        };
+      } catch (nativeMediaErr) {
+        console.warn('Media plugin savePhoto failed, attempting Filesystem fallback:', nativeMediaErr);
+        try {
+          const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+          await Filesystem.writeFile({
+            path: `StockApp/${filename}`,
+            data: base64Clean,
+            directory: Directory.Documents,
+            recursive: true,
+          });
+          return {
+            success: true,
+            message: 'Saved to StockApp folder in Documents!',
+          };
+        } catch (fsErr) {
+          console.error('Filesystem save also failed:', fsErr);
+        }
+      }
+    }
+
+    // Convert dataURL to Blob for web/browser environment
     const response = await fetch(dataUrl);
     const blob = await response.blob();
-    const filename = `receipt-${transaction.transactionNumber || 'sale'}.png`;
     const file = new File([blob], filename, { type: 'image/png' });
 
-    // Try Web Share API on mobile devices if supported (e.g. Save to Photos / Save to Files)
-    // Only use share if canShare is supported and has files capability
+    // Try Web Share API on mobile browsers if supported (e.g. Save to Photos / Save to Files)
     if (
       typeof navigator !== 'undefined' &&
       navigator.canShare &&
@@ -376,20 +440,19 @@ export async function downloadReceiptTicket(
       try {
         await navigator.share({
           files: [file],
-          title: `Receipt ${transaction.transactionNumber}`,
-          text: `Sales Receipt for ${transaction.transactionNumber}`,
+          title: `Receipt ${txNum}`,
+          text: `Sales Receipt for ${txNum}`,
         });
-        return { success: true };
+        return { success: true, message: 'Receipt shared successfully' };
       } catch (shareErr) {
-        // If user cancelled the share sheet (AbortError), don't throw an error
         if ((shareErr as Error).name === 'AbortError') {
           return { success: true };
         }
-        console.warn('Web Share failed, proceeding with direct download:', shareErr);
+        console.warn('Web Share failed, proceeding with direct download link:', shareErr);
       }
     }
 
-    // Standard HTML5 Download anchor
+    // Standard HTML5 Download anchor for Web / Desktop
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -403,7 +466,7 @@ export async function downloadReceiptTicket(
       URL.revokeObjectURL(blobUrl);
     }, 250);
 
-    return { success: true };
+    return { success: true, message: 'Receipt downloaded successfully' };
   } catch (err) {
     console.error('Failed to download receipt:', err);
     return {
