@@ -15,6 +15,8 @@ import { ActiveSaleScreen } from './components/ActiveSaleScreen';
 import { BottomNav } from './components/BottomNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { User, ArrowLeft, Plus } from 'lucide-react';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SALES } from './data/initialSales';
@@ -346,6 +348,32 @@ export default function App() {
     initialUnrecognizedBarcode?: string | null;
   }>({ isOpen: false });
 
+  // Dynamically synchronize Capacitor Android / iOS Status Bar style with current screen
+  useEffect(() => {
+    try {
+      const isCapacitorNative =
+        Capacitor.isNativePlatform() ||
+        (typeof (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+          .Capacitor?.isNativePlatform === 'function' &&
+          (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+            .Capacitor!.isNativePlatform!());
+
+      if (isCapacitorNative) {
+        if (activeTab === 'home' && !activeSaleSession.isOpen) {
+          // Home screen has rich green header: use dark style (crisp white text/icons)
+          StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#64A30E' }).catch(() => {});
+        } else {
+          // Other screens have off-white #F9FAF8 header: use light style (crisp dark text/icons)
+          StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#F9FAF8' }).catch(() => {});
+        }
+      }
+    } catch {
+      // Graceful fallback for non-native environments
+    }
+  }, [activeTab, activeSaleSession.isOpen]);
+
   const handleSelectTab = (tab: NavTab) => {
     if (tab === 'home') {
       setHomeClickTrigger((prev) => prev + 1);
@@ -496,6 +524,7 @@ export default function App() {
           <ActiveSaleScreen
             products={products}
             existingSales={sales}
+            storeName={userProfile.storeName}
             onCompleteSale={handleCompleteSale}
             onCancelSale={() =>
               setActiveSaleSession({
@@ -529,11 +558,11 @@ export default function App() {
               style={{
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                paddingTop: 'env(safe-area-inset-top, 0px)',
+                paddingTop: 'var(--safe-area-top, env(safe-area-inset-top, 0px))',
               }}
             >
               {activeTab === 'sales' ? (
-                <div className="px-5 pt-2 pb-0 flex flex-col items-start relative">
+                <div className="px-5 pt-3 pb-1 flex flex-col items-start relative">
                   <button
                     type="button"
                     onClick={() => handleSelectTab('home')}
@@ -544,7 +573,7 @@ export default function App() {
                   </button>
                   <h1
                     id="page-header-title"
-                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left leading-tight mt-0.5"
+                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left leading-tight mt-1"
                   >
                     Sales
                   </h1>
@@ -605,6 +634,7 @@ export default function App() {
               <SalesScreen
                 products={products}
                 sales={sales}
+                storeName={userProfile.storeName}
                 onCompleteSale={handleCompleteSale}
                 onBack={() => setActiveTab('home')}
                 onStartNewSale={handleQuickNewSale}

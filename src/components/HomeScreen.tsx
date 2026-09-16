@@ -193,7 +193,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         style={{
           background:
             'radial-gradient(circle at 50% -10%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #64A30E 0%, #538C0B 52%, #457508 100%)',
-          paddingTop: 'max(env(safe-area-inset-top, 0px), 14px)',
+          paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 14px)',
         }}
       >
         {/* Soft atmospheric background glow discs */}
@@ -516,6 +516,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <div className="w-full select-none">
                     <ReceiptTicketCard
                       transaction={sale}
+                      storeName={userProfile?.storeName || sale.storeName}
                       hideThankYou
                       hideBrokenLine={!active}
                       isPeekingShadow={!active}

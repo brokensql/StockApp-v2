@@ -4,6 +4,7 @@ import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from './philippineDate';
+import { getStoredStoreName } from './storeProfile';
 
 // Format currency for canvas fallback
 function formatPHP(amount?: number | null): string {
@@ -37,14 +38,15 @@ function formatReceiptDate(timestamp?: number | string): string {
 function generateCanvasReceipt(
   transaction: SaleTransaction,
   cashTendered?: number | string,
-  changeAmount?: number
+  changeAmount?: number,
+  storeName?: string
 ): string {
   const width = 420;
   const itemsCount = transaction.items?.length || 0;
   // Estimate height based on number of items
-  const baseHeight = 580;
+  const baseHeight = 610;
   const itemRowHeight = 44;
-  const height = Math.max(680, baseHeight + itemsCount * itemRowHeight);
+  const height = Math.max(710, baseHeight + itemsCount * itemRowHeight);
 
   const canvas = document.createElement('canvas');
   const scale = 2; // High-DPI 2x retina
@@ -55,6 +57,11 @@ function generateCanvasReceipt(
   if (!ctx) throw new Error('Could not get canvas context');
 
   ctx.scale(scale, scale);
+
+  const resolvedStoreName =
+    storeName?.trim() ||
+    transaction.storeName?.trim() ||
+    getStoredStoreName();
 
   // Background canvas tint
   ctx.fillStyle = '#F9FAF8';
@@ -83,12 +90,19 @@ function generateCanvasReceipt(
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 1. Success Circle & Checkmark
+  // 1. Prominent Store Name above checkmark
   const circleX = width / 2;
-  const circleY = cardY + 54;
+  const storeNameY = cardY + 44;
+  ctx.fillStyle = '#202522';
+  ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(resolvedStoreName.toUpperCase(), circleX, storeNameY);
+
+  // 2. Success Circle & Checkmark
+  const circleY = storeNameY + 44;
   ctx.fillStyle = '#64A30E';
   ctx.beginPath();
-  ctx.arc(circleX, circleY, 28, 0, Math.PI * 2);
+  ctx.arc(circleX, circleY, 26, 0, Math.PI * 2);
   ctx.fill();
 
   // Draw White Checkmark
@@ -97,23 +111,23 @@ function generateCanvasReceipt(
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.moveTo(circleX - 11, circleY);
-  ctx.lineTo(circleX - 3, circleY + 8);
-  ctx.lineTo(circleX + 11, circleY - 7);
+  ctx.moveTo(circleX - 10, circleY);
+  ctx.lineTo(circleX - 3, circleY + 7);
+  ctx.lineTo(circleX + 10, circleY - 6);
   ctx.stroke();
 
-  // 2. Header Text
+  // Header Text
   ctx.fillStyle = '#202522';
-  ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+  ctx.font = 'bold 21px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Thank you', circleX, circleY + 50);
+  ctx.fillText('Thank you', circleX, circleY + 44);
 
   ctx.fillStyle = '#68716C';
   ctx.font = '13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Your payment has been processed successfully.', circleX, circleY + 70);
+  ctx.fillText('Your payment has been processed successfully.', circleX, circleY + 64);
 
   // 3. Perforated Divider
-  const notchY = circleY + 95;
+  const notchY = circleY + 90;
   const notchRadius = 14;
 
   // Left Notch cutout
@@ -138,11 +152,39 @@ function generateCanvasReceipt(
   ctx.setLineDash([]); // reset
 
   // 4. Receipt Details
-  let currentY = notchY + 36;
+  let currentY = notchY + 32;
   const leftX = cardX + 22;
   const rightX = cardX + cardW - 22;
 
+  // Store & Date/Time Row
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#68716C';
+  ctx.font = '11px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Store', leftX, currentY);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('Date & time', rightX, currentY);
+
+  currentY += 17;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#202522';
+  ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+  ctx.fillText(resolvedStoreName, leftX, currentY);
+
+  ctx.textAlign = 'right';
+  ctx.fillText(formatReceiptDate(transaction.createdAt || transaction.timestamp), rightX, currentY);
+
+  // Subtle separator line
+  currentY += 10;
+  ctx.strokeStyle = '#F1F3F0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(leftX, currentY);
+  ctx.lineTo(rightX, currentY);
+  ctx.stroke();
+
   // Receipt ID & Total
+  currentY += 18;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#68716C';
   ctx.font = '11px system-ui, -apple-system, sans-serif';
@@ -160,18 +202,6 @@ function generateCanvasReceipt(
   ctx.textAlign = 'right';
   ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
   ctx.fillText(formatPHP(transaction.total), rightX, currentY);
-
-  // Date & Time
-  currentY += 26;
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#68716C';
-  ctx.font = '11px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Date & time', leftX, currentY);
-
-  currentY += 17;
-  ctx.fillStyle = '#202522';
-  ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText(formatReceiptDate(transaction.createdAt || transaction.timestamp), leftX, currentY);
 
   // Bought Products Header
   currentY += 26;
@@ -332,7 +362,8 @@ export async function downloadReceiptTicket(
   receiptElement: HTMLElement | null,
   transaction: SaleTransaction,
   cashTendered?: number | string,
-  changeAmount?: number
+  changeAmount?: number,
+  storeName?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     let dataUrl = '';
@@ -360,7 +391,7 @@ export async function downloadReceiptTicket(
 
     // Attempt 2: Fallback to canvas renderer if DOM capture failed or returned empty
     if (!dataUrl || dataUrl.length < 100) {
-      dataUrl = generateCanvasReceipt(transaction, cashTendered, changeAmount);
+      dataUrl = generateCanvasReceipt(transaction, cashTendered, changeAmount, storeName);
     }
 
     const txNum = transaction.transactionNumber || 'sale';

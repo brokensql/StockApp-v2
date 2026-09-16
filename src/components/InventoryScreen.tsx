@@ -170,7 +170,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
         style={{
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingTop: 'var(--safe-area-top, env(safe-area-inset-top, 0px))',
         }}
       >
         <div className="px-5 pt-3 pb-2.5">

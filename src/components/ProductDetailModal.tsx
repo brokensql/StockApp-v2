@@ -507,15 +507,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                   <AnimatePresence>
                     {isCategoryOpen && (
-                      <motion.ul
-                        role="listbox"
-                        aria-label="Product category"
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.16, ease: 'easeOut' }}
-                        className="absolute z-20 left-0 right-0 mt-2 bg-white border border-[#E1E6E2] rounded-xl shadow-[0_12px_32px_rgba(32,37,34,0.14)] py-1.5 max-h-56 overflow-y-auto"
-                      >
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setIsCategoryOpen(false)}
+                          aria-hidden="true"
+                        />
+                        <motion.ul
+                          role="listbox"
+                          aria-label="Product category"
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.16, ease: 'easeOut' }}
+                          className="absolute z-20 left-0 right-0 mt-2 bg-white border border-[#E1E6E2] rounded-xl shadow-[0_12px_32px_rgba(32,37,34,0.14)] py-1.5 max-h-64 overflow-y-auto"
+                        >
                         {categoryList.map((cat) => {
                           const selected = cat === category;
                           return (
@@ -543,8 +549,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           );
                         })}
                       </motion.ul>
-                    )}
-                  </AnimatePresence>
+                    </>
+                  )}
+                </AnimatePresence>
                 </div>
               </div>
 

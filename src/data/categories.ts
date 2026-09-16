@@ -8,6 +8,16 @@ export const STANDARD_CATEGORIES = [
   'Dairy',
   'Bakery',
   'Household',
+  'Toiletries',
+  'Skincare',
+  'Body Care',
+  'Hair Care',
+  'Frozen Goods',
+  'Medicine',
+  'Condiments',
+  'Cigrattes',
+  'Ice Cream & Desserts',
+  'Biscuits',
 ] as const;
 
 export type StandardCategory = (typeof STANDARD_CATEGORIES)[number];

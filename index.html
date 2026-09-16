@@ -18,8 +18,23 @@
     <meta property="og:description" content="A simple way to manage your inventory and sales." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://api.fontshare.com" />
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="preload" href="/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      (function() {
+        try {
+          var isNative = Boolean(
+            (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+            window.androidBridge ||
+            window._capacitor ||
+            (window.Capacitor && window.Capacitor.platform && window.Capacitor.platform !== 'web')
+          );
+          if (isNative) {
+            document.documentElement.classList.add('capacitor-native');
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#F9FAF8] text-[#202522] font-sans antialiased selection:bg-[#64A30E]/20">
     <div id="root"></div>
