@@ -53,6 +53,9 @@ export interface SaleTransaction {
   paymentMethod: PaymentMethod;
   itemCount: number;
   primaryItemName: string;
+  storeName?: string;
+  cashTendered?: number | string;
+  changeAmount?: number;
 }
 
 export interface RecentSale {

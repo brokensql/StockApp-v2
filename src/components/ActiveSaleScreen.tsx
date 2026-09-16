@@ -39,6 +39,7 @@ interface ActiveSaleScreenProps {
   initialUnrecognizedBarcode?: string | null;
   onAddNewProductWithBarcode?: (barcode: string) => void;
   existingSales?: SaleTransaction[];
+  storeName?: string;
 }
 
 export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
@@ -49,6 +50,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   initialUnrecognizedBarcode = null,
   onAddNewProductWithBarcode,
   existingSales = [],
+  storeName,
 }) => {
   const [cart, setCart] = useState<SaleItem[]>(() =>
     sanitizeCartStock(initialItems || [], products)
@@ -77,7 +79,8 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         cardEl,
         completedTx,
         cashTendered,
-        changeAmount
+        changeAmount,
+        storeName || completedTx.storeName
       );
       if (result.success) {
         toast.success(result.message || 'Receipt saved to StockApp album in gallery!');
@@ -279,6 +282,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       paymentMethod,
       itemCount: totalItemsCount,
       primaryItemName: cart[0].name,
+      storeName: storeName || 'My Store',
+      cashTendered: paymentMethod === 'cash' && cashTendered !== '' ? cashTendered : undefined,
+      changeAmount: paymentMethod === 'cash' && changeAmount > 0 ? changeAmount : undefined,
     };
 
     // Calculate updated products stock
@@ -337,7 +343,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F9FAF8] px-4 pt-4 pb-8 flex flex-col"
         style={{
-          paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
+          paddingTop: 'calc(1.25rem + var(--safe-area-top, env(safe-area-inset-top, 0px)))',
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
@@ -360,6 +366,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
             transaction={completedTx}
             cashTendered={cashTendered}
             changeAmount={changeAmount}
+            storeName={storeName || completedTx.storeName}
           />
         </div>
 
@@ -406,7 +413,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       <div
         className="px-5 pt-6"
         style={{
-          paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+          paddingTop: 'calc(1.25rem + var(--safe-area-top, env(safe-area-inset-top, 0px)))',
           paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))',
         }}
       >

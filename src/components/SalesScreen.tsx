@@ -17,6 +17,7 @@ interface SalesScreenProps {
   onBack?: () => void;
   onStartNewSale?: () => void;
   isStartingSaleImmediately?: boolean;
+  storeName?: string;
 }
 
 export const SalesScreen: React.FC<SalesScreenProps> = ({
@@ -26,6 +27,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
   onBack,
   onStartNewSale,
   isStartingSaleImmediately = false,
+  storeName,
 }) => {
   const [isActiveSaleOpen, setIsActiveSaleOpen] = useState(isStartingSaleImmediately);
   const [selectedTransaction, setSelectedTransaction] = useState<SaleTransaction | null>(null);
@@ -92,6 +94,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
       <ActiveSaleScreen
         products={products}
         existingSales={sales}
+        storeName={storeName}
         onCompleteSale={handleSaleCompleted}
         onCancelSale={() => setIsActiveSaleOpen(false)}
       />
@@ -330,6 +333,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
       <TransactionDetailModal
         isOpen={Boolean(selectedTransaction)}
         transaction={selectedTransaction}
+        storeName={storeName || selectedTransaction?.storeName}
         onClose={() => setSelectedTransaction(null)}
       />
     </motion.div>

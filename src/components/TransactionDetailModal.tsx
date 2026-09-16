@@ -9,18 +9,22 @@ import { downloadReceiptTicket } from '../utils/downloadReceipt';
 interface TransactionDetailModalProps {
   isOpen: boolean;
   transaction: SaleTransaction | null;
+  storeName?: string;
   onClose: () => void;
 }
 
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   isOpen,
   transaction,
+  storeName,
   onClose,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const cardContainerRef = useRef<HTMLDivElement>(null);
 
   if (!transaction) return null;
+
+  const effectiveStoreName = storeName || transaction.storeName;
 
   const handleDownloadReceipt = async () => {
     if (isDownloading) return;
@@ -33,7 +37,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         cardEl,
         transaction,
         transaction.cashTendered,
-        transaction.changeAmount
+        transaction.changeAmount,
+        effectiveStoreName
       );
       if (result.success) {
         toast.success(result.message || 'Receipt saved to StockApp album in gallery!');
@@ -53,7 +58,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
       {isOpen && (
         <div
           id="transaction-modal-backdrop"
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-start sm:justify-center bg-[#252825]/70 backdrop-blur-sm p-4 pt-[calc(1.25rem+env(safe-area-inset-top,16px))] pb-[calc(3rem+env(safe-area-inset-bottom,28px))] overflow-y-auto"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-start sm:justify-center bg-[#252825]/70 backdrop-blur-sm p-4 pt-[calc(1.25rem+var(--safe-area-top,env(safe-area-inset-top,16px)))] pb-[calc(3rem+var(--safe-area-bottom,env(safe-area-inset-bottom,28px)))] overflow-y-auto"
         >
           {/* Backdrop Click Dismiss */}
           <div
@@ -87,7 +92,11 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
             {/* Authentic Receipt Ticket Card */}
             <div ref={cardContainerRef} className="w-full shadow-2xl rounded-2xl overflow-hidden">
-              <ReceiptTicketCard transaction={transaction} enableConfetti={false} />
+              <ReceiptTicketCard
+                transaction={transaction}
+                storeName={effectiveStoreName}
+                enableConfetti={false}
+              />
             </div>
 
             {/* Bottom Action: Download Receipt */}

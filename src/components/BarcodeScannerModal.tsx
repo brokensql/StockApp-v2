@@ -1148,7 +1148,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 <header
                   className="sticky top-0 z-30 w-full bg-[#f7f9fb]/90 backdrop-blur-md border-b border-transparent select-none shrink-0"
                   style={{
-                    paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
+                    paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 10px)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                   }}
@@ -1470,7 +1470,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 24 }}
                 transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-                className="relative z-10 flex-1 w-full h-full bg-black/20 overflow-hidden flex flex-col justify-between cursor-pointer pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]"
+                className="relative z-10 flex-1 w-full h-full bg-black/20 overflow-hidden flex flex-col justify-between cursor-pointer pt-[max(var(--safe-area-top,env(safe-area-inset-top)),16px)] pb-[max(var(--safe-area-bottom,env(safe-area-inset-bottom)),16px)]"
                 onClick={handleViewfinderTap}
               >
                 {/* Floating Top Header (Close on left, Controls on right) */}
