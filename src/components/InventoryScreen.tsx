@@ -195,7 +195,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
             />
             {searchQuery && (
               <button
@@ -227,7 +227,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   {isSelected && (
                     <motion.div
                       layoutId="inventory-filter-active-pill"
-                      className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
+                      className="absolute -inset-px bg-[#2F7D32] rounded-full shadow-xs"
                       transition={{
                         type: 'tween',
                         ease: [0.25, 0.1, 0.25, 1],
@@ -324,7 +324,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                   key={product.id}
                   id={`product-card-${product.id}`}
                   onClick={() => handleOpenEditModal(product)}
-                  className="group bg-white rounded-2xl border border-[#E1E6E2] hover:border-[#64A30E]/50 shadow-2xs hover:shadow-xs transition-all cursor-pointer overflow-hidden flex items-stretch h-[104px] sm:h-[112px] active:scale-[0.995]"
+                  className="group bg-white rounded-2xl border border-[#E1E6E2] hover:border-[#2F7D32]/50 shadow-2xs hover:shadow-xs transition-all cursor-pointer overflow-hidden flex items-stretch h-[104px] sm:h-[112px] active:scale-[0.995]"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
@@ -413,7 +413,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                 whileTap={{ scale: 0.92 }}
                 whileHover={{ scale: 1.05 }}
                 onClick={handleOpenAddModal}
-                className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white flex items-center justify-center shadow-[0_6px_22px_rgba(100,163,14,0.4)] transition-colors cursor-pointer border border-white/20 focus-visible:outline-none focus:ring-2 focus:ring-[#64A30E] focus:ring-offset-2"
+                className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white flex items-center justify-center shadow-[0_6px_22px_rgba(47,125,50,0.4)] transition-colors cursor-pointer border border-white/20 focus-visible:outline-none focus:ring-2 focus:ring-[#2F7D32] focus:ring-offset-2"
                 aria-label="Add product"
                 title="Add product"
               >

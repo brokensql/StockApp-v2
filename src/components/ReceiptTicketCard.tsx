@@ -3,7 +3,6 @@ import { Store } from 'lucide-react';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from '../utils/philippineDate';
 import { ConfettiExplosion } from './ui/ticket-confirmation-card';
-import { ReceiptCheckmark } from './ReceiptCheckmark';
 import { getStoredStoreName } from '../utils/storeProfile';
 
 interface ReceiptTicketCardProps {
@@ -151,23 +150,19 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
         ) : (
           <>
             {/* Top Header Section */}
-            <div className={`${cardBgClass} rounded-t-[28px] pt-6 px-6 pb-2 text-center`}>
-              {/* Prominent Store Name above checkmark */}
-              <div className="mb-3 px-2">
-                <h1 className="text-[21px] sm:text-[23px] font-extrabold text-[#202522] tracking-tight leading-tight uppercase line-clamp-2 select-none">
-                  {displayStoreName}
-                </h1>
-              </div>
+            <div className={`${cardBgClass} rounded-t-[28px] pt-5 px-6 pb-2 text-center`}>
+              {/* App's Icon Picture (substantially enlarged, tight gap to store name) */}
+              <img
+                src="/icon_192.png"
+                alt="App icon"
+                className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-1 object-contain select-none"
+                referrerPolicy="no-referrer"
+              />
 
-              {/* Success Checkmark Animated Lottie */}
-              <div className="w-16 h-16 mx-auto mb-2 flex items-center justify-center">
-                <ReceiptCheckmark size={64} className="w-16 h-16" />
-              </div>
-
-              {/* Heading */}
-              <h2 className="text-[20px] font-bold text-[#202522] tracking-tight">
-                Thank you
-              </h2>
+              {/* Store Name in place of Thank you (preserves original case, snug spacing) */}
+              <h1 className="text-[22px] sm:text-[25px] font-extrabold text-[#202522] tracking-tight leading-tight line-clamp-2 select-none">
+                {displayStoreName}
+              </h1>
               <p className="text-[13px] text-[#68716C] mt-1 max-w-[260px] mx-auto leading-relaxed">
                 Your payment has been processed successfully.
               </p>
@@ -225,28 +220,18 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             : 'pt-4 pb-4 space-y-4'
         }`}
       >
-        {/* Store & Date Row */}
+        {/* Date & Time Row */}
         <div
-          className={`grid grid-cols-2 gap-2.5 ${
+          className={`flex items-center justify-between gap-2.5 ${
             hideThankYou ? 'pb-1.5' : 'pb-2.5'
           } border-b border-[#F1F3F0]`}
         >
-          <div className="min-w-0 pr-1">
-            <span className="block text-[10.5px] font-medium text-[#68716C]">
-              Store
-            </span>
-            <span className="text-[13px] font-bold text-[#202522] truncate block">
-              {displayStoreName}
-            </span>
-          </div>
-          <div className="min-w-0 text-right">
-            <span className="block text-[10.5px] font-medium text-[#68716C]">
-              Date & time
-            </span>
-            <span className="text-[12px] font-bold text-[#202522] tabular-nums truncate block">
-              {formatReceiptDateTime(transaction.createdAt || transaction.timestamp)}
-            </span>
-          </div>
+          <span className="text-[11px] font-medium text-[#68716C]">
+            Date & time
+          </span>
+          <span className="text-[12px] font-bold text-[#202522] tabular-nums">
+            {formatReceiptDateTime(transaction.createdAt || transaction.timestamp)}
+          </span>
         </div>
 
         {/* Receipt ID & Amount Row */}

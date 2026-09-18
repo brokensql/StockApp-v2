@@ -245,7 +245,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         >
           {/* 1. Total Revenue */}
           <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#F0F7E6] text-[#64A30E] flex items-center justify-center mb-2.5 flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2.5 flex-shrink-0">
               <TrendingUp size={20} strokeWidth={2.2} />
             </div>
             <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
@@ -261,7 +261,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
 
           {/* 2. Items Sold */}
           <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#F0F7E6] text-[#64A30E] flex items-center justify-center mb-2.5 flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2.5 flex-shrink-0">
               <Package size={20} strokeWidth={2.2} />
             </div>
             <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
@@ -373,7 +373,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         {/* Multi-segment bar directly on screen */}
         <div className="w-full bg-[#E1E6E2] h-2.5 sm:h-3 rounded-full overflow-hidden flex my-3.5">
           <div
-            className="bg-[#64A30E] h-full transition-all"
+            className="bg-[#2F7D32] h-full transition-all"
             style={{ width: `${stockHealth.inStockPct}%` }}
             title={`In Stock: ${stockHealth.inStock}`}
           />
@@ -392,7 +392,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         <div className="grid grid-cols-3 gap-2 text-center pt-1">
           <div>
             <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
-              <span className="w-2 h-2 rounded-full bg-[#64A30E]" />
+              <span className="w-2 h-2 rounded-full bg-[#2F7D32]" />
               <span>In Stock</span>
             </div>
             <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">

@@ -69,7 +69,7 @@ const SafeSlideImage: React.FC<{ src: string; alt: string; className?: string }>
 
   if (error) {
     return (
-      <div className={`bg-[#EAEFEA] flex items-center justify-center text-[#64A30E] ${className}`}>
+      <div className={`bg-[#E8F3E8] flex items-center justify-center text-[#2F7D32] ${className}`}>
         <Package size={28} strokeWidth={1.5} />
       </div>
     );
@@ -191,7 +191,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   const activeSlide = ONBOARDING_SLIDES[currentSlideIndex];
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#181B19] sm:bg-[#1E2220] flex items-center justify-center p-0 sm:p-4 selection:bg-[#64A30E]/30">
+    <div className="min-h-[100dvh] w-full bg-[#181B19] sm:bg-[#1E2220] flex items-center justify-center p-0 sm:p-4 selection:bg-[#2F7D32]/30">
       {/* Mobile viewport container matching reference card frame */}
       <div
         id="onboarding-viewport-card"
@@ -218,7 +218,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                     >
                       <div
                         className={`h-full rounded-full transition-all duration-400 ease-out ${
-                          idx <= currentSlideIndex ? 'bg-[#64A30E] w-full' : 'w-0'
+                          idx <= currentSlideIndex ? 'bg-[#2F7D32] w-full' : 'w-0'
                         }`}
                       />
                     </div>
@@ -306,7 +306,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                           id="onboarding-slide-1-get-started"
                           type="button"
                           onClick={handleNextSlide}
-                          className="w-full h-13 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_14px_rgba(100,163,14,0.25)] active:scale-[0.99]"
+                          className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_14px_rgba(47,125,50,0.25)] active:scale-[0.99]"
                         >
                           <span>Get Started</span>
                         </button>
@@ -334,7 +334,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                           id={`onboarding-next-slide-${currentSlideIndex}`}
                           type="button"
                           onClick={currentSlideIndex === ONBOARDING_SLIDES.length - 1 ? handleProceedToForm : handleNextSlide}
-                          className="py-2 px-1 text-[15px] font-semibold text-[#1E2522] hover:text-[#64A30E] flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="py-2 px-1 text-[15px] font-semibold text-[#1E2522] hover:text-[#2F7D32] flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <span>{currentSlideIndex === ONBOARDING_SLIDES.length - 1 ? 'Proceed' : 'Next'}</span>
                           <ChevronRight size={17} strokeWidth={2.5} className="mt-0.5" />
@@ -392,7 +392,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                           value={ownerName}
                           onChange={(e) => setOwnerName(e.target.value)}
                           placeholder="Enter your name"
-                          className="w-full h-11 px-4.5 rounded-full border border-[#E2E6E3] text-[14px] text-[#1E2522] placeholder:text-[#8E948F]/70 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E]/20 bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                          className="w-full h-11 px-4.5 rounded-full border border-[#E2E6E3] text-[14px] text-[#1E2522] placeholder:text-[#8E948F]/70 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32]/20 bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                         />
                       </div>
                     </div>
@@ -412,7 +412,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                           value={storeName}
                           onChange={(e) => setStoreName(e.target.value)}
                           placeholder="Enter store name"
-                          className="w-full h-11 px-4.5 rounded-full border border-[#E2E6E3] text-[14px] text-[#1E2522] placeholder:text-[#8E948F]/70 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E]/20 bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                          className="w-full h-11 px-4.5 rounded-full border border-[#E2E6E3] text-[14px] text-[#1E2522] placeholder:text-[#8E948F]/70 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32]/20 bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                         />
                       </div>
                     </div>
@@ -433,7 +433,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                         id="finish-onboarding-cta-btn"
                         type="submit"
                         disabled={isFinishing}
-                        className="w-full h-13 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] disabled:opacity-75 text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_14px_rgba(100,163,14,0.25)] active:scale-[0.99]"
+                        className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] disabled:opacity-75 text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_4px_14px_rgba(47,125,50,0.25)] active:scale-[0.99]"
                         aria-label="Complete setup"
                       >
                         {isFinishing ? (

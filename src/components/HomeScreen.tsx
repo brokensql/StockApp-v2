@@ -192,13 +192,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         className="w-full relative text-white select-none overflow-hidden pb-10 sm:pb-12"
         style={{
           background:
-            'radial-gradient(circle at 50% -10%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #64A30E 0%, #538C0B 52%, #457508 100%)',
+            'radial-gradient(circle at 50% -10%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, #2F7D32 0%, #256B29 52%, #1E5A22 100%)',
           paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 14px)',
         }}
       >
         {/* Soft atmospheric background glow discs */}
         <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-        <div className="absolute top-1/3 -right-20 w-64 h-64 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 -right-20 w-64 h-64 rounded-full bg-[#81B783]/10 blur-3xl pointer-events-none" />
 
         {/* Top App Bar: Profile Avatar (Left), Period Pill (Center), Privacy Toggle (Right) */}
         <div className="px-5 pt-3 pb-2 flex items-center justify-between relative z-20">
@@ -211,12 +211,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             aria-label="View Profile"
           >
             <div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/50 backdrop-blur-md flex items-center justify-center text-white shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#E5F4CF] flex items-center justify-center text-[#457508] font-bold text-[15px]">
+              <div className="w-full h-full bg-[#E8F3E8] flex items-center justify-center text-[#1E5A22] font-bold text-[15px]">
                 {userProfile?.ownerName ? userProfile.ownerName.charAt(0).toUpperCase() : 'S'}
               </div>
             </div>
             {/* Small corner badge icon */}
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#64A30E] border-2 border-white flex items-center justify-center text-white shadow-xs">
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#2F7D32] border-2 border-white flex items-center justify-center text-white shadow-xs">
               <Store size={10} strokeWidth={2.4} />
             </div>
           </button>
@@ -271,7 +271,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         }}
                         className={`w-full text-left px-3 py-2 text-[12.5px] rounded-xl font-medium transition-colors ${
                           activeTimeframe === option.id
-                            ? 'bg-[#F0F7E6] text-[#457508] font-semibold'
+                            ? 'bg-[#E8F3E8] text-[#1E5A22] font-semibold'
                             : 'text-[#202522] hover:bg-gray-100'
                         }`}
                       >
@@ -322,7 +322,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Comparison / Growth Pill */}
           {comparisonData.isAllTime ? (
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 border border-white/15 backdrop-blur-md text-[12px] font-medium text-white/95">
-              <Receipt size={13} strokeWidth={2.2} className="text-[#E7F8C4]" />
+              <Receipt size={13} strokeWidth={2.2} className="text-[#E8F3E8]" />
               <span>
                 {sales.length} total {sales.length === 1 ? 'sale' : 'sales'} recorded
               </span>
@@ -330,7 +330,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           ) : (
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/15 border border-white/15 backdrop-blur-md text-[12px] font-medium text-white/95">
               {comparisonData.diff >= 0 ? (
-                <TrendingUp size={13} strokeWidth={2.4} className="text-[#E7F8C4]" />
+                <TrendingUp size={13} strokeWidth={2.4} className="text-[#E8F3E8]" />
               ) : (
                 <TrendingDown size={13} strokeWidth={2.4} className="text-[#FFA4A4]" />
               )}
@@ -393,8 +393,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 ? `${sales.length} ${sales.length === 1 ? 'sale' : 'sales'} recorded`
                 : "Good start, don't stop"
             }
-            badgeIcon={<Banknote size={22} strokeWidth={2.2} />}
-            badgeVariant="blue"
+            badgeIcon={<Banknote size={22} strokeWidth={2.2} className="text-[#2F7D32]" />}
+            badgeVariant="stats-green"
             onClick={() => onNavigate && onNavigate('sales')}
             onInfoClick={() =>
               setInfoModalContent({
@@ -416,8 +416,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 ? `${totalProducts} ${totalProducts === 1 ? 'item' : 'items'} in stock`
                 : "Good start, don't stop"
             }
-            badgeIcon={<Wallet size={22} strokeWidth={2.2} />}
-            badgeVariant="amber"
+            badgeIcon={<Wallet size={22} strokeWidth={2.2} className="text-[#2F7D32]" />}
+            badgeVariant="stats-green"
             onClick={() => onNavigate && onNavigate('store')}
             onInfoClick={() =>
               setInfoModalContent({
@@ -433,27 +433,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div
           id="inventory-summary-card"
           onClick={() => onNavigate && onNavigate('store')}
-          className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors mb-5"
+          className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] flex items-center justify-between cursor-pointer hover:border-[#CAD2CB] active:bg-[#F9FAF8] transition-all mb-5 group"
         >
           <div>
-            <div className="text-[12.5px] font-medium text-[#68716C] flex items-center gap-1.5">
-              <Package size={14} className="text-[#64A30E]" />
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[#202522]">
+              <Package size={16} strokeWidth={2.2} className="text-[#2F7D32]" />
               <span>Inventory Products</span>
             </div>
-            <div className="text-[17px] font-bold text-[#202522] mt-1 tabular-nums">
+            <div className="text-[12px] text-[#68716C] mt-1 tabular-nums">
               {totalProducts} {totalProducts === 1 ? 'product' : 'products'} registered
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#F1F3F0] border border-[#E1E6E2] px-2.5 py-1.5 rounded-xl">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                lowStockCount > 0 ? 'bg-[#B58A52]' : 'bg-[#64A30E]'
-              }`}
-            />
-            <span className="text-[12px] font-semibold text-[#202522] tabular-nums">
+          <div className="flex items-center gap-1.5 text-[#68716C]">
+            <span className="text-[12.5px] font-medium tabular-nums">
               {lowStockCount} low stock
             </span>
+            <ChevronRight size={15} strokeWidth={2} className="text-[#929A95] group-hover:text-[#202522] group-hover:translate-x-0.5 transition-all" />
           </div>
         </div>
 
@@ -490,7 +486,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <button
                 type="button"
                 onClick={onNewSaleClick}
-                className="inline-flex items-center justify-center px-4 py-2.5 bg-[#64A30E] text-white text-[14px] font-semibold rounded-xl hover:bg-[#54890B] active:bg-[#477309] active:scale-98 transition-all cursor-pointer shadow-sm"
+                className="inline-flex items-center justify-center px-4 py-2.5 bg-[#2F7D32] text-white text-[14px] font-semibold rounded-xl hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer shadow-sm"
               >
                 Record your first sale
               </button>
@@ -544,7 +540,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#F0F7E6] text-[#457508] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[#E8F3E8] text-[#1E5A22] flex items-center justify-center">
                     <Info size={16} strokeWidth={2.2} />
                   </div>
                   <h3 className="text-[17px] font-bold text-[#202522]">
@@ -567,7 +563,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setInfoModalContent(null)}
-                className="w-full mt-5 py-2.5 bg-[#64A30E] text-white text-[14px] font-semibold rounded-xl hover:bg-[#54890B] active:scale-98 transition-all"
+                className="w-full mt-5 py-2.5 bg-[#2F7D32] text-white text-[14px] font-semibold rounded-xl hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all"
               >
                 Got it
               </button>

@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
-import { ReceiptCheckmark } from "../ReceiptCheckmark";
 
 // --- SVG Icons ---
 
@@ -208,9 +207,14 @@ const AnimatedTicket = React.forwardRef<HTMLDivElement, TicketProps>(
 
           <div className="p-8 flex flex-col items-center text-center">
             <div className="w-16 h-16 mx-auto mb-1 flex items-center justify-center">
-              <ReceiptCheckmark size={64} className="w-16 h-16" />
+              <img
+                src="/icon_192.png"
+                alt="App icon"
+                className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-border"
+                referrerPolicy="no-referrer"
+              />
             </div>
-            <h1 className="text-2xl font-semibold mt-4">Thank you!</h1>
+            <h1 className="text-2xl font-semibold mt-4">Confirmed</h1>
             <p className="text-muted-foreground mt-1">
               Your ticket has been issued successfully
             </p>

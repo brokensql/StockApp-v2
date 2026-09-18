@@ -362,7 +362,7 @@ export default function App() {
         if (activeTab === 'home' && !activeSaleSession.isOpen) {
           // Home screen has rich green header: use dark style (crisp white text/icons)
           StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#64A30E' }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#2F7D32' }).catch(() => {});
         } else {
           // Other screens have off-white #F9FAF8 header: use light style (crisp dark text/icons)
           StatusBar.setStyle({ style: Style.Light }).catch(() => {});

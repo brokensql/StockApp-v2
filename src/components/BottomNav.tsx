@@ -161,14 +161,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       strokeWidth={isActive ? 2.3 : 1.8}
                       className={`transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#64A30E]'
+                          ? 'text-[#2F7D32]'
                           : 'text-[#929A95] hover:text-[#202522]'
                       }`}
                     />
                     <span
                       className={`text-[11px] mt-1 leading-none tracking-tight transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#64A30E] font-semibold'
+                          ? 'text-[#2F7D32] font-semibold'
                           : 'text-[#929A95] font-medium'
                       }`}
                     >
@@ -189,7 +189,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     onClick={handleCenterButtonClick}
                     aria-label="Scan Barcode"
                     title="Scan Barcode"
-                    className="w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#64A30E] text-white flex items-center justify-center shadow-[0_5px_16px_rgba(100,163,14,0.35)] hover:bg-[#54890B] hover:shadow-[0_6px_20px_rgba(100,163,14,0.45)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none"
+                    className="w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#2F7D32] text-white flex items-center justify-center shadow-[0_5px_16px_rgba(47,125,50,0.35)] hover:bg-[#256B29] active:bg-[#1E5A22] hover:shadow-[0_6px_20px_rgba(47,125,50,0.45)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none"
                   >
                     <ScanLine size={27} strokeWidth={2.3} className="sm:w-7 sm:h-7" />
                   </button>
@@ -218,14 +218,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                       strokeWidth={isActive ? 2.3 : 1.8}
                       className={`transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#64A30E]'
+                          ? 'text-[#2F7D32]'
                           : 'text-[#929A95] hover:text-[#202522]'
                       }`}
                     />
                     <span
                       className={`text-[11px] mt-1 leading-none tracking-tight transition-colors duration-150 ${
                         isActive
-                          ? 'text-[#64A30E] font-semibold'
+                          ? 'text-[#2F7D32] font-semibold'
                           : 'text-[#929A95] font-medium'
                       }`}
                     >

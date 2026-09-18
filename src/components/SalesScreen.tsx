@@ -159,7 +159,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search product or transaction..."
-              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
             />
             {searchQuery && (
               <button
@@ -196,7 +196,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                   {isSelected && (
                     <motion.div
                       layoutId="sales-filter-active-pill"
-                      className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
+                      className="absolute -inset-px bg-[#2F7D32] rounded-full shadow-xs"
                       transition={{
                         type: 'tween',
                         ease: [0.25, 0.1, 0.25, 1],
@@ -248,7 +248,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
             <button
               type="button"
               onClick={handleStartSale}
-              className="h-11 px-5 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              className="h-11 px-5 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
             >
               <Plus size={17} strokeWidth={2.2} />
               <span>Record first sale</span>
@@ -298,7 +298,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               >
                 {/* Left: Product/Transaction description */}
                 <div className="min-w-0 pr-3 flex-1">
-                  <p className="text-[14.5px] font-semibold text-[#202522] truncate group-hover:text-[#64A30E] transition-colors">
+                  <p className="text-[14.5px] font-semibold text-[#202522] truncate group-hover:text-[#2F7D32] transition-colors">
                     {sale.primaryItemName}
                     {sale.items.length > 1 && (
                       <span className="text-[12.5px] font-normal text-[#68716C] ml-1">
@@ -321,7 +321,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                       {sale.paymentMethod}
                     </span>
                   </div>
-                  <ChevronRight size={16} className="text-[#68716C]/60 group-hover:text-[#64A30E] transition-colors" />
+                  <ChevronRight size={16} className="text-[#68716C]/60 group-hover:text-[#2F7D32] transition-colors" />
                 </div>
               </div>
             ))}

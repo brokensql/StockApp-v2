@@ -421,7 +421,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
               {isActive && (
                 <motion.div
                   layoutId="activeTimeframePill"
-                  className="absolute inset-0 bg-[#64A30E] rounded-full shadow-[0_2px_8px_rgba(100,163,14,0.25)]"
+                  className="absolute inset-0 bg-[#2F7D32] rounded-full shadow-[0_2px_8px_rgba(47,125,50,0.25)]"
                   transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                 />
               )}
@@ -534,7 +534,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 <motion.path
                   d={currentPath}
                   fill="none"
-                  stroke="#64A30E"
+                  stroke="#2F7D32"
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -558,7 +558,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                     y1={activePoint.y}
                     x2={activePoint.x}
                     y2={padTop + plotHeight}
-                    stroke="#64A30E"
+                    stroke="#2F7D32"
                     strokeWidth={1.5}
                     strokeDasharray="3 3"
                   />
@@ -568,10 +568,10 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                     cx={activePoint.x}
                     cy={activePoint.y}
                     r={4.5}
-                    fill="#64A30E"
+                    fill="#2F7D32"
                     stroke="#FFFFFF"
                     strokeWidth={2}
-                    className="shadow-sm filter drop-shadow-[0_1px_2px_rgba(100,163,14,0.4)]"
+                    className="shadow-sm filter drop-shadow-[0_1px_2px_rgba(47,125,50,0.4)]"
                   />
 
                   {/* Optional previous period dot on gold line */}
@@ -618,7 +618,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
         {/* 4. Legend directly under chart */}
         <div className="flex items-center justify-center gap-6 mt-4 mb-3.5 text-[12.5px]">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#64A30E] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2F7D32] inline-block" />
             <span className="font-medium text-[#68716C]">Current Revenue</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -656,7 +656,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold ${
                     isUp
-                      ? 'bg-[#F0F7E6] text-[#64A30E]'
+                      ? 'bg-[#E8F3E8] text-[#2F7D32]'
                       : 'bg-[#FDF0EE] text-[#D94841]'
                   }`}
                 >
