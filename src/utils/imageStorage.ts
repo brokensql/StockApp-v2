@@ -343,7 +343,10 @@ export async function clearAllProductImages(): Promise<void> {
  * Removes any images from IndexedDB that do not belong to active products.
  * Prevents IndexedDB storage bloat and churn over time.
  */
-export async function pruneOrphanProductImages(activeProductIds: string[]): Promise<void> {
+export async function pruneOrphanProductImages(
+  activeProductIds: string[],
+  hasProfileAvatar?: boolean
+): Promise<void> {
   try {
     const validSet = new Set(activeProductIds);
     const db = await getDB();
@@ -356,17 +359,24 @@ export async function pruneOrphanProductImages(activeProductIds: string[]): Prom
       req.onsuccess = () => {
         const keys = (req.result as string[]) || [];
         keys.forEach((key) => {
-          if (!validSet.has(key)) {
+          if (key === PROFILE_AVATAR_KEY) {
+            // If explicit check indicates no profile avatar, prune it from IDB to avoid storage churn
+            if (hasProfileAvatar === false) {
+              store.delete(key);
+              delete memoryCache[key];
+            }
+          } else if (!validSet.has(key)) {
             store.delete(key);
             delete memoryCache[key];
           }
         });
-        resolve();
       };
-      req.onerror = () => resolve();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+      tx.onabort = () => resolve();
     });
   } catch (err) {
-    console.warn('Failed to prune orphan product images from IndexedDB:', err);
+    console.warn('Failed to prune orphan images from IndexedDB:', err);
   }
 }
 
@@ -376,4 +386,124 @@ export async function pruneOrphanProductImages(activeProductIds: string[]): Prom
 export function getCachedProductImage(productId: string): string | null {
   return memoryCache[productId] || null;
 }
+
+const PROFILE_AVATAR_KEY = 'user_profile_avatar';
+
+/**
+ * Saves or updates user profile avatar directly in IndexedDB on the device
+ */
+export async function saveProfileImage(fileOrBlobOrDataUrl: File | Blob | string): Promise<string> {
+  let finalDataUrl: string;
+
+  if (typeof fileOrBlobOrDataUrl === 'string') {
+    finalDataUrl = fileOrBlobOrDataUrl;
+  } else {
+    finalDataUrl = await compressImage(fileOrBlobOrDataUrl, 400, 0.85);
+  }
+
+  memoryCache[PROFILE_AVATAR_KEY] = finalDataUrl;
+
+  try {
+    const db = await getDB();
+    if (db) {
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const record: ImageRecord = {
+          id: PROFILE_AVATAR_KEY,
+          dataUrl: finalDataUrl,
+          updatedAt: Date.now(),
+        };
+        const req = store.put(record);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to save profile avatar in IndexedDB:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('user-avatar-updated', {
+        detail: { dataUrl: finalDataUrl },
+      })
+    );
+  }
+
+  return finalDataUrl;
+}
+
+/**
+ * Retrieves the stored user profile avatar from in-memory cache or IndexedDB on device
+ */
+export async function getProfileImage(): Promise<string | null> {
+  if (memoryCache[PROFILE_AVATAR_KEY]) {
+    return memoryCache[PROFILE_AVATAR_KEY];
+  }
+
+  try {
+    const db = await getDB();
+    if (!db) return null;
+
+    return new Promise<string | null>((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(PROFILE_AVATAR_KEY);
+
+      req.onsuccess = () => {
+        const record = req.result as ImageRecord | undefined;
+        if (record && record.dataUrl) {
+          memoryCache[PROFILE_AVATAR_KEY] = record.dataUrl;
+          resolve(record.dataUrl);
+        } else {
+          resolve(null);
+        }
+      };
+
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Deletes user profile avatar from IndexedDB and in-memory cache
+ */
+export async function deleteProfileImage(): Promise<void> {
+  delete memoryCache[PROFILE_AVATAR_KEY];
+
+  try {
+    const db = await getDB();
+    if (db) {
+      await new Promise<void>((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.delete(PROFILE_AVATAR_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+        tx.onabort = () => resolve();
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to delete profile avatar from IndexedDB:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('user-avatar-updated', {
+        detail: { dataUrl: null },
+      })
+    );
+  }
+}
+
+/**
+ * Synchronous getter for profile avatar from in-memory cache
+ */
+export function getCachedProfileImage(): string | null {
+  return memoryCache[PROFILE_AVATAR_KEY] || null;
+}
+
 

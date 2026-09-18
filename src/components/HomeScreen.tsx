@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Package,
   Receipt,
   User,
   ChevronDown,
@@ -67,7 +66,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   // Products metrics
   const totalProducts = products.length;
-  const lowStockCount = products.filter((p) => p.stock <= p.lowStockThreshold).length;
 
   // Inventory value (Expenses / Asset worth)
   const totalInventoryValue = useMemo(() => {
@@ -78,6 +76,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const totalSalesRevenue = useMemo(() => {
     return sales.reduce((acc, s) => acc + (s.total || 0), 0);
   }, [sales]);
+
+  // All-time top 3 most sold products
+  const topSoldProducts = useMemo(() => {
+    const soldMap = new Map<
+      string,
+      { productId: string; name: string; totalSold: number; category?: string }
+    >();
+
+    for (const sale of sales) {
+      if (!sale.items || !Array.isArray(sale.items)) continue;
+      for (const item of sale.items) {
+        const key = item.productId || item.name;
+        const current = soldMap.get(key);
+        const qty = Number(item.quantity) || 0;
+        if (current) {
+          current.totalSold += qty;
+          if (item.name && !current.name) current.name = item.name;
+        } else {
+          const matchedProduct = products.find(
+            (p) => p.id === item.productId || p.name.toLowerCase() === item.name.toLowerCase()
+          );
+          soldMap.set(key, {
+            productId: item.productId,
+            name: item.name || matchedProduct?.name || 'Product',
+            totalSold: qty,
+            category: item.category || matchedProduct?.category,
+          });
+        }
+      }
+    }
+
+    return Array.from(soldMap.values())
+      .filter((item) => item.totalSold > 0)
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, 3);
+  }, [sales, products]);
 
   // Sales in current month (PHT)
   const currentMonthSales = useMemo(() => {
@@ -211,9 +245,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             aria-label="View Profile"
           >
             <div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/50 backdrop-blur-md flex items-center justify-center text-white shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#E8F3E8] flex items-center justify-center text-[#1E5A22] font-bold text-[15px]">
-                {userProfile?.ownerName ? userProfile.ownerName.charAt(0).toUpperCase() : 'S'}
-              </div>
+              {userProfile?.avatarUrl ? (
+                <img
+                  src={userProfile.avatarUrl}
+                  alt={userProfile.ownerName || 'Profile'}
+                  className="w-full h-full object-cover select-none"
+                />
+              ) : (
+                <div className="w-full h-full bg-[#E8F3E8] flex items-center justify-center text-[#1E5A22] font-bold text-[15px]">
+                  {userProfile?.ownerName ? userProfile.ownerName.charAt(0).toUpperCase() : 'S'}
+                </div>
+              )}
             </div>
             {/* Small corner badge icon */}
             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#2F7D32] border-2 border-white flex items-center justify-center text-white shadow-xs">
@@ -429,28 +471,61 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         </div>
 
-        {/* Store Inventory Quick Status */}
+        {/* Most Sold Products (Top 3 All-Time) */}
         <div
-          id="inventory-summary-card"
-          onClick={() => onNavigate && onNavigate('store')}
-          className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] flex items-center justify-between cursor-pointer hover:border-[#CAD2CB] active:bg-[#F9FAF8] transition-all mb-5 group"
+          id="most-sold-products-card"
+          className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] mb-5"
         >
-          <div>
-            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[#202522]">
-              <Package size={16} strokeWidth={2.2} className="text-[#2F7D32]" />
-              <span>Inventory Products</span>
+          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#F0F3F1]">
+            <div className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#202522]">
+              <TrendingUp size={16} strokeWidth={2.2} className="text-[#2F7D32]" />
+              <span>Most sold products</span>
             </div>
-            <div className="text-[12px] text-[#68716C] mt-1 tabular-nums">
-              {totalProducts} {totalProducts === 1 ? 'product' : 'products'} registered
-            </div>
+            <span className="text-[12px] font-medium text-[#68716C]">
+              All time
+            </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[#68716C]">
-            <span className="text-[12.5px] font-medium tabular-nums">
-              {lowStockCount} low stock
-            </span>
-            <ChevronRight size={15} strokeWidth={2} className="text-[#929A95] group-hover:text-[#202522] group-hover:translate-x-0.5 transition-all" />
-          </div>
+          {topSoldProducts.length === 0 ? (
+            <div className="py-2.5 text-center text-[12.5px] text-[#68716C]">
+              No products sold yet
+            </div>
+          ) : (
+            <div className="divide-y divide-[#F0F3F1]">
+              {topSoldProducts.map((item, index) => (
+                <div
+                  key={item.productId || item.name}
+                  className="flex items-center justify-between py-2 first:pt-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 pr-3">
+                    <span
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10.5px] font-bold shrink-0 ${
+                        index === 0
+                          ? 'bg-[#FBF3DD] text-[#946A1B]'
+                          : index === 1
+                          ? 'bg-[#EFF2F6] text-[#5B6877]'
+                          : 'bg-[#FAEEE6] text-[#8F4E2B]'
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="text-[13px] font-semibold text-[#202522] truncate">
+                      {item.name}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0 text-right whitespace-nowrap">
+                    <span className="text-[13px] font-semibold text-[#555E58] tabular-nums">
+                      {item.totalSold}
+                    </span>
+                    <span className="text-[12px] font-normal text-[#68716C] ml-1">
+                      sold
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* In-app PWA install prompt banner */}

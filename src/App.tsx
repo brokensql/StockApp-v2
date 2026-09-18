@@ -25,6 +25,8 @@ import {
   deleteProductImage,
   clearAllProductImages,
   pruneOrphanProductImages,
+  getProfileImage,
+  deleteProfileImage,
 } from './utils/imageStorage';
 
 const PROFILE_STORAGE_KEY = 'store_user_profile';
@@ -114,6 +116,8 @@ function getInitialProfile(): UserProfile {
     let profile = { ...DEFAULT_PROFILE };
     if (saved) {
       profile = { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
+      // Profile avatar is stored solely in IndexedDB on device to avoid storage churn
+      delete profile.avatarUrl;
     }
 
     // Redundant restoration from individual keys if available
@@ -210,12 +214,23 @@ export default function App() {
     }
     // Prune any orphan images in IDB that don't match any active products
     pruneOrphanProductImages(products.map((p) => p.id)).catch(() => {});
+
+    // Load offline profile avatar stored on device/phone
+    getProfileImage().then((avatar) => {
+      if (avatar) {
+        setUserProfile((prev) => (prev.avatarUrl === avatar ? prev : { ...prev, avatarUrl: avatar }));
+      } else {
+        setUserProfile((prev) => (prev.avatarUrl ? { ...prev, avatarUrl: undefined } : prev));
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(userProfile));
-      localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(userProfile));
+      // Exclude avatarUrl from localStorage to prevent quota bloat and avoid stale image churn
+      const { avatarUrl, ...profileWithoutAvatar } = userProfile;
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileWithoutAvatar));
+      localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(profileWithoutAvatar));
       if (userProfile.ownerName && userProfile.ownerName.trim() && userProfile.ownerName !== 'Store Owner') {
         localStorage.setItem(OWNER_NAME_BACKUP_KEY, userProfile.ownerName);
         localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
@@ -311,6 +326,9 @@ export default function App() {
     clearAllProductImages().catch((err) =>
       console.error('Failed to clear product images from IDB on reset:', err)
     );
+    deleteProfileImage().catch((err) =>
+      console.error('Failed to clear profile image from IDB on reset:', err)
+    );
     setProducts([]);
     setSales([]);
     const defaultProfile: UserProfile = {
@@ -345,7 +363,6 @@ export default function App() {
   const [activeSaleSession, setActiveSaleSession] = useState<{
     isOpen: boolean;
     initialItems?: SaleItem[];
-    initialUnrecognizedBarcode?: string | null;
   }>({ isOpen: false });
 
   // Dynamically synchronize Capacitor Android / iOS Status Bar style with current screen
@@ -395,7 +412,6 @@ export default function App() {
     setActiveSaleSession({
       isOpen: true,
       initialItems: [],
-      initialUnrecognizedBarcode: null,
     });
   };
 
@@ -530,22 +546,9 @@ export default function App() {
               setActiveSaleSession({
                 isOpen: false,
                 initialItems: [],
-                initialUnrecognizedBarcode: null,
               })
             }
             initialItems={activeSaleSession.initialItems}
-            initialUnrecognizedBarcode={activeSaleSession.initialUnrecognizedBarcode}
-            onAddNewProductWithBarcode={(barcode) => {
-              setActiveSaleSession({
-                isOpen: false,
-                initialItems: [],
-                initialUnrecognizedBarcode: null,
-              });
-              setStoreSubTab('inventory');
-              setNewProductInitialSku(barcode);
-              setIsAddProductImmediately(true);
-              setActiveTab('store');
-            }}
           />
         </div>
       ) : (
@@ -656,8 +659,10 @@ export default function App() {
               <ProfileScreen
                 profile={userProfile}
                 onUpdateProfile={(updated) => {
+                  if (!updated.avatarUrl) {
+                    deleteProfileImage().catch(() => {});
+                  }
                   setUserProfile(updated);
-                  toast.success('Saved');
                 }}
                 onResetAllData={handleResetAllData}
               />
@@ -674,11 +679,10 @@ export default function App() {
             onCompleteSale={handleCompleteSale}
             onQuickNewSale={handleQuickNewSale}
             onQuickAddProduct={handleQuickAddProduct}
-            onOpenActiveSale={({ items, unrecognizedBarcode }) => {
+            onOpenActiveSale={({ items }) => {
               setActiveSaleSession({
                 isOpen: true,
                 initialItems: items || [],
-                initialUnrecognizedBarcode: unrecognizedBarcode || null,
               });
             }}
           />
