@@ -380,7 +380,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
             type="button"
             onClick={handleDownloadReceipt}
             disabled={isDownloading}
-            className="w-full h-13 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_4px_16px_rgba(100,163,14,0.28)] active:scale-[0.98] transition-all disabled:opacity-75 select-none"
+            className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_4px_16px_rgba(47,125,50,0.28)] active:scale-[0.98] transition-all disabled:opacity-75 select-none"
             aria-label="Download receipt"
           >
             {isDownloading ? (
@@ -445,7 +445,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               id="btn-scan-more-header"
               type="button"
               onClick={() => setIsScannerOpen(true)}
-              className="h-9 px-3 rounded-full bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              className="h-9 px-3 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
               title="Scan barcode with camera"
             >
               <Camera size={15} />
@@ -670,8 +670,8 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                     label: 'Cash',
                     subtitle: 'Bills & coins',
                     icon: Banknote,
-                    activeIconBg: 'bg-[#E5F4CF]',
-                    activeIconColor: 'text-[#457508]',
+                    activeIconBg: 'bg-[#E8F3E8]',
+                    activeIconColor: 'text-[#2F7D32]',
                   },
                   {
                     id: 'gcash' as PaymentMethod,
@@ -706,7 +706,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                       }}
                       className={`relative p-2.5 sm:p-3 rounded-2xl border transition-colors duration-200 cursor-pointer flex flex-col items-center text-center gap-1.5 select-none focus:outline-none ${
                         isSelected
-                          ? 'bg-[#F0F7E6] border-[#64A30E] shadow-2xs ring-1 ring-[#64A30E]'
+                          ? 'bg-[#E8F3E8] border-[#2F7D32] shadow-2xs ring-1 ring-[#2F7D32]'
                           : 'bg-white border-[#E1E6E2] hover:border-[#D0D7D2] hover:bg-[#FAFBFB]'
                       }`}
                     >
@@ -733,7 +733,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                         </p>
                         <span
                           className={`text-[10px] sm:text-[10.5px] font-medium block truncate transition-colors duration-200 ${
-                            isSelected ? 'text-[#457508]' : 'text-[#8E948F]'
+                            isSelected ? 'text-[#2F7D32]' : 'text-[#8E948F]'
                           }`}
                         >
                           {method.subtitle}
@@ -748,7 +748,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                             animate={{ scale: 1, rotate: 0, opacity: 1 }}
                             exit={{ scale: 0, rotate: 30, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-                            className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#64A30E] text-white flex items-center justify-center shadow-2xs"
+                            className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#2F7D32] text-white flex items-center justify-center shadow-2xs"
                           >
                             <Check size={9} strokeWidth={3} />
                           </motion.div>
@@ -876,7 +876,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                 type="button"
                 onClick={handleFinalizeSale}
                 disabled={isShortCash || hasInvalidStock || cart.length === 0}
-                className="w-full h-12 bg-[#64A30E] active:bg-[#477309] hover:bg-[#54890B] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[15px] font-bold rounded-full flex items-center justify-center cursor-pointer shadow-sm transition-all"
+                className="w-full h-12 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[15px] font-bold rounded-full flex items-center justify-center cursor-pointer shadow-sm transition-all"
               >
                 <span>Complete Sale</span>
               </button>

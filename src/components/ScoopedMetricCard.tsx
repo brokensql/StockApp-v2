@@ -9,7 +9,7 @@ export interface ScoopedMetricCardProps {
   titleLine2?: string;
   subtitle: string;
   badgeIcon: React.ReactNode;
-  badgeVariant?: 'blue' | 'amber' | 'green' | 'purple';
+  badgeVariant?: 'stats-green' | 'white' | 'blue' | 'amber' | 'green' | 'purple' | 'green-mint' | 'green-sage';
   onClick?: () => void;
   onInfoClick?: () => void;
 }
@@ -22,7 +22,7 @@ export const ScoopedMetricCard: React.FC<ScoopedMetricCardProps> = ({
   titleLine2,
   subtitle,
   badgeIcon,
-  badgeVariant = 'blue',
+  badgeVariant = 'stats-green',
   onClick,
   onInfoClick,
 }) => {
@@ -115,26 +115,59 @@ export const ScoopedMetricCard: React.FC<ScoopedMetricCardProps> = ({
   // Badge gradient & shadow profiles based on variant
   const getBadgeStyle = () => {
     switch (badgeVariant) {
+      case 'stats-green':
+        return {
+          background: '#E8F3E8',
+          boxShadow: '0 2px 6px rgba(47, 125, 50, 0.10), inset 0 0 0 1px #D6E8D6',
+          color: '#2F7D32',
+        };
+      case 'green-mint':
+        return {
+          background: 'radial-gradient(circle at 35% 30%, #E0F4E5 0%, #C8E8CF 55%, #B4DEBC 100%)',
+          boxShadow: '0 3px 10px rgba(47, 125, 50, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.7), inset 0 0 0 1px #8ECB97',
+          color: '#1E5A22',
+        };
+      case 'green-sage':
+        return {
+          background: 'radial-gradient(circle at 35% 30%, #E8F2DF 0%, #D4E6C5 55%, #C0DBAD 100%)',
+          boxShadow: '0 3px 10px rgba(58, 105, 45, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.7), inset 0 0 0 1px #9EC588',
+          color: '#256B29',
+        };
+      case 'green':
+        return {
+          background: 'radial-gradient(circle at 35% 30%, #43A047 0%, #2F7D32 60%, #1E5A22 100%)',
+          boxShadow: '0 4px 10px rgba(47, 125, 50, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.15)',
+          color: '#FFFFFF',
+        };
+      case 'white':
+        return {
+          background: '#FFFFFF',
+          boxShadow: '0 2px 8px rgba(32, 37, 34, 0.07), inset 0 0 0 1px #DEE3DE',
+          color: '#2F7D32',
+        };
       case 'amber':
         return {
           background: 'radial-gradient(circle at 35% 30%, #F5B041 0%, #E67E22 60%, #CF6D17 100%)',
           boxShadow: '0 4px 10px rgba(230, 126, 34, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
-        };
-      case 'green':
-        return {
-          background: 'radial-gradient(circle at 35% 30%, #76A575 0%, #5A8759 60%, #466E45 100%)',
-          boxShadow: '0 4px 10px rgba(90, 135, 89, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
+          color: '#FFFFFF',
         };
       case 'purple':
         return {
           background: 'radial-gradient(circle at 35% 30%, #8E79B5 0%, #7158A0 60%, #594285 100%)',
           boxShadow: '0 4px 10px rgba(113, 88, 160, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
+          color: '#FFFFFF',
         };
       case 'blue':
-      default:
         return {
           background: 'radial-gradient(circle at 35% 30%, #688FB9 0%, #4D749E 60%, #395B82 100%)',
           boxShadow: '0 4px 10px rgba(77, 116, 158, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.1)',
+          color: '#FFFFFF',
+        };
+      default:
+        return {
+          background: '#E8F3E8',
+          boxShadow: '0 2px 6px rgba(47, 125, 50, 0.10), inset 0 0 0 1px #D6E8D6',
+          color: '#2F7D32',
         };
     }
   };
@@ -158,13 +191,13 @@ export const ScoopedMetricCard: React.FC<ScoopedMetricCardProps> = ({
           fill="#FFFFFF"
           stroke="#E5E8E5"
           strokeWidth="1"
-          className="transition-colors duration-200 group-hover:stroke-[#64A30E]/30"
+          className="transition-colors duration-200 group-hover:stroke-[#2F7D32]/30"
         />
       </svg>
 
       {/* 3D Circular Floating Badge nestled inside the scooped notch */}
       <div
-        className="absolute w-[46px] h-[46px] rounded-full flex items-center justify-center text-white z-10 transition-transform duration-200 group-hover:scale-105"
+        className="absolute w-[46px] h-[46px] rounded-full flex items-center justify-center z-10 transition-transform duration-200 group-hover:scale-105"
         style={{
           top: `${cy - 23}px`,
           right: `${cx - 23}px`,

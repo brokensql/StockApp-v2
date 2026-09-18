@@ -90,44 +90,32 @@ function generateCanvasReceipt(
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 1. Prominent Store Name above checkmark
+  // 1. App Icon area (enlarged, no surrounding container box or border)
   const circleX = width / 2;
-  const storeNameY = cardY + 44;
-  ctx.fillStyle = '#202522';
-  ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+  const iconY = cardY + 16;
+  const iconSize = 72;
+
+  // Draw App Icon
+  ctx.fillStyle = '#2F7D32';
+  ctx.font = 'bold 44px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(resolvedStoreName.toUpperCase(), circleX, storeNameY);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(resolvedStoreName.charAt(0) || 'S', circleX, iconY + iconSize / 2);
+  ctx.textBaseline = 'alphabetic';
 
-  // 2. Success Circle & Checkmark
-  const circleY = storeNameY + 44;
-  ctx.fillStyle = '#64A30E';
-  ctx.beginPath();
-  ctx.arc(circleX, circleY, 26, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Draw White Checkmark
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 3.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(circleX - 10, circleY);
-  ctx.lineTo(circleX - 3, circleY + 7);
-  ctx.lineTo(circleX + 10, circleY - 6);
-  ctx.stroke();
-
-  // Header Text
+  // 2. Store Name (in place of Thank you, snug gap under icon)
+  const storeNameY = iconY + iconSize + 14;
   ctx.fillStyle = '#202522';
-  ctx.font = 'bold 21px system-ui, -apple-system, sans-serif';
+  ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Thank you', circleX, circleY + 44);
+  ctx.fillText(resolvedStoreName, circleX, storeNameY);
 
   ctx.fillStyle = '#68716C';
   ctx.font = '13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Your payment has been processed successfully.', circleX, circleY + 64);
+  ctx.fillText('Your payment has been processed successfully.', circleX, storeNameY + 20);
 
   // 3. Perforated Divider
-  const notchY = circleY + 90;
+  const notchY = 194;
   const notchRadius = 14;
 
   // Left Notch cutout
@@ -152,30 +140,23 @@ function generateCanvasReceipt(
   ctx.setLineDash([]); // reset
 
   // 4. Receipt Details
-  let currentY = notchY + 32;
+  let currentY = notchY + 28;
   const leftX = cardX + 22;
   const rightX = cardX + cardW - 22;
 
-  // Store & Date/Time Row
+  // Date/Time Row (Store row removed)
   ctx.textAlign = 'left';
   ctx.fillStyle = '#68716C';
   ctx.font = '11px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Store', leftX, currentY);
+  ctx.fillText('Date & time', leftX, currentY);
 
   ctx.textAlign = 'right';
-  ctx.fillText('Date & time', rightX, currentY);
-
-  currentY += 17;
-  ctx.textAlign = 'left';
   ctx.fillStyle = '#202522';
-  ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText(resolvedStoreName, leftX, currentY);
-
-  ctx.textAlign = 'right';
+  ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
   ctx.fillText(formatReceiptDate(transaction.createdAt || transaction.timestamp), rightX, currentY);
 
   // Subtle separator line
-  currentY += 10;
+  currentY += 12;
   ctx.strokeStyle = '#F1F3F0';
   ctx.lineWidth = 1;
   ctx.beginPath();

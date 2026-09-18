@@ -52,7 +52,20 @@
   --font-mono: 'Satoshi', monospace;
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
+  --color-primary-pressed: var(--color-primary-pressed);
   --color-primary-tint: var(--color-primary-tint);
+  --color-green-primary: #2F7D32;
+  --color-green-hover: #256B29;
+  --color-green-pressed: #1E5A22;
+  --color-green-light: #4F9D52;
+  --color-green-soft: #81B783;
+  --color-green-tint: #E8F3E8;
+  --color-sage-primary: #2F7D32;
+  --color-sage-hover: #256B29;
+  --color-sage-pressed: #1E5A22;
+  --color-sage-light: #4F9D52;
+  --color-sage-soft: #81B783;
+  --color-sage-tint: #E8F3E8;
   --color-canvas: var(--color-canvas);
   --color-surface: var(--color-surface);
   --color-surface-soft: var(--color-surface-soft);
@@ -75,10 +88,27 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
 
+  /* Approved Master Green System Tokens */
+  --green-primary: #2F7D32;
+  --green-hover: #256B29;
+  --green-pressed: #1E5A22;
+  --green-light: #4F9D52;
+  --green-soft: #81B783;
+  --green-tint: #E8F3E8;
+
+  /* Backward Compatibility Aliases */
+  --sage-primary: #2F7D32;
+  --sage-hover: #256B29;
+  --sage-pressed: #1E5A22;
+  --sage-light: #4F9D52;
+  --sage-soft: #81B783;
+  --sage-tint: #E8F3E8;
+
   /* UI / Brand Tokens */
-  --color-primary: #64A30E;
-  --color-primary-hover: #54890B;
-  --color-primary-tint: #F0F7E6;
+  --color-primary: #2F7D32;
+  --color-primary-hover: #256B29;
+  --color-primary-pressed: #1E5A22;
+  --color-primary-tint: #E8F3E8;
 
   --color-canvas: #F9FAF8;
   --color-surface: #FFFFFF;
@@ -93,14 +123,14 @@
   --color-accent-amber: #B58A52;
 
   /* Semantic Status Tokens */
-  --color-success: #64A30E;
+  --color-success: #2F7D32;
   --color-warning: #B58A52;
   --color-error: #D94841;
   --color-info: #3B82F6;
 
   /* Legacy variable alignment */
-  --accent: #64A30E;
-  --accent-soft: #F0F7E6;
+  --accent: #2F7D32;
+  --accent-soft: #E8F3E8;
   --ink: #202522;
   --ink-2: #68716C;
   --ink-3: #929A95;
@@ -112,11 +142,11 @@
 }
 
 .dark {
-  --accent: #64A30E;
+  --accent: #2F7D32;
   --ink: #202522;
   --ink-2: #68716C;
   --ink-3: #929A95;
-  --accent-soft: #F0F7E6;
+  --accent-soft: #E8F3E8;
 }
 
 /* When running inside native Capacitor APK, guarantee safe area clearance even if Android WebView reports 0px */

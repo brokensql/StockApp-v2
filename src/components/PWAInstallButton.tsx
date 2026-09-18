@@ -44,7 +44,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       <>
         <div
           id="pwa-install-banner"
-          className="mx-4 my-2 p-3 bg-[#F0F5F2] border border-[#DEE3DE] rounded-2xl flex items-center justify-between gap-3 text-left shadow-xs"
+          className="mx-4 my-2 p-3 bg-[#E8F3E8]/60 border border-[#DEE3DE] rounded-2xl flex items-center justify-between gap-3 text-left shadow-xs"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-white border border-[#DEE3DE] overflow-hidden flex items-center justify-center flex-shrink-0 shadow-xs p-0.5">
@@ -68,7 +68,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={handleInstallClick}
-              className="px-3 py-1.5 rounded-lg bg-[#64A30E] text-white text-[12px] font-semibold hover:bg-[#54890B] active:scale-95 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-[#2F7D32] text-white text-[12px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-95 transition-all cursor-pointer"
             >
               {isIOS ? 'Instructions' : 'Install'}
             </button>
@@ -110,14 +110,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               </div>
 
               <div className="space-y-3 text-[13px] text-[#424743] mb-5">
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                  <Share2 size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#E8F3E8]">
+                  <Share2 size={18} className="text-[#2F7D32] mt-0.5 flex-shrink-0" />
                   <p>
                     <strong>1.</strong> Tap the <strong>Share</strong> icon in the Safari navigation bar at the bottom.
                   </p>
                 </div>
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                  <PlusSquare size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#E8F3E8]">
+                  <PlusSquare size={18} className="text-[#2F7D32] mt-0.5 flex-shrink-0" />
                   <p>
                     <strong>2.</strong> Scroll down and select <strong>Add to Home Screen</strong>.
                   </p>
@@ -127,7 +127,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
-                className="w-full py-2.5 rounded-xl bg-[#64A30E] text-white text-[13px] font-semibold hover:bg-[#54890B] active:scale-98 transition-all cursor-pointer text-center"
+                className="w-full py-2.5 rounded-xl bg-[#2F7D32] text-white text-[13px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer text-center"
               >
                 Got It
               </button>
@@ -144,10 +144,10 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         type="button"
         id="btn-pwa-install"
         onClick={handleInstallClick}
-        className="h-9 px-3 rounded-full bg-[#F0F5F2] hover:bg-[#E2EBE5] text-[#252825] border border-[#DEE3DE] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
+        className="h-9 px-3 rounded-full bg-[#E8F3E8]/50 hover:bg-[#E8F3E8] text-[#252825] border border-[#DEE3DE] text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95"
         title="Install StockApp to Home Screen"
       >
-        <Download size={14} className="text-[#64A30E]" />
+        <Download size={14} className="text-[#2F7D32]" />
         <span>Install App</span>
       </button>
 
@@ -177,14 +177,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             </div>
 
             <div className="space-y-3 text-[13px] text-[#424743] mb-5">
-              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                <Share2 size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#E8F3E8]">
+                <Share2 size={18} className="text-[#2F7D32] mt-0.5 flex-shrink-0" />
                 <p>
                   <strong>1.</strong> Tap the <strong>Share</strong> icon in the Safari navigation bar at the bottom.
                 </p>
               </div>
-              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F9F7]">
-                <PlusSquare size={18} className="text-[#64A30E] mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-[#E8F3E8]">
+                <PlusSquare size={18} className="text-[#2F7D32] mt-0.5 flex-shrink-0" />
                 <p>
                   <strong>2.</strong> Scroll down and select <strong>Add to Home Screen</strong>.
                 </p>
@@ -194,7 +194,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={() => setShowIOSGuide(false)}
-              className="w-full py-2.5 rounded-xl bg-[#64A30E] text-white text-[13px] font-semibold hover:bg-[#54890B] active:scale-98 transition-all cursor-pointer text-center"
+              className="w-full py-2.5 rounded-xl bg-[#2F7D32] text-white text-[13px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer text-center"
             >
               Got It
             </button>

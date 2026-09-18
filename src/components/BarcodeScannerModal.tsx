@@ -1225,7 +1225,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             {isSelected && (
                               <motion.div
                                 layoutId="key-barcode-filter-active-pill"
-                                className="absolute -inset-px bg-[#64A30E] rounded-full shadow-xs"
+                                className="absolute -inset-px bg-[#2F7D32] rounded-full shadow-xs"
                                 transition={{
                                   type: 'tween',
                                   ease: [0.25, 0.1, 0.25, 1],
@@ -1294,8 +1294,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                               isOutOfStock
                                 ? 'opacity-60 border-[#DEE3DE] cursor-not-allowed bg-gray-50/40'
                                 : qty > 0
-                                ? 'border-[#64A30E] shadow-xs ring-1 ring-[#64A30E] cursor-pointer'
-                                : 'border-[#DEE3DE] hover:border-[#64A30E]/50 shadow-2xs hover:shadow-xs active:scale-[0.99] cursor-pointer'
+                                ? 'border-[#2F7D32] shadow-xs ring-1 ring-[#2F7D32] cursor-pointer'
+                                : 'border-[#DEE3DE] hover:border-[#2F7D32]/50 shadow-2xs hover:shadow-xs active:scale-[0.99] cursor-pointer'
                             }`}
                           >
                             {/* Top Product Photo Container (prominent picture centered on clean white canvas) */}
@@ -1317,7 +1317,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
                               {/* Cart Quantity Badge (Pop-up number with green container & crisp white ring) */}
                               {qty > 0 && (
-                                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#64A30E] text-white text-[11px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white animate-in zoom-in-75 duration-150">
+                                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#2F7D32] text-white text-[11px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white animate-in zoom-in-75 duration-150">
                                   {qty}
                                 </span>
                               )}
@@ -1373,7 +1373,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                         type="button"
                                         onClick={() => handleAddProductToCart(p)}
                                         disabled={isMaxReached}
-                                        className="w-6 h-6 rounded-full bg-[#64A30E] hover:bg-[#54890B] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
+                                        className="w-6 h-6 rounded-full bg-[#2F7D32] hover:bg-[#256B29] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-2xs"
                                         aria-label={`Increase ${p.name}`}
                                       >
                                         <Plus size={11} strokeWidth={2.5} />
@@ -1384,7 +1384,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                       type="button"
                                       onClick={() => handleAddProductToCart(p)}
                                       disabled={isOutOfStock}
-                                      className="w-7 h-7 rounded-full bg-[#64A30E] hover:bg-[#54890B] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                      className="w-7 h-7 rounded-full bg-[#2F7D32] hover:bg-[#256B29] disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                       aria-label={`Add ${p.name}`}
                                     >
                                       <Plus size={14} strokeWidth={2.5} />
@@ -1394,7 +1394,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleAddProductToCart(p)}
-                                    className="w-7 h-7 rounded-full bg-[#64A30E] hover:bg-[#54890B] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                                    className="w-7 h-7 rounded-full bg-[#2F7D32] hover:bg-[#256B29] text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
                                     aria-label={`Select ${p.name}`}
                                   >
                                     <Plus size={14} strokeWidth={2.5} />
@@ -1430,7 +1430,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#64A30E] hover:bg-[#54890B] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
                       >
                         <span>Checkout</span>
                         <ChevronRight size={15} strokeWidth={2.5} />
@@ -1453,7 +1453,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSwitchInputMethod('key')}
-                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#64A30E] text-white shadow-[0_4px_16px_rgba(100,163,14,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#2F7D32] text-white shadow-[0_4px_16px_rgba(47,125,50,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[12.5px] sm:text-[13px] transition-all cursor-pointer select-none px-2"
                       >
                         <Package size={18} strokeWidth={2.2} />
                         <span className="whitespace-nowrap">All products</span>
@@ -1711,7 +1711,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#64A30E] hover:bg-[#54890B] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
                       >
                         <span>Checkout</span>
                         <ChevronRight size={15} strokeWidth={2.5} />
@@ -1725,7 +1725,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSwitchInputMethod('barcode')}
-                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#64A30E] text-white shadow-[0_4px_16px_rgba(100,163,14,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
+                        className="w-28 sm:w-30 h-14 rounded-2xl bg-[#2F7D32] text-white shadow-[0_4px_16px_rgba(47,125,50,0.38)] flex flex-col items-center justify-center gap-1 font-semibold text-[13px] transition-all cursor-pointer select-none"
                       >
                         <ScanLine size={18} strokeWidth={2.3} />
                         <span>Barcode</span>
@@ -1769,10 +1769,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         onClick={triggerScanSession}
                         aria-label="Scan Barcode"
                         title="Scan Barcode"
-                        className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full text-white flex items-center justify-center shadow-[0_5px_16px_rgba(100,163,14,0.38)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none ${
+                        className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full text-white flex items-center justify-center shadow-[0_5px_16px_rgba(47,125,50,0.38)] active:scale-95 transition-all duration-150 cursor-pointer focus-visible:outline-none ${
                           isScanningActive
-                            ? 'bg-[#54890B] ring-4 ring-[#64A30E]/40 shadow-[0_0_20px_rgba(100,163,14,0.6)]'
-                            : 'bg-[#64A30E] hover:bg-[#54890B] hover:shadow-[0_6px_20px_rgba(100,163,14,0.48)]'
+                            ? 'bg-[#256B29] ring-4 ring-[#2F7D32]/40 shadow-[0_0_20px_rgba(47,125,50,0.6)]'
+                            : 'bg-[#2F7D32] hover:bg-[#256B29] hover:shadow-[0_6px_20px_rgba(47,125,50,0.48)]'
                         }`}
                       >
                         <ScanLine size={27} strokeWidth={2.3} className="sm:w-7 sm:h-7 text-white" />

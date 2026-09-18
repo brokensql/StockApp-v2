@@ -186,7 +186,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
           <div className="flex items-center gap-1.5 mt-2">
             <div
               className={`inline-flex items-center gap-1 text-[13px] font-medium ${
-                growthMetrics.isPositive ? 'text-[#64A30E]' : 'text-[#D94841]'
+                growthMetrics.isPositive ? 'text-[#2F7D32]' : 'text-[#D94841]'
               }`}
             >
               {growthMetrics.isPositive ? (
@@ -251,8 +251,8 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#64A30E" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#64A30E" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#2F7D32" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#2F7D32" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -272,7 +272,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
           <motion.path
             d={linePath}
             fill="none"
-            stroke="#64A30E"
+            stroke="#2F7D32"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -291,7 +291,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
               y1={paddingTop}
               x2={activePoint.x}
               y2={chartHeight - paddingBottom}
-              stroke="#64A30E"
+              stroke="#2F7D32"
               strokeWidth="1.2"
               strokeDasharray="3 3"
               opacity="0.6"
@@ -305,7 +305,7 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
                 cx={activePoint.x}
                 cy={activePoint.y}
                 r="5.5"
-                fill="#64A30E"
+                fill="#2F7D32"
                 stroke="#FFFFFF"
                 strokeWidth="2"
               />
@@ -345,14 +345,14 @@ export const SalesTrendChart: React.FC<SalesTrendChartProps> = ({
                   onClick={() => setTimeframe(tf)}
                   className={`relative px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
                     isSelected
-                      ? 'text-[#64A30E] font-semibold'
+                      ? 'text-[#2F7D32] font-semibold'
                       : 'text-[#68716C] hover:text-[#202522]'
                   }`}
                 >
                   {isSelected && (
                     <motion.div
                       layoutId="active-timeframe-pill"
-                      className="absolute inset-0 bg-[#F0F7E6] rounded-lg shadow-2xs z-0"
+                      className="absolute inset-0 bg-[#E8F3E8] rounded-lg shadow-2xs z-0"
                       transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                     />
                   )}

@@ -96,7 +96,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className="mb-4 p-3.5 bg-[#F0F7E6] border border-[#C8E0A6] rounded-xl flex items-center gap-2 text-[#64A30E] text-[13px] font-medium"
+          className="mb-4 p-3.5 bg-[#E8F3E8] border border-[#81B783] rounded-xl flex items-center gap-2 text-[#2F7D32] text-[13px] font-medium"
         >
           <CheckCircle2 size={16} />
           Profile updated successfully!
@@ -106,9 +106,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Profile Card */}
       <div className="bg-white border border-[#E1E6E2] rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] relative overflow-hidden">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#F0F7E6] border border-[#C8E0A6] flex items-center justify-center text-[#64A30E] flex-shrink-0 shadow-2xs relative">
+          <div className="w-16 h-16 rounded-full bg-[#E8F3E8] border border-[#81B783] flex items-center justify-center text-[#2F7D32] flex-shrink-0 shadow-2xs relative">
             <User size={30} strokeWidth={1.8} />
-            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-[#64A30E] border-2 border-white rounded-full flex items-center justify-center z-10">
+            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-[#2F7D32] border-2 border-white rounded-full flex items-center justify-center z-10">
               <CheckCircle2 size={12} className="text-white" />
             </span>
           </div>
@@ -118,7 +118,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <h2 className="text-[20px] font-bold text-[#202522] truncate">
                 {formData.ownerName}
               </h2>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#F0F7E6] text-[#64A30E] flex-shrink-0">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex-shrink-0">
                 Verified Owner
               </span>
             </div>
@@ -127,7 +127,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {formData.storeName}
             </p>
             <p className="text-[12px] text-[#68716C]/80 mt-1 flex items-center gap-1">
-              <ShieldCheck size={13} className="text-[#64A30E]" />
+              <ShieldCheck size={13} className="text-[#2F7D32]" />
               Store ID: <span className="font-mono text-[11px] font-semibold text-[#202522]">SAGE-8921-PH</span>
             </p>
           </div>
@@ -148,7 +148,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               type="text"
               value={formData.ownerName}
               onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
               placeholder="Full name"
               required
             />
@@ -160,7 +160,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               type="text"
               value={formData.storeName}
               onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
               placeholder="Business or store name"
               required
             />
@@ -172,7 +172,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <select
                 value={formData.businessType}
                 onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
               >
                 <option value="Retail & Grocery">Retail & Grocery</option>
                 <option value="Sari-Sari Store">Sari-Sari Store</option>
@@ -188,7 +188,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <select
                 value={formData.currency}
                 onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
               >
                 <option value="PHP (₱)">PHP (₱) - Philippine Peso</option>
                 <option value="USD ($)">USD ($) - US Dollar</option>
@@ -204,7 +204,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
               placeholder="e.g. contact@email.com"
             />
           </div>
@@ -215,7 +215,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
               placeholder="e.g. +63 917 000 0000"
             />
           </div>
@@ -226,7 +226,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               rows={2}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3.5 py-2 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#64A30E] bg-[#FAFBFB] focus:bg-white transition-colors resize-none"
+              className="w-full px-3.5 py-2 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors resize-none"
               placeholder="Store location / address"
             />
           </div>
@@ -241,7 +241,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-[#64A30E] text-white rounded-xl text-[14px] font-semibold hover:bg-[#54890B] active:bg-[#477309] transition-colors cursor-pointer shadow-2xs"
+              className="flex-1 py-2.5 bg-[#2F7D32] text-white rounded-xl text-[14px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] transition-colors cursor-pointer shadow-2xs"
             >
               Save Changes
             </button>

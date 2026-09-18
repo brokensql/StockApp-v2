@@ -424,12 +424,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onDragLeave={handleDragLeave}
                     className={`relative w-48 h-48 aspect-square border-2 border-dashed rounded-2xl p-3 flex flex-col items-center justify-center text-center transition-all ${
                       isDraggingOver
-                        ? 'border-[#64A30E] bg-[#F0F7E6]'
+                        ? 'border-[#2F7D32] bg-[#E8F3E8]'
                         : 'border-[#E1E6E2] bg-[#FAFBFB]'
                     }`}
                   >
                     {isCompressingImage ? (
-                      <div className="flex flex-col items-center gap-2 py-3 text-[#64A30E]">
+                      <div className="flex flex-col items-center gap-2 py-3 text-[#2F7D32]">
                         <Loader2 size={22} className="animate-spin" />
                         <span className="text-[12px] font-medium">Optimizing...</span>
                       </div>
@@ -438,7 +438,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={triggerCamera}
-                          className="w-36 h-9.5 px-3 rounded-xl bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                          className="w-36 h-9.5 px-3 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                         >
                           <Camera size={15} strokeWidth={2.2} />
                           <span>Take picture</span>
@@ -446,7 +446,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-36 h-9.5 px-3 rounded-xl bg-white hover:bg-[#F4F6F4] text-[#64A30E] border border-[#64A30E]/40 hover:border-[#64A30E] text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                          className="w-36 h-9.5 px-3 rounded-xl bg-white hover:bg-[#E8F3E8]/30 text-[#2F7D32] border border-[#2F7D32]/40 hover:border-[#2F7D32] text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                         >
                           <Upload size={15} strokeWidth={2.2} />
                           <span>Upload image</span>
@@ -471,7 +471,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Canned Sardines 155g"
-                  className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E]"
+                  className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32]"
                   autoFocus
                 />
               </div>
@@ -491,7 +491,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onClick={() => setIsCategoryOpen((v) => !v)}
                     aria-haspopup="listbox"
                     aria-expanded={isCategoryOpen}
-                    className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] text-left focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] cursor-pointer transition-colors flex items-center"
+                    className="w-full h-12 pl-3.5 pr-10 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] text-left focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] cursor-pointer transition-colors flex items-center"
                   >
                     <span className="truncate">{category || 'General'}</span>
                   </button>
@@ -536,13 +536,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                                 }}
                                 className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[15px] cursor-pointer transition-colors ${
                                   selected
-                                    ? 'bg-[#F0F7E6] text-[#202522] font-semibold'
+                                    ? 'bg-[#E8F3E8] text-[#202522] font-semibold'
                                     : 'text-[#202522] hover:bg-[#F4F6F4]'
                                 }`}
                               >
                                 <span className="truncate">{cat}</span>
                                 {selected && (
-                                  <Check size={17} strokeWidth={2.5} className="text-[#64A30E] flex-shrink-0" />
+                                  <Check size={17} strokeWidth={2.5} className="text-[#2F7D32] flex-shrink-0" />
                                 )}
                               </button>
                             </li>
@@ -571,7 +571,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="0"
-                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] tabular-nums"
+                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] tabular-nums"
                   />
                 </div>
 
@@ -590,7 +590,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="0.00"
-                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] tabular-nums"
+                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] tabular-nums"
                   />
                 </div>
               </div>
@@ -611,7 +611,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     value={threshold}
                     onChange={(e) => setThreshold(e.target.value)}
                     placeholder="5"
-                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] tabular-nums"
+                    className="w-full h-12 px-3.5 bg-white border border-[#E1E6E2] rounded-xl text-[15px] text-[#202522] placeholder:text-[#68716C]/50 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] tabular-nums"
                   />
                 </div>
 
@@ -635,12 +635,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       readOnly
                       onClick={() => setIsBarcodeScannerOpen(true)}
                       placeholder="Scan to add"
-                      className="w-full h-12 pl-3.5 pr-10 bg-[#FAFBFB] hover:bg-[#F4F6F4] border border-[#E1E6E2] rounded-xl text-[14px] text-[#202522] placeholder:text-[#68716C]/60 cursor-pointer focus:outline-none focus:border-[#64A30E] focus:ring-1 focus:ring-[#64A30E] select-none transition-colors font-mono"
+                      className="w-full h-12 pl-3.5 pr-10 bg-[#FAFBFB] hover:bg-[#F4F6F4] border border-[#E1E6E2] rounded-xl text-[14px] text-[#202522] placeholder:text-[#68716C]/60 cursor-pointer focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] select-none transition-colors font-mono"
                     />
                     <button
                       type="button"
                       onClick={() => setIsBarcodeScannerOpen(true)}
-                      className="absolute right-2 text-[#64A30E] hover:bg-[#64A30E]/10 p-1.5 rounded-lg transition-colors cursor-pointer"
+                      className="absolute right-2 text-[#2F7D32] hover:bg-[#2F7D32]/10 p-1.5 rounded-lg transition-colors cursor-pointer"
                       title="Scan barcode with camera or upload"
                     >
                       <ScanLine size={19} strokeWidth={2.3} />
@@ -651,8 +651,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Existing product detection notice */}
               {matchingExistingProduct && !isEditing && (
-                <div className="p-3.5 bg-[#F0F7E6] border border-[#C8E0A6] rounded-xl flex items-start gap-2.5 text-[13px] text-[#335508]">
-                  <AlertCircle size={18} className="shrink-0 mt-0.5 text-[#64A30E]" />
+                <div className="p-3.5 bg-[#E8F3E8] border border-[#81B783] rounded-xl flex items-start gap-2.5 text-[13px] text-[#1E5A22]">
+                  <AlertCircle size={18} className="shrink-0 mt-0.5 text-[#2F7D32]" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-[#1F3328]">Existing product detected</p>
@@ -666,12 +666,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           setThreshold(matchingExistingProduct.lowStockThreshold.toString());
                           if (matchingExistingProduct.sku) setSku(matchingExistingProduct.sku);
                         }}
-                        className="text-[11px] font-semibold text-[#64A30E] hover:text-[#54890B] underline cursor-pointer shrink-0"
+                        className="text-[11px] font-semibold text-[#2F7D32] hover:text-[#256B29] underline cursor-pointer shrink-0"
                       >
                         Load current info
                       </button>
                     </div>
-                    <p className="text-[12px] text-[#477309] mt-1 leading-relaxed">
+                    <p className="text-[12px] text-[#1E5A22] mt-1 leading-relaxed">
                       "<span className="font-medium text-[#1F3328]">{matchingExistingProduct.name}</span>"
                       {matchingExistingProduct.sku ? ` (${matchingExistingProduct.sku})` : ''} is already in your inventory.
                       Saving will update this product instead of creating a duplicate.
@@ -688,7 +688,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <button
                   id="btn-save-product"
                   type="submit"
-                  className="w-full h-13 bg-[#64A30E] hover:bg-[#54890B] active:bg-[#477309] text-white text-[15px] font-semibold rounded-xl flex items-center justify-center cursor-pointer transition-colors shadow-xs"
+                  className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15px] font-semibold rounded-xl flex items-center justify-center cursor-pointer transition-colors shadow-xs"
                 >
                   {isEditing
                     ? 'Save changes'
