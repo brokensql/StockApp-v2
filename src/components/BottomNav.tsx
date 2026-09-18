@@ -19,7 +19,7 @@ interface BottomNavProps {
   onCompleteSale?: (newTransaction: SaleTransaction, updatedProducts: Product[]) => void;
   onQuickNewSale?: () => void;
   onQuickAddProduct?: () => void;
-  onOpenActiveSale?: (params: { items?: SaleItem[]; unrecognizedBarcode?: string | null }) => void;
+  onOpenActiveSale?: (params: { items?: SaleItem[] }) => void;
 }
 
 interface NavItemConfig {
@@ -86,13 +86,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 category: matched.category,
               },
             ],
-            unrecognizedBarcode: null,
           });
         } else {
-          onOpenActiveSale({
-            items: [],
-            unrecognizedBarcode: cleanCode,
-          });
+          toast.error(`Barcode "${cleanCode}" not found in inventory`);
         }
       }
     },
@@ -100,14 +96,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   );
 
   const handleProceedToSale = useCallback(
-    (items: SaleItem[], unrecognizedBarcode?: string | null) => {
+    (items: SaleItem[]) => {
       setIsScannerOpen(false);
       const validItems = items.filter((item) => {
         const prod = products.find((p) => p.id === item.productId);
         return prod && Number(prod.stock) > 0;
       });
-      if (onOpenActiveSale) {
-        onOpenActiveSale({ items: validItems, unrecognizedBarcode });
+      if (onOpenActiveSale && validItems.length > 0) {
+        onOpenActiveSale({ items: validItems });
       }
     },
     [onOpenActiveSale, products]

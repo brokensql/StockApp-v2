@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   User,
@@ -6,13 +6,18 @@ import {
   Mail,
   Phone,
   MapPin,
-  ShieldCheck,
-  CheckCircle2,
   Edit2,
   Building2,
   Trash2,
+  Camera,
+  Loader2,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import {
+  saveProfileImage,
+  deleteProfileImage,
+  getProfileImage,
+} from '../utils/imageStorage';
 
 interface ProfileScreenProps {
   profile?: UserProfile;
@@ -36,14 +41,81 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onResetAllData,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [formData, setFormData] = useState<UserProfile>(profile);
   const [confirmResetData, setConfirmResetData] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync formData if profile prop updates externally
-  React.useEffect(() => {
+  useEffect(() => {
     setFormData(profile);
   }, [profile]);
+
+  // Load offline profile image if not yet attached to profile
+  useEffect(() => {
+    if (!formData.avatarUrl) {
+      getProfileImage().then((avatar) => {
+        if (avatar) {
+          setFormData((prev) => ({ ...prev, avatarUrl: avatar }));
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPEG, WebP, etc.)');
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+      // Compresses client-side using HTML5 Canvas and saves directly on phone storage (IndexedDB)
+      const dataUrl = await saveProfileImage(file);
+      const updated: UserProfile = {
+        ...formData,
+        avatarUrl: dataUrl,
+      };
+      setFormData(updated);
+      if (onUpdateProfile) {
+        onUpdateProfile(updated);
+      }
+    } catch (err) {
+      console.error('Failed to save profile photo to phone storage:', err);
+      alert('Failed to process image. Please try another photo.');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      setIsUploadingPhoto(true);
+      // Remove immediately from device IndexedDB to eliminate storage churn
+      await deleteProfileImage();
+      const updated: UserProfile = {
+        ...formData,
+        avatarUrl: undefined,
+      };
+      setFormData(updated);
+      if (onUpdateProfile) {
+        onUpdateProfile(updated);
+      }
+    } catch (err) {
+      console.error('Failed to remove profile photo from IDB:', err);
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +123,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       onUpdateProfile(formData);
     }
     setIsEditing(false);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   const handleCancel = () => {
@@ -70,67 +140,83 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       className="w-full max-w-[430px] mx-auto px-5 pt-3 sm:pt-4"
       style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      {/* Profile Subtitle & Action Bar */}
-      <div className="mb-5 flex items-center justify-between">
-        <p
-          id="profile-subtitle"
-          className="text-[13.5px] font-medium text-[#68716C]"
-        >
-          Store account & business details
-        </p>
+      {/* Hidden File Input for Phone Photo Selection */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoUpload}
+        className="hidden"
+        aria-hidden="true"
+      />
 
-        <button
-          id="edit-profile-button"
-          type="button"
-          onClick={() => setIsEditing(!isEditing)}
-          className="px-3.5 py-1.5 rounded-full border border-[#E1E6E2] bg-white hover:bg-[#F4F6F4] text-[13px] font-medium text-[#202522] flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-        >
-          <Edit2 size={14} className="text-[#68716C]" />
-          {isEditing ? 'Cancel' : 'Edit Profile'}
-        </button>
-      </div>
+      {/* Profile Card with User Avatar, Name, Store, and Edit Pen */}
+      <div className="bg-white border border-[#E1E6E2] rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            {/* Interactive Profile Avatar */}
+            <div className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                title="Change profile photo (stored on phone)"
+                aria-label="Upload profile photo"
+                className="w-14 h-14 rounded-full bg-[#E8F3E8] border border-[#81B783] overflow-hidden flex items-center justify-center text-[#2F7D32] shadow-2xs cursor-pointer hover:opacity-95 transition-all group relative focus:outline-none"
+              >
+                {formData.avatarUrl ? (
+                  <img
+                    src={formData.avatarUrl}
+                    alt={formData.ownerName}
+                    className="w-full h-full object-cover select-none"
+                  />
+                ) : (
+                  <User size={28} strokeWidth={1.8} />
+                )}
 
-      {/* Success Notification Banner */}
-      {savedSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          className="mb-4 p-3.5 bg-[#E8F3E8] border border-[#81B783] rounded-xl flex items-center gap-2 text-[#2F7D32] text-[13px] font-medium"
-        >
-          <CheckCircle2 size={16} />
-          Profile updated successfully!
-        </motion.div>
-      )}
+                {/* Hover tint indicating tap to upload */}
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Camera size={16} className="text-white" />
+                </div>
+              </button>
 
-      {/* Profile Card */}
-      <div className="bg-white border border-[#E1E6E2] rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] relative overflow-hidden">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#E8F3E8] border border-[#81B783] flex items-center justify-center text-[#2F7D32] flex-shrink-0 shadow-2xs relative">
-            <User size={30} strokeWidth={1.8} />
-            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-[#2F7D32] border-2 border-white rounded-full flex items-center justify-center z-10">
-              <CheckCircle2 size={12} className="text-white" />
-            </span>
-          </div>
+              {/* Camera icon badge */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                aria-label="Upload profile photo"
+                className="absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-[#2F7D32] hover:bg-[#25632A] text-white flex items-center justify-center shadow-xs border-2 border-white transition-colors cursor-pointer"
+              >
+                {isUploadingPhoto ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <Camera size={11} strokeWidth={2.4} />
+                )}
+              </button>
+            </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[20px] font-bold text-[#202522] truncate">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[19px] font-bold text-[#202522] truncate">
                 {formData.ownerName}
               </h2>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex-shrink-0">
-                Verified Owner
-              </span>
+              <p className="text-[14px] font-medium text-[#68716C] mt-0.5 flex items-center gap-1.5 truncate">
+                <Store size={15} className="text-[#68716C] flex-shrink-0" />
+                <span>{formData.storeName}</span>
+              </p>
             </div>
-            <p className="text-[14px] font-medium text-[#68716C] mt-0.5 flex items-center gap-1 truncate">
-              <Store size={14} className="text-[#68716C]/70 flex-shrink-0" />
-              {formData.storeName}
-            </p>
-            <p className="text-[12px] text-[#68716C]/80 mt-1 flex items-center gap-1">
-              <ShieldCheck size={13} className="text-[#2F7D32]" />
-              Store ID: <span className="font-mono text-[11px] font-semibold text-[#202522]">SAGE-8921-PH</span>
-            </p>
           </div>
+
+          {/* Pen for editing profile inside the container with user's name */}
+          <button
+            id="edit-profile-button"
+            type="button"
+            onClick={() => setIsEditing(!isEditing)}
+            aria-label={isEditing ? 'Cancel editing' : 'Edit profile'}
+            className="w-9 h-9 rounded-full border border-[#E1E6E2] bg-white hover:bg-[#F4F6F4] text-[#202522] flex items-center justify-center shadow-2xs cursor-pointer transition-colors flex-shrink-0 active:scale-95"
+          >
+            <Edit2 size={15} className="text-[#68716C]" />
+          </button>
         </div>
       </div>
 
@@ -140,6 +226,53 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <div className="flex items-center justify-between border-b border-[#E1E6E2] pb-3 mb-1">
             <h3 className="text-[17px] font-bold text-[#202522]">Edit Profile Details</h3>
             <span className="text-[12px] text-[#68716C]">Update store & account</span>
+          </div>
+
+          {/* Profile Photo Controls Inside Form */}
+          <div className="flex items-center gap-3.5 pb-3 border-b border-[#E1E6E2]">
+            <div className="w-14 h-14 rounded-full bg-[#E8F3E8] border border-[#81B783] overflow-hidden flex items-center justify-center text-[#2F7D32] shadow-2xs flex-shrink-0">
+              {formData.avatarUrl ? (
+                <img
+                  src={formData.avatarUrl}
+                  alt={formData.ownerName}
+                  className="w-full h-full object-cover select-none"
+                />
+              ) : (
+                <User size={28} strokeWidth={1.8} />
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="px-3 py-1.5 rounded-xl border border-[#E1E6E2] bg-white hover:bg-[#F4F6F4] text-[12.5px] font-semibold text-[#202522] flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  {isUploadingPhoto ? (
+                    <Loader2 size={13} className="animate-spin text-[#2F7D32]" />
+                  ) : (
+                    <Camera size={13} className="text-[#2F7D32]" />
+                  )}
+                  <span>{formData.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
+                </button>
+                {formData.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    disabled={isUploadingPhoto}
+                    className="px-2.5 py-1.5 rounded-xl border border-[#E1E6E2] bg-white hover:bg-red-50 text-[12px] font-medium text-red-600 flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Trash2 size={13} />
+                    <span>Remove</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-[#68716C] mt-1">
+                Stored offline on your phone
+              </p>
+            </div>
           </div>
           
           <div>

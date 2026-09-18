@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Check,
   AlertCircle,
-  X,
   Camera,
   ShoppingBag,
   Download,
@@ -36,8 +35,6 @@ interface ActiveSaleScreenProps {
   onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => void;
   onCancelSale: () => void;
   initialItems?: SaleItem[];
-  initialUnrecognizedBarcode?: string | null;
-  onAddNewProductWithBarcode?: (barcode: string) => void;
   existingSales?: SaleTransaction[];
   storeName?: string;
 }
@@ -47,8 +44,6 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   onCompleteSale,
   onCancelSale,
   initialItems = [],
-  initialUnrecognizedBarcode = null,
-  onAddNewProductWithBarcode,
   existingSales = [],
   storeName,
 }) => {
@@ -60,9 +55,6 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   const [completedTx, setCompletedTx] = useState<SaleTransaction | null>(null);
   const [stockWarning, setStockWarning] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [unrecognizedBarcode, setUnrecognizedBarcode] = useState<string | null>(
-    initialUnrecognizedBarcode
-  );
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const receiptContainerRef = useRef<HTMLDivElement>(null);
@@ -106,12 +98,6 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       }
     }
   }, [initialItems, products]);
-
-  useEffect(() => {
-    if (initialUnrecognizedBarcode) {
-      setUnrecognizedBarcode(initialUnrecognizedBarcode);
-    }
-  }, [initialUnrecognizedBarcode]);
 
   // Quick lookup of available stock considering items currently in cart
   const getProductRemainingStock = (productId: string) => {
@@ -320,9 +306,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         return;
       }
       handleAddToCart(matched);
-      setUnrecognizedBarcode(null);
     } else {
-      setUnrecognizedBarcode(cleanCode);
+      setStockWarning(`No product found matching "${cleanCode}".`);
+      setTimeout(() => setStockWarning(null), 3000);
     }
   };
 
@@ -465,55 +451,6 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           </div>
         )}
 
-        {/* Unrecognized Barcode Banner */}
-        {unrecognizedBarcode && (
-          <div
-            id="unrecognized-barcode-card"
-            className="mb-4 p-4 bg-[#FAF7F2] border border-[#EADCC8] rounded-2xl shadow-xs"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-2.5 min-w-0 pr-2">
-                <AlertCircle size={18} className="text-[#B58A52] flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[13.5px] font-bold text-[#6D532C]">
-                    Barcode not registered
-                  </p>
-                  <p className="text-[12px] text-[#8C6B38] mt-0.5 font-mono">
-                    "{unrecognizedBarcode}" is not yet in your inventory catalog.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setUnrecognizedBarcode(null)}
-                className="p-1 text-[#8C6B38] hover:text-[#6D532C] cursor-pointer"
-                aria-label="Dismiss barcode alert"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div className="mt-3 flex items-center gap-2">
-              {onAddNewProductWithBarcode && (
-                <button
-                  type="button"
-                  onClick={() => onAddNewProductWithBarcode(unrecognizedBarcode)}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#B58A52] hover:bg-[#9B7440] text-white text-[12px] font-bold cursor-pointer transition-colors shadow-2xs"
-                >
-                  Register as New Product
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-[#EADCC8] text-[#6D532C] text-[12px] font-semibold hover:bg-[#FAF7F2] cursor-pointer transition-colors"
-              >
-                Scan Again
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Scanned Items in Current Sale - Clean, unboxed design */}
         <section aria-label="Current sale items" className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -641,27 +578,9 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
 
             {/* Payment Method Selector */}
             <div className="pt-2 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-[13px] font-bold text-[#202522]">
-                  Payment Method
-                </label>
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={paymentMethod}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className="text-[11px] font-semibold text-[#68716C] uppercase tracking-wider"
-                  >
-                    {paymentMethod === 'cash'
-                      ? 'Cash Tender'
-                      : paymentMethod === 'gcash'
-                      ? 'E-Wallet'
-                      : 'Card POS'}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
+              <label className="block text-[13px] font-bold text-[#202522]">
+                Payment Method
+              </label>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                 {[
@@ -890,7 +809,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScanSuccess={handleScanSuccess}
-        onProceedToActiveSale={(items, unrecognized) => {
+        onProceedToActiveSale={(items) => {
           setIsScannerOpen(false);
           if (items && items.length > 0) {
             setCart((prev) => {
@@ -915,9 +834,6 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               });
               return Array.from(map.values());
             });
-          }
-          if (unrecognized) {
-            setUnrecognizedBarcode(unrecognized);
           }
         }}
         products={products}

@@ -8,6 +8,7 @@ export interface UserProfile {
   address: string;
   businessType: string;
   currency: string;
+  avatarUrl?: string;
 }
 
 export type InventoryFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
