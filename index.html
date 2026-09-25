@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>StockApp</title>
     <meta name="description" content="A simple way to manage your inventory and sales." />
@@ -14,31 +15,16 @@
     <link rel="icon" type="image/png" sizes="152x152" href="/icon_152.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/icon_152.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/icon_192.png" />
+    <link rel="manifest" href="/manifest.json" />
     <meta property="og:title" content="StockApp" />
     <meta property="og:description" content="A simple way to manage your inventory and sales." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preload" href="/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/satoshi-700.woff2" as="font" type="font/woff2" crossorigin />
-    <script>
-      (function() {
-        try {
-          var isNative = Boolean(
-            (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
-            window.androidBridge ||
-            window._capacitor ||
-            (window.Capacitor && window.Capacitor.platform && window.Capacitor.platform !== 'web')
-          );
-          if (isNative) {
-            document.documentElement.classList.add('capacitor-native');
-          }
-        } catch(e) {}
-      })();
-    </script>
   </head>
   <body class="bg-[#F9FAF8] text-[#202522] font-sans antialiased selection:bg-[#2F7D32]/20">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

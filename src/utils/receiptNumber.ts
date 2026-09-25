@@ -2,13 +2,18 @@ import { SaleTransaction } from '../types';
 
 /**
  * Generates the next sequential, collision-free Receipt ID starting from "SA-01", "SA-02", etc.
+ * The sales array is the single source of truth (no external side-counters).
  */
 export function getNextReceiptId(existingSales: SaleTransaction[] = []): string {
   let maxSeq = 0;
+  const existingIdentifiers = new Set<string>();
 
   if (Array.isArray(existingSales)) {
     for (const s of existingSales) {
       if (!s) continue;
+      if (s.transactionNumber) existingIdentifiers.add(s.transactionNumber.toUpperCase());
+      if (s.id) existingIdentifiers.add(s.id.toUpperCase());
+
       const txNum = s.transactionNumber || s.id || '';
       const match = txNum.match(/SA-(\d+)/i);
       if (match) {
@@ -20,31 +25,19 @@ export function getNextReceiptId(existingSales: SaleTransaction[] = []): string 
     }
   }
 
-  // Check persistent sequence tracking in localStorage if available
-  try {
-    const stored = localStorage.getItem('store_last_receipt_seq');
-    if (stored) {
-      const parsed = parseInt(stored, 10);
-      if (!isNaN(parsed) && parsed > maxSeq) {
-        maxSeq = parsed;
-      }
-    }
-  } catch {
-    // ignore
-  }
-
   // If existing sales exist but none had SA- format, use existingSales.length as base
   if (maxSeq === 0 && existingSales && existingSales.length > 0) {
     maxSeq = existingSales.length;
   }
 
-  const nextSeq = maxSeq + 1;
+  let candidateSeq = maxSeq + 1;
+  let candidateId = `SA-${String(candidateSeq).padStart(2, '0')}`;
 
-  try {
-    localStorage.setItem('store_last_receipt_seq', String(nextSeq));
-  } catch {
-    // ignore
+  // Assert uniqueness against both transactionNumber and id
+  while (existingIdentifiers.has(candidateId.toUpperCase())) {
+    candidateSeq++;
+    candidateId = `SA-${String(candidateSeq).padStart(2, '0')}`;
   }
 
-  return `SA-${String(nextSeq).padStart(2, '0')}`;
+  return candidateId;
 }

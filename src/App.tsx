@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Toaster, toast } from 'sonner';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
@@ -18,8 +18,6 @@ import { User, ArrowLeft, Plus } from 'lucide-react';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
-import { INITIAL_PRODUCTS } from './data/initialProducts';
-import { INITIAL_SALES } from './data/initialSales';
 import { validateCartStock } from './utils/stockValidation';
 import {
   deleteProductImage,
@@ -28,16 +26,18 @@ import {
   getProfileImage,
   deleteProfileImage,
 } from './utils/imageStorage';
-
-const PROFILE_STORAGE_KEY = 'store_user_profile';
-const PROFILE_BACKUP_KEY = 'sage_user_profile_backup';
-const OWNER_NAME_BACKUP_KEY = 'sage_owner_name_backup';
-const STORE_NAME_BACKUP_KEY = 'sage_store_name_backup';
-const HAS_ENTERED_NAME_KEY = 'sage_user_has_entered_name';
-const PRODUCTS_STORAGE_KEY = 'store_products';
-const SALES_STORAGE_KEY = 'store_sales';
-const ONBOARDED_STORAGE_KEY = 'sage_onboarding_completed';
-const CLEAN_SLATE_KEY = 'sage_clean_slate_initialized_v2';
+import {
+  PROFILE_STORAGE_KEY,
+  PROFILE_BACKUP_KEY,
+  OWNER_NAME_BACKUP_KEY,
+  STORE_NAME_BACKUP_KEY,
+  HAS_ENTERED_NAME_KEY,
+  PRODUCTS_STORAGE_KEY,
+  SALES_STORAGE_KEY,
+  SALES_STORAGE_MIRROR_KEY,
+  ONBOARDED_STORAGE_KEY,
+  CLEAN_SLATE_KEY,
+} from './utils/storageKeys';
 
 const DEFAULT_PROFILE: UserProfile = {
   ownerName: 'Store Owner',
@@ -48,6 +48,37 @@ const DEFAULT_PROFILE: UserProfile = {
   businessType: 'Retail & Grocery',
   currency: 'PHP (₱)',
 };
+
+/**
+ * Safe JSON parser with auto-quarantine for corrupted records (F3).
+ * Preserves the corrupted string with a timestamped key instead of silently wiping it.
+ */
+function safeParseStorage<T>(key: string): { data: T | null; corrupted: boolean } {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw || !raw.trim()) {
+      return { data: null, corrupted: false };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return { data: parsed, corrupted: false };
+    } catch {
+      const corruptKey = `${key}_corrupt_${Date.now()}`;
+      try {
+        localStorage.setItem(corruptKey, raw);
+        localStorage.removeItem(key);
+      } catch (storageErr) {
+        console.error('Failed to preserve corrupt data', storageErr);
+      }
+      setTimeout(() => {
+        toast.error('Saved data was corrupted; it has been preserved for recovery. Starting fresh.');
+      }, 300);
+      return { data: null, corrupted: true };
+    }
+  } catch {
+    return { data: null, corrupted: false };
+  }
+}
 
 function getInitialOnboarded(): boolean {
   try {
@@ -87,19 +118,27 @@ function getInitialOnboarded(): boolean {
     // 5. Existing active store with saved products or sales
     const savedProductsStr = localStorage.getItem(PRODUCTS_STORAGE_KEY);
     if (savedProductsStr) {
-      const prods = JSON.parse(savedProductsStr);
-      if (Array.isArray(prods) && prods.length > 0) {
-        localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-        return true;
+      try {
+        const prods = JSON.parse(savedProductsStr);
+        if (Array.isArray(prods) && prods.length > 0) {
+          localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
+          return true;
+        }
+      } catch {
+        // Corrupted storage handled cleanly by safeParseStorage on boot
       }
     }
 
     const savedSalesStr = localStorage.getItem(SALES_STORAGE_KEY);
     if (savedSalesStr) {
-      const salesList = JSON.parse(savedSalesStr);
-      if (Array.isArray(salesList) && salesList.length > 0) {
-        localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-        return true;
+      try {
+        const salesList = JSON.parse(savedSalesStr);
+        if (Array.isArray(salesList) && salesList.length > 0) {
+          localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
+          return true;
+        }
+      } catch {
+        // Corrupted storage handled cleanly by safeParseStorage on boot
       }
     }
   } catch (e) {
@@ -139,20 +178,16 @@ function getInitialProfile(): UserProfile {
 function deduplicateProducts(prods: Product[]): Product[] {
   const seenIds = new Set<string>();
   const seenSkus = new Set<string>();
-  const seenNames = new Set<string>();
   const deduplicated: Product[] = [];
 
   for (const p of prods) {
     if (seenIds.has(p.id)) continue;
     const cleanSku = p.sku ? p.sku.trim().toLowerCase() : '';
-    const cleanName = p.name ? p.name.trim().toLowerCase() : '';
 
     if (cleanSku && seenSkus.has(cleanSku)) continue;
-    if (cleanName && seenNames.has(cleanName)) continue;
 
     seenIds.add(p.id);
     if (cleanSku) seenSkus.add(cleanSku);
-    if (cleanName) seenNames.add(cleanName);
     deduplicated.push(p);
   }
 
@@ -167,15 +202,13 @@ function getInitialProducts(): Product[] {
       localStorage.setItem(CLEAN_SLATE_KEY, 'true');
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
       localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
+      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify([]));
       return [];
     }
 
-    const saved = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        return deduplicateProducts(parsed);
-      }
+    const { data } = safeParseStorage<Product[]>(PRODUCTS_STORAGE_KEY);
+    if (data && Array.isArray(data)) {
+      return deduplicateProducts(data);
     }
   } catch (e) {
     console.error('Failed to load products from localStorage', e);
@@ -189,9 +222,18 @@ function getInitialSales(): SaleTransaction[] {
     if (!hasCleanSlate) {
       return [];
     }
-    const saved = localStorage.getItem(SALES_STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
+    const primary = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_KEY);
+    if (primary.data && Array.isArray(primary.data)) {
+      return primary.data;
+    }
+
+    // Mirror fallback if primary key missing or corrupted (F2)
+    const mirror = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_MIRROR_KEY);
+    if (mirror.data && Array.isArray(mirror.data)) {
+      setTimeout(() => {
+        toast.warning('Recovered sales from backup mirror after storage issue.');
+      }, 500);
+      return mirror.data;
     }
   } catch (e) {
     console.error('Failed to load sales from localStorage', e);
@@ -253,14 +295,24 @@ export default function App() {
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
+      toast.error(
+        'Storage full — your last change was NOT saved. Clear some product images or export a backup now.',
+        { duration: 8000 }
+      );
     }
   }, [products]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+      const serialized = JSON.stringify(sales);
+      localStorage.setItem(SALES_STORAGE_KEY, serialized);
+      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, serialized);
     } catch (e) {
       console.error('Failed to save sales to localStorage', e);
+      toast.error(
+        'Storage full — your last change was NOT saved. Clear some product images or export a backup now.',
+        { duration: 8000 }
+      );
     }
   }, [sales]);
 
@@ -348,7 +400,8 @@ export default function App() {
       localStorage.removeItem(OWNER_NAME_BACKUP_KEY);
       localStorage.removeItem(STORE_NAME_BACKUP_KEY);
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
+      localStorage.removeItem(SALES_STORAGE_KEY);
+      localStorage.removeItem(SALES_STORAGE_MIRROR_KEY);
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(defaultProfile));
       localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(defaultProfile));
     } catch (e) {
@@ -364,6 +417,16 @@ export default function App() {
     isOpen: boolean;
     initialItems?: SaleItem[];
   }>({ isOpen: false });
+
+  // Cooperative deferral: track active sale state and dispatch pos-sale-closed when sale finishes
+  const prevSaleActiveRef = useRef<boolean>(false);
+  useEffect(() => {
+    (window as unknown as { __posSaleActive?: boolean }).__posSaleActive = activeSaleSession.isOpen;
+    if (prevSaleActiveRef.current && !activeSaleSession.isOpen) {
+      window.dispatchEvent(new CustomEvent('pos-sale-closed'));
+    }
+    prevSaleActiveRef.current = activeSaleSession.isOpen;
+  }, [activeSaleSession.isOpen]);
 
   // Dynamically synchronize Capacitor Android / iOS Status Bar style with current screen
   useEffect(() => {
@@ -426,28 +489,42 @@ export default function App() {
     const cleanSku = newProduct.sku?.trim().toLowerCase();
     const cleanName = newProduct.name.trim().toLowerCase();
 
-    setProducts((prev) => {
-      const existingIndex = prev.findIndex((p) => {
-        if (p.id === newProduct.id) return true;
-        const matchesSku = Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
-        const matchesName = Boolean(cleanName && p.name.trim().toLowerCase() === cleanName);
-        return matchesSku || matchesName;
-      });
+    // Match ONLY on id or non-empty SKU for the merge/update path (F1)
+    const existingIndex = products.findIndex((p) => {
+      if (p.id === newProduct.id) return true;
+      return Boolean(cleanSku && p.sku && p.sku.trim().toLowerCase() === cleanSku);
+    });
 
-      if (existingIndex >= 0) {
-        const existing = prev[existingIndex];
+    if (existingIndex >= 0) {
+      setProducts((prev) => {
+        const targetId = products[existingIndex].id;
+        const idx = prev.findIndex((p) => p.id === targetId);
+        if (idx < 0) return [newProduct, ...prev];
+        const existing = prev[idx];
         const updatedList = [...prev];
-        updatedList[existingIndex] = {
+        updatedList[idx] = {
           ...existing,
           ...newProduct,
           id: existing.id, // Preserve original id
         };
         return updatedList;
-      }
+      });
+      toast.success('Completed');
+      return;
+    }
 
-      return [newProduct, ...prev];
-    });
-    toast.success('Completed');
+    // Check if only the name matches an existing product
+    const isNameOnlyCollision = products.some(
+      (p) => Boolean(cleanName && p.name.trim().toLowerCase() === cleanName)
+    );
+
+    setProducts((prev) => [newProduct, ...prev]);
+
+    if (isNameOnlyCollision) {
+      toast.warning('A different product with this name already exists — added as a new item.');
+    } else {
+      toast.success('Completed');
+    }
   };
 
   const handleUpdateProduct = (updatedProduct: Product) => {

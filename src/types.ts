@@ -55,8 +55,18 @@ export interface SaleTransaction {
   itemCount: number;
   primaryItemName: string;
   storeName?: string;
-  cashTendered?: number | string;
+  cashTendered?: number;
   changeAmount?: number;
+}
+
+export interface BackupSummary {
+  schemaVersion: number;
+  exportedAt: string;
+  storeName: string;
+  productCount: number;
+  salesCount: number;
+  imageCount: number;
+  backupData?: unknown;
 }
 
 export interface RecentSale {

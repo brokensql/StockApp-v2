@@ -5,7 +5,6 @@ import {
   User,
   ChevronDown,
   ChevronRight,
-  Info,
   Banknote,
   Wallet,
   Eye,
@@ -13,7 +12,6 @@ import {
   Store,
   ArrowUpRight,
   ArrowDownLeft,
-  X,
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
@@ -49,10 +47,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isPriceHidden, setIsPriceHidden] = useState<boolean>(false);
   const [activeTimeframe, setActiveTimeframe] = useState<TimeframeFilter>('today');
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState<boolean>(false);
-  const [infoModalContent, setInfoModalContent] = useState<{
-    title: string;
-    description: string;
-  } | null>(null);
 
   // Derive date in PHT
   const phtDate = useMemo(() => getPHTParts(new Date()), []);
@@ -391,25 +385,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <div className="flex-1 bg-[#F9FAF8] rounded-t-[30px] sm:rounded-t-[34px] -mt-6 relative z-20 pt-6 px-5 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
         {/* Section Header: Store Overview & Details > */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-[17px] font-bold text-[#202522]">
-              Store Overview
-            </h2>
-            <button
-              type="button"
-              onClick={() =>
-                setInfoModalContent({
-                  title: 'Store Overview',
-                  description:
-                    'Store Overview summarizes your active sales revenue alongside your current inventory stock valuation.',
-                })
-              }
-              className="text-[#68716C] hover:text-[#202522] transition-colors p-0.5"
-              aria-label="Info about Store Overview"
-            >
-              <Info size={15} strokeWidth={2} />
-            </button>
-          </div>
+          <h2 className="text-[17px] font-bold text-[#202522]">
+            Store Overview
+          </h2>
 
           <button
             type="button"
@@ -438,13 +416,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             badgeIcon={<Banknote size={22} strokeWidth={2.2} className="text-[#2F7D32]" />}
             badgeVariant="stats-green"
             onClick={() => onNavigate && onNavigate('sales')}
-            onInfoClick={() =>
-              setInfoModalContent({
-                title: 'Total sales',
-                description:
-                  'Gross income collected from all completed checkout transactions in your store.',
-              })
-            }
           />
 
           {/* Card 2: Stock Value (Sales / Inventory Value) */}
@@ -461,13 +432,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             badgeIcon={<Wallet size={22} strokeWidth={2.2} className="text-[#2F7D32]" />}
             badgeVariant="stats-green"
             onClick={() => onNavigate && onNavigate('store')}
-            onInfoClick={() =>
-              setInfoModalContent({
-                title: 'Stock value',
-                description:
-                  'The total retail value of all available products and items currently in your stock inventory.',
-              })
-            }
           />
         </div>
 
@@ -477,10 +441,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] mb-5"
         >
           <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#F0F3F1]">
-            <div className="flex items-center gap-1.5 text-[13.5px] font-bold text-[#202522]">
-              <TrendingUp size={16} strokeWidth={2.2} className="text-[#2F7D32]" />
-              <span>Most sold products</span>
-            </div>
+            <h3 className="text-[14px] sm:text-[15px] font-semibold text-[#202522] tracking-[-0.015em]">
+              Most sold products
+            </h3>
             <span className="text-[12px] font-medium text-[#68716C]">
               All time
             </span>
@@ -600,52 +563,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           )}
         </section>
       </div>
-
-      {/* ============================================================ */}
-      {/* INFO MODAL POPUP                                             */}
-      {/* ============================================================ */}
-      <AnimatePresence>
-        {infoModalContent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.94 }}
-              className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-[#E1E6E2]"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#E8F3E8] text-[#1E5A22] flex items-center justify-center">
-                    <Info size={16} strokeWidth={2.2} />
-                  </div>
-                  <h3 className="text-[17px] font-bold text-[#202522]">
-                    {infoModalContent.title}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setInfoModalContent(null)}
-                  className="p-1 rounded-full text-[#68716C] hover:bg-gray-100 transition-colors"
-                >
-                  <X size={18} strokeWidth={2} />
-                </button>
-              </div>
-
-              <p className="text-[14px] text-[#68716C] leading-relaxed">
-                {infoModalContent.description}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => setInfoModalContent(null)}
-                className="w-full mt-5 py-2.5 bg-[#2F7D32] text-white text-[14px] font-semibold rounded-xl hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all"
-              >
-                Got it
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };

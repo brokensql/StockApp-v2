@@ -1,0 +1,10 @@
+export const PROFILE_STORAGE_KEY = 'store_user_profile';
+export const PROFILE_BACKUP_KEY = 'sage_user_profile_backup';
+export const OWNER_NAME_BACKUP_KEY = 'sage_owner_name_backup';
+export const STORE_NAME_BACKUP_KEY = 'sage_store_name_backup';
+export const HAS_ENTERED_NAME_KEY = 'sage_user_has_entered_name';
+export const PRODUCTS_STORAGE_KEY = 'store_products';
+export const SALES_STORAGE_KEY = 'store_sales';
+export const SALES_STORAGE_MIRROR_KEY = 'store_sales_mirror';
+export const ONBOARDED_STORAGE_KEY = 'sage_onboarding_completed';
+export const CLEAN_SLATE_KEY = 'sage_clean_slate_initialized_v2';

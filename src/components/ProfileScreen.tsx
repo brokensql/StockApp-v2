@@ -11,13 +11,23 @@ import {
   Trash2,
   Camera,
   Loader2,
+  Download,
+  Upload,
+  Database,
+  AlertTriangle,
 } from 'lucide-react';
-import { UserProfile } from '../types';
+import { toast } from 'sonner';
+import { UserProfile, BackupSummary } from '../types';
 import {
   saveProfileImage,
   deleteProfileImage,
   getProfileImage,
 } from '../utils/imageStorage';
+import {
+  saveBackupFile,
+  restoreBackupFromFile,
+  applyRestorePayload,
+} from '../utils/backup';
 
 interface ProfileScreenProps {
   profile?: UserProfile;
@@ -45,6 +55,57 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [formData, setFormData] = useState<UserProfile>(profile);
   const [confirmResetData, setConfirmResetData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<BackupSummary | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const restoreFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportBackup = async () => {
+    try {
+      setIsExporting(true);
+      const savedPath = await saveBackupFile();
+      toast.success(`Backup saved: ${savedPath}`);
+    } catch (err) {
+      console.error('Failed to export backup:', err);
+      toast.error('Failed to export backup file.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSelectRestoreFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const summary = await restoreBackupFromFile(file);
+      setPendingRestore(summary);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid backup file.';
+      toast.error(message);
+    } finally {
+      if (restoreFileInputRef.current) {
+        restoreFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleConfirmRestore = async () => {
+    if (!pendingRestore || !pendingRestore.backupData) return;
+    try {
+      setIsRestoring(true);
+      await applyRestorePayload(pendingRestore.backupData);
+      // applyRestorePayload ends with window.location.reload(); reset the spinner
+      // as a safety net in case the reload is deferred by the WebView.
+      setTimeout(() => {
+        setIsRestoring(false);
+        toast.warning('Restore applied — reload did not complete. Please close and reopen the app.');
+      }, 5000);
+    } catch (err: unknown) {
+      console.error('Restore failed:', err);
+      toast.error('Failed to restore data from backup.');
+      setIsRestoring(false);
+    }
+  };
 
   // Sync formData if profile prop updates externally
   useEffect(() => {
@@ -434,6 +495,91 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   </p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Data & Backup Section */}
+          <section aria-label="Data and Backup" className="pt-2">
+            <div className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
+              <div className="flex items-center gap-2 mb-2">
+                <Database size={16} className="text-[#2F7D32]" />
+                <h3 className="text-[14px] font-semibold text-[#202522]">Data & Backup</h3>
+              </div>
+              <p className="text-[12px] text-[#68716C] mb-3.5 leading-relaxed">
+                Export an offline snapshot of your products, sales history, and store identity to your device, or restore from a previous JSON backup.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleExportBackup}
+                  disabled={isExporting}
+                  className="py-2.5 px-3 bg-[#FAFBFB] hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[#202522] font-medium text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {isExporting ? <Loader2 size={15} className="animate-spin text-[#2F7D32]" /> : <Download size={15} className="text-[#2F7D32]" />}
+                  <span>Export Backup</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => restoreFileInputRef.current?.click()}
+                  disabled={isRestoring}
+                  className="py-2.5 px-3 bg-[#FAFBFB] hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[#202522] font-medium text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  <Upload size={15} className="text-[#2F7D32]" />
+                  <span>Restore Backup</span>
+                </button>
+                <input
+                  ref={restoreFileInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={handleSelectRestoreFile}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Restore Confirmation Dialog */}
+              {pendingRestore && (
+                <div className="mt-3.5 p-3.5 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
+                  <div className="flex items-center gap-2 mb-2 text-[#202522] font-semibold text-[13px]">
+                    <AlertTriangle size={16} className="text-[#C07000] flex-shrink-0" />
+                    <span className="truncate">Restore: {pendingRestore.storeName}</span>
+                  </div>
+                  <div className="text-[12px] text-[#68716C] space-y-1 mb-3">
+                    <p>• Products: <span className="font-semibold text-[#202522]">{pendingRestore.productCount}</span></p>
+                    <p>• Sales ledger: <span className="font-semibold text-[#202522]">{pendingRestore.salesCount}</span> transactions</p>
+                    <p>• Exported date: <span className="font-semibold text-[#202522]">{new Date(pendingRestore.exportedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></p>
+                    <p className="text-[#D94841] font-medium pt-1">
+                      This replaces everything currently on this device.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPendingRestore(null)}
+                      disabled={isRestoring}
+                      className="flex-1 py-2 bg-white border border-[#E1E6E2] rounded-lg text-[13px] font-medium text-[#202522] hover:bg-[#F2F4F2] cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmRestore}
+                      disabled={isRestoring}
+                      className="flex-1 py-2 bg-[#2F7D32] text-white rounded-lg text-[13px] font-medium hover:bg-[#256B29] cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {isRestoring ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          <span>Restoring...</span>
+                        </>
+                      ) : (
+                        <span>Yes, Restore</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Product, SaleItem, SaleTransaction, PaymentMethod } from '../types';
 import { formatPHTTimestamp } from '../utils/philippineDate';
 import { getNextReceiptId } from '../utils/receiptNumber';
+import { roundMoney } from '../utils/currency';
 import {
   validateCartStock,
   sanitizeCartStock,
@@ -205,7 +206,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
 
   // Calculations
   const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    return roundMoney(cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
   }, [cart]);
 
   const total = subtotal;
@@ -216,7 +217,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
 
   // Cash calculation
   const parsedTendered = parseFloat(cashTendered) || 0;
-  const changeAmount = Math.max(0, parsedTendered - total);
+  const changeAmount = roundMoney(Math.max(0, parsedTendered - total));
   const isShortCash = paymentMethod === 'cash' && cashTendered !== '' && parsedTendered < total;
 
   // Format currency in Philippine Peso
@@ -263,14 +264,14 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       timestamp: timeStr,
       createdAt: nowEpoch,
       items: cart,
-      subtotal,
-      total,
+      subtotal: roundMoney(subtotal),
+      total: roundMoney(total),
       paymentMethod,
       itemCount: totalItemsCount,
       primaryItemName: cart[0].name,
       storeName: storeName || 'My Store',
-      cashTendered: paymentMethod === 'cash' && cashTendered !== '' ? cashTendered : undefined,
-      changeAmount: paymentMethod === 'cash' && changeAmount > 0 ? changeAmount : undefined,
+      cashTendered: paymentMethod === 'cash' && cashTendered !== '' ? roundMoney(parsedTendered) : undefined,
+      changeAmount: paymentMethod === 'cash' && changeAmount > 0 ? roundMoney(changeAmount) : undefined,
     };
 
     // Calculate updated products stock

@@ -68,36 +68,6 @@ export default defineConfig(() => {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/api\.fontshare\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'fontshare-fonts-cache',
-                expiration: {
-                  maxEntries: 15,
-                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/cdn\.fontshare\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'fontshare-static-cache',
-                expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-          ],
         },
         devOptions: {
           enabled: false,

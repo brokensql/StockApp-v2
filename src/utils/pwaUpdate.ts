@@ -14,6 +14,32 @@ let updateSWHandler: ((reloadPage?: boolean) => Promise<void>) | null = null;
 const listeners: Set<UpdateCallback> = new Set();
 let isCheckingUpdate = false;
 let refreshing = false;
+let pendingReload = false;
+
+function applyOrDeferReload(): void {
+  if (typeof window === 'undefined') return;
+
+  const isSaleActive = (window as unknown as { __posSaleActive?: boolean }).__posSaleActive === true;
+  if (isSaleActive) {
+    console.log('[PWA] Sale session is currently active. Deferring reload until sale closes.');
+    pendingReload = true;
+    const handleSaleClosed = () => {
+      window.removeEventListener('pos-sale-closed', handleSaleClosed);
+      if (pendingReload && !refreshing) {
+        refreshing = true;
+        console.log('[PWA] Active sale closed. Reloading to apply pending update...');
+        window.location.reload();
+      }
+    };
+    window.addEventListener('pos-sale-closed', handleSaleClosed);
+    return;
+  }
+
+  if (refreshing) return;
+  refreshing = true;
+  console.log('[PWA] New service worker activated, reloading for latest updates...');
+  window.location.reload();
+}
 
 export function initPWAUpdateManager() {
   if (typeof window === 'undefined') return;
@@ -45,10 +71,7 @@ export function initPWAUpdateManager() {
   // Listen for controllerchange: when new Service Worker takes over, reload to apply updates
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      console.log('[PWA] New service worker activated, reloading for latest updates...');
-      window.location.reload();
+      applyOrDeferReload();
     });
   }
 
@@ -95,8 +118,27 @@ export function initPWAUpdateManager() {
     onNeedRefresh() {
       console.log('[PWA] New content available.');
       notifyListeners(true);
+      const isSaleActive =
+        typeof window !== 'undefined' &&
+        (window as unknown as { __posSaleActive?: boolean }).__posSaleActive === true;
+
       if (updateSWHandler) {
-        updateSWHandler(true);
+        if (isSaleActive) {
+          console.log('[PWA] Sale active during onNeedRefresh; deferring update reload until sale closes.');
+          updateSWHandler(false);
+          pendingReload = true;
+          const handleSaleClosed = () => {
+            window.removeEventListener('pos-sale-closed', handleSaleClosed);
+            if (pendingReload && !refreshing) {
+              refreshing = true;
+              console.log('[PWA] Sale closed. Applying deferred reload...');
+              window.location.reload();
+            }
+          };
+          window.addEventListener('pos-sale-closed', handleSaleClosed);
+        } else {
+          updateSWHandler(true);
+        }
       }
     },
     onOfflineReady() {
@@ -230,6 +272,8 @@ export async function checkForAppUpdate(): Promise<{
 
 /**
  * Verifies that Google AI Studio shared cookie is valid.
+ * Note: verifyShareCookie is strictly for AI Studio web shared preview sessions (*.run.app / ais-pre-*).
+ * It automatically no-ops on native Capacitor (com.sageinventory.app) or standalone offline domains.
  * If the server responds with a redirect to __cookie_check.html,
  * seamlessly navigates to complete the cookie refresh so the mobile app doesn't break.
  */
