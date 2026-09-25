@@ -52,6 +52,41 @@ jobs:
       - name: Sync web assets into android/app
         run: npx cap sync android
 
+      - name: Disable Android system font scaling and lock text zoom
+        run: |
+          MAIN_ACTIVITY_DIR="android/app/src/main/java/com/sageinventory/app"
+          mkdir -p "$MAIN_ACTIVITY_DIR"
+          cat > "$MAIN_ACTIVITY_DIR/MainActivity.java" <<'JAVA'
+          package com.sageinventory.app;
+
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  applyFixedFontSettings();
+              }
+
+              @Override
+              public void onResume() {
+                  super.onResume();
+                  applyFixedFontSettings();
+              }
+
+              private void applyFixedFontSettings() {
+                  if (bridge != null && bridge.getWebView() != null) {
+                      WebSettings settings = bridge.getWebView().getSettings();
+                      // Lock WebView text zoom to 100% so Android system font-size/accessibility scaling
+                      // does not alter or distort UI layouts and button dimensions.
+                      settings.setTextZoom(100);
+                  }
+              }
+          }
+          JAVA
+
       - name: Stamp launcher icon and label
         run: |
           # 1. App name: write res/values/strings.xml so the launcher label is 'StockApp'
@@ -202,6 +237,41 @@ jobs:
 
       - name: Sync web assets into android/app
         run: npx cap sync android
+
+      - name: Disable Android system font scaling and lock text zoom
+        run: |
+          MAIN_ACTIVITY_DIR="android/app/src/main/java/com/sageinventory/app"
+          mkdir -p "$MAIN_ACTIVITY_DIR"
+          cat > "$MAIN_ACTIVITY_DIR/MainActivity.java" <<'JAVA'
+          package com.sageinventory.app;
+
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  applyFixedFontSettings();
+              }
+
+              @Override
+              public void onResume() {
+                  super.onResume();
+                  applyFixedFontSettings();
+              }
+
+              private void applyFixedFontSettings() {
+                  if (bridge != null && bridge.getWebView() != null) {
+                      WebSettings settings = bridge.getWebView().getSettings();
+                      // Lock WebView text zoom to 100% so Android system font-size/accessibility scaling
+                      // does not alter or distort UI layouts and button dimensions.
+                      settings.setTextZoom(100);
+                  }
+              }
+          }
+          JAVA
 
       - name: Stamp launcher icon and label
         run: |
