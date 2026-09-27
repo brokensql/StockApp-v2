@@ -190,12 +190,12 @@ jobs:
           echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
           echo "Debug APK path: $APK"
 
-      - name: Upload Debug APK (retain 7 days)
+      - name: Upload Debug APK (retain 1 day)
         uses: actions/upload-artifact@v4
         with:
           name: sage-inventory-debug-apk
           path: ${{ steps.locate.outputs.apk_path }}
-          retention-days: 7
+          retention-days: 1
 
   build-release-apk:
     name: Build Release APK
