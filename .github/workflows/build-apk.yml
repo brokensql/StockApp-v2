@@ -9,6 +9,8 @@ jobs:
   build-debug-apk:
     name: Build Debug APK
     if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -190,12 +192,18 @@ jobs:
           echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
           echo "Debug APK path: $APK"
 
-      - name: Upload Debug APK (retain 1 day)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sage-inventory-debug-apk
-          path: ${{ steps.locate.outputs.apk_path }}
-          retention-days: 1
+      - name: Publish APK to rolling release (apk-latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="${{ steps.locate.outputs.apk_path }}"
+          cp "$APK" stockapp-debug.apk
+          gh release create apk-latest \
+            --prerelease \
+            --title "Latest StockApp debug APK" \
+            --notes "Rolling prerelease - rebuilt automatically on every push to main." \
+            || true
+          gh release upload apk-latest stockapp-debug.apk --clobber
 
   build-release-apk:
     name: Build Release APK
