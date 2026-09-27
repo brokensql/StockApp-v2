@@ -559,6 +559,39 @@ export default function App() {
     toast.success('Sale completed');
   };
 
+  const handleDeleteSale = (transactionId: string, restoreStock = false) => {
+    const saleToDelete = sales.find((s) => s.id === transactionId);
+    if (!saleToDelete) return;
+
+    if (restoreStock && saleToDelete.items && saleToDelete.items.length > 0) {
+      setProducts((prevProducts) => {
+        return prevProducts.map((prod) => {
+          const soldItem = saleToDelete.items.find((item) => item.productId === prod.id);
+          if (soldItem && soldItem.quantity > 0) {
+            return { ...prod, stock: prod.stock + soldItem.quantity };
+          }
+          return prod;
+        });
+      });
+    }
+
+    setSales((prev) => prev.filter((s) => s.id !== transactionId));
+    toast.success(
+      restoreStock
+        ? `Sale ${saleToDelete.transactionNumber} deleted & stock restored`
+        : `Sale ${saleToDelete.transactionNumber} deleted from history`
+    );
+  };
+
+  const handleClearSales = (saleIdsToDelete: string[]) => {
+    if (!saleIdsToDelete || saleIdsToDelete.length === 0) return;
+    const idSet = new Set(saleIdsToDelete);
+    setSales((prev) => prev.filter((s) => !idSet.has(s.id)));
+    toast.success(
+      `Removed ${saleIdsToDelete.length} ${saleIdsToDelete.length === 1 ? 'sale record' : 'sale records'} from history`
+    );
+  };
+
   const getHeaderTitle = (tab: NavTab): string => {
     switch (tab) {
       case 'home':
@@ -716,6 +749,8 @@ export default function App() {
                 sales={sales}
                 storeName={userProfile.storeName}
                 onCompleteSale={handleCompleteSale}
+                onDeleteSale={handleDeleteSale}
+                onClearSales={handleClearSales}
                 onBack={() => setActiveTab('home')}
                 onStartNewSale={handleQuickNewSale}
               />

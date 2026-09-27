@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Camera,
   ShoppingBag,
+  Package,
   Download,
   Loader2,
   Banknote,
@@ -28,8 +29,30 @@ import {
 import { downloadReceiptTicket } from '../utils/downloadReceipt';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
-import { ProductThumbnail } from './ProductThumbnail';
 import { useProductImages } from '../hooks/useProductImages';
+
+const CheckoutCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src, alt }) => {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className="absolute inset-0 w-full h-full bg-[#FAFBFB] flex items-center justify-center text-[#8E948F]">
+        <Package size={22} strokeWidth={1.5} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setError(true)}
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+    />
+  );
+};
 
 interface ActiveSaleScreenProps {
   products: Product[];
@@ -335,7 +358,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         }}
       >
         {/* Top Header with Back Button */}
-        <header className="mb-4 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between flex-shrink-0">
           <button
             id="btn-receipt-back-to-home"
             type="button"
@@ -348,19 +371,21 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           </button>
         </header>
 
-        <div ref={receiptContainerRef} className="w-full flex-1 flex flex-col justify-start">
+        {/* Printable / Downloadable Receipt Ticket with Full Product Breakdown */}
+        <div ref={receiptContainerRef} className="w-full flex-1 flex flex-col justify-start pb-2">
           <ReceiptTicketCard
             transaction={completedTx}
             cashTendered={cashTendered}
             changeAmount={changeAmount}
             storeName={storeName || completedTx.storeName}
+            showAllProducts={true}
           />
         </div>
 
-        {/* Bottom Download Receipt Action */}
+        {/* Bottom Download Receipt Action - Guaranteed no overlap with ticket */}
         <div
-          className="pt-5 w-full"
-          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+          className="pt-6 pb-2 w-full flex-shrink-0 mt-4"
+          style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <button
             id="btn-download-receipt"
@@ -433,10 +458,10 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               type="button"
               onClick={() => setIsScannerOpen(true)}
               className="h-9 px-3 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[12.5px] font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-              title="Scan barcode with camera"
+              title="Add products"
             >
               <Camera size={15} />
-              <span>Scan</span>
+              <span>Add</span>
             </button>
           </div>
         </header>
@@ -452,14 +477,8 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           </div>
         )}
 
-        {/* Scanned Items in Current Sale - Clean, unboxed design */}
+        {/* Scanned Items in Current Sale */}
         <section aria-label="Current sale items" className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[16px] font-bold text-[#202522]">
-              Scanned products
-            </h2>
-          </div>
-
           {cart.length === 0 ? (
             <div
               id="empty-cart-state"
@@ -474,7 +493,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               </p>
             </div>
           ) : (
-            <div id="scanned-items-list" className="divide-y divide-[#E1E6E2]/70">
+            <div id="scanned-items-list" className="space-y-2.5">
               {cart.map((item) => {
                 const prod = products.find((p) => p.id === item.productId);
                 const isOutOfStock = !prod || prod.stock <= 0;
@@ -484,69 +503,90 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   <div
                     key={item.productId}
                     id={`cart-item-${item.productId}`}
-                    className={`py-3 select-none rounded-xl px-2 -mx-2 transition-all flex items-center justify-between gap-3 ${
+                    className={`group bg-white rounded-2xl border ${
                       isOutOfStock
-                        ? 'bg-red-50/40 border border-red-200/50'
-                        : 'hover:bg-gray-50/50'
-                    }`}
+                        ? 'border-red-200 bg-red-50/20'
+                        : 'border-[#E1E6E2] hover:border-[#2F7D32]/50'
+                    } shadow-2xs hover:shadow-xs transition-all overflow-hidden flex items-stretch h-[90px] sm:h-[96px]`}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <ProductThumbnail
+                    {/* Left: Product Image Container (matches Inventory card style, comfortable height) */}
+                    <div className="w-22 sm:w-24 h-full min-w-[88px] sm:min-w-[96px] max-w-[88px] sm:max-w-[96px] bg-[#FAFBFB] relative overflow-hidden flex-shrink-0 flex items-center justify-center border-r border-[#E1E6E2]/70">
+                      <CheckoutCardImage
                         src={prod?.imageUrl || images[item.productId]}
                         alt={item.name}
-                        size="sm"
                       />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[14.5px] font-bold text-[#202522] truncate">
+                    </div>
+
+                    {/* Right: Content details (Product Name, Category, Price, Quantity with +/- buttons) */}
+                    <div className="p-2.5 sm:p-3 flex flex-col justify-between flex-1 min-w-0 h-full overflow-hidden">
+                      {/* Top: Product Name & Category / Badges */}
+                      <div className="min-w-0">
+                        <div className="flex items-center justify-between gap-1.5">
+                          <h3
+                            className="text-[14px] sm:text-[14.5px] font-semibold text-[#202522] leading-snug truncate"
+                            title={item.name}
+                          >
                             {item.name}
-                          </p>
-                          {isOutOfStock && (
-                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200/80 px-1.5 py-0.5 rounded shrink-0">
-                              Out of stock
+                          </h3>
+                          {isOutOfStock ? (
+                            <span className="text-[10px] font-semibold text-[#D94841] bg-[#FDF0EE] border border-[#FADCDA] px-1.5 py-0.5 rounded-md shrink-0">
+                              Out
                             </span>
-                          )}
-                          {!isOutOfStock && isExceedingStock && (
-                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded shrink-0">
+                          ) : isExceedingStock ? (
+                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md shrink-0">
                               Max {prod?.stock}
+                            </span>
+                          ) : null}
+                        </div>
+                        {item.category || prod?.category ? (
+                          <p className="text-[12px] text-[#68716C] truncate mt-0.5">
+                            {item.category || prod?.category}
+                          </p>
+                        ) : (
+                          <p className="text-[12px] text-[#68716C] truncate mt-0.5">
+                            {formatCurrency(item.unitPrice)} each
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bottom: Price & Quantity with Minus and Plus buttons */}
+                      <div className="flex items-center justify-between gap-x-2 pt-0.5 mt-auto">
+                        <div className="flex items-baseline gap-1.5 min-w-0 shrink-0">
+                          <span className="text-[15.5px] sm:text-[16.5px] font-bold text-[#202522] tabular-nums">
+                            {formatCurrency(item.quantity * item.unitPrice)}
+                          </span>
+                          {item.quantity > 1 && (
+                            <span className="text-[11px] text-[#68716C] tabular-nums hidden sm:inline">
+                              ({formatCurrency(item.unitPrice)} ea)
                             </span>
                           )}
                         </div>
-                        <p className="text-[12px] text-[#68716C] tabular-nums mt-0.5">
-                          {formatCurrency(item.unitPrice)} each
-                        </p>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateQuantity(item.productId, -1)}
+                            className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] shadow-2xs flex items-center justify-center text-[#202522] hover:bg-[#F4F8F4] hover:border-[#2F7D32]/40 active:scale-95 transition-all cursor-pointer"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus size={13} strokeWidth={2.2} />
+                          </button>
+
+                          <span className="w-5 text-center text-[13px] sm:text-[13.5px] font-bold text-[#202522] tabular-nums">
+                            {item.quantity}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateQuantity(item.productId, 1)}
+                            disabled={!prod || prod.stock <= 0 || item.quantity >= prod.stock}
+                            className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] shadow-2xs flex items-center justify-center text-[#202522] hover:bg-[#F4F8F4] hover:border-[#2F7D32]/40 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus size={13} strokeWidth={2.2} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateQuantity(item.productId, -1)}
-                          className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] flex items-center justify-center text-[#202522] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={13} />
-                        </button>
-
-                        <span className="w-6 text-center text-[13.5px] font-bold text-[#202522] tabular-nums">
-                          {item.quantity}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateQuantity(item.productId, 1)}
-                          disabled={!prod || prod.stock <= 0 || item.quantity >= prod.stock}
-                          className="w-7 h-7 rounded-full bg-white border border-[#E1E6E2] flex items-center justify-center text-[#202522] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
-
-                      <span className="text-[14.5px] font-bold text-[#202522] tabular-nums text-right min-w-[60px]">
-                        {formatCurrency(item.quantity * item.unitPrice)}
-                      </span>
                     </div>
                   </div>
                 );
@@ -567,11 +607,11 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                 </span>
               </div>
 
-              <div className="flex justify-between items-baseline pt-2 border-t border-[#E1E6E2]">
+              <div className="flex justify-between items-center pt-2 border-t border-[#E1E6E2]">
                 <span className="text-[15px] font-bold text-[#202522]">
                   Total Due
                 </span>
-                <span className="text-[26px] font-black text-[#202522] tabular-nums">
+                <span className="text-[15px] font-bold text-[#202522] tabular-nums">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -680,18 +720,18 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               </div>
             </div>
 
-            {/* Method Specific Details with Smooth AnimatePresence Transition */}
-            <div className="overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={paymentMethod}
-                  initial={{ opacity: 0, y: 8, filter: 'blur(3px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {paymentMethod === 'cash' ? (
-                    /* Cash Received Stacked Section */
+            {/* Method Specific Details (Cash Tendered only; no popups for GCash/Cards) */}
+            {paymentMethod === 'cash' && (
+              <div className="overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key="cash"
+                    initial={{ opacity: 0, y: 8, filter: 'blur(3px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    {/* Cash Received Stacked Section */}
                     <div className="pt-1 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label
@@ -754,40 +794,10 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                         </div>
                       )}
                     </div>
-                  ) : paymentMethod === 'gcash' ? (
-                    /* GCash Info Container */
-                    <div className="p-3.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl flex items-center gap-3 shadow-2xs">
-                      <div className="w-9 h-9 rounded-xl bg-[#DBEAFE] text-[#0284C7] flex items-center justify-center shrink-0">
-                        <Smartphone size={18} strokeWidth={2.2} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-bold text-[#1E3A8A]">
-                          GCash Payment
-                        </p>
-                        <p className="text-[11.5px] text-[#3B82F6] leading-snug mt-0.5">
-                          Collect exact amount of <strong className="font-bold text-[#1E3A8A]">{formatCurrency(total)}</strong> via store QR or transfer.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Card Info Container */
-                    <div className="p-3.5 bg-[#F5F3FF] border border-[#DDD6FE] rounded-2xl flex items-center gap-3 shadow-2xs">
-                      <div className="w-9 h-9 rounded-xl bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center shrink-0">
-                        <CreditCard size={18} strokeWidth={2.2} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-bold text-[#4C1D95]">
-                          Card Payment
-                        </p>
-                        <p className="text-[11.5px] text-[#7C3AED] leading-snug mt-0.5">
-                          Tap or swipe card on POS terminal for <strong className="font-bold text-[#4C1D95]">{formatCurrency(total)}</strong>.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            )}
 
             {/* Complete Sale CTA */}
             <div className="pt-2">
@@ -879,7 +889,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
                   handleRemoveItem(itemToDelete.id);
                   setItemToDelete(null);
                 }}
-                className="h-10 px-4 rounded-xl bg-[#202522] text-white text-[13.5px] font-semibold hover:bg-black active:scale-95 transition-all cursor-pointer"
+                className="h-10 px-4 rounded-xl bg-[#D94841] hover:bg-[#B83832] active:bg-[#9B2F2A] text-white text-[13.5px] font-semibold active:scale-95 transition-all cursor-pointer shadow-xs"
               >
                 Remove
               </button>

@@ -238,41 +238,46 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22, ease: 'easeOut' }}
       >
-        {/* 2-Column Horizontal KPI Metrics (Total Revenue & Items Sold, resized) */}
+        {/* 2-Column KPI Metrics Container (Total Revenue & Items Sold) */}
         <section
           aria-label="Key Performance Indicators"
-          className="grid grid-cols-2 divide-x divide-[#E1E6E2] py-5 mb-7 select-none"
+          className="mb-7 select-none"
         >
-          {/* 1. Total Revenue */}
-          <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2.5 flex-shrink-0">
-              <TrendingUp size={20} strokeWidth={2.2} />
+          <div
+            id="kpi-metrics-container"
+            className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] grid grid-cols-2 divide-x divide-[#E1E6E2]"
+          >
+            {/* 1. Total Revenue */}
+            <div className="flex flex-col items-center text-center px-2.5">
+              <div className="w-10 h-10 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2 flex-shrink-0">
+                <TrendingUp size={19} strokeWidth={2.2} />
+              </div>
+              <span className="text-[12.5px] font-medium text-[#68716C] leading-tight block truncate">
+                Total Revenue
+              </span>
+              <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1 block tracking-tight leading-none">
+                {formatCurrency(totalRevenue)}
+              </span>
+              <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
+                {activeDaysInPeriod} {activeDaysInPeriod === 1 ? 'day' : 'days'} in period
+              </span>
             </div>
-            <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
-              Total Revenue
-            </span>
-            <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1.5 block tracking-tight leading-none">
-              {formatCurrency(totalRevenue)}
-            </span>
-            <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
-              {activeDaysInPeriod} {activeDaysInPeriod === 1 ? 'day' : 'days'} in period
-            </span>
-          </div>
 
-          {/* 2. Items Sold */}
-          <div className="flex flex-col items-center text-center px-3">
-            <div className="w-11 h-11 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2.5 flex-shrink-0">
-              <Package size={20} strokeWidth={2.2} />
+            {/* 2. Items Sold */}
+            <div className="flex flex-col items-center text-center px-2.5">
+              <div className="w-10 h-10 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center mb-2 flex-shrink-0">
+                <Package size={19} strokeWidth={2.2} />
+              </div>
+              <span className="text-[12.5px] font-medium text-[#68716C] leading-tight block truncate">
+                Items Sold
+              </span>
+              <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1 block tracking-tight leading-none">
+                {totalItemsSold}
+              </span>
+              <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
+                {products.length} catalog products
+              </span>
             </div>
-            <span className="text-[13px] font-medium text-[#68716C] leading-tight block truncate">
-              Items Sold
-            </span>
-            <span className="text-[18px] sm:text-[20px] font-bold text-[#202522] tabular-nums mt-1.5 block tracking-tight leading-none">
-              {totalItemsSold}
-            </span>
-            <span className="text-[11.5px] text-[#929A95] mt-1.5 block leading-tight">
-              {products.length} catalog products
-            </span>
           </div>
         </section>
 

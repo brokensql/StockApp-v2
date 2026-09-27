@@ -27,7 +27,6 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
     <div
       id="store-screen-container"
       className="w-full flex flex-col"
-      style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <InventoryScreen
         products={products}

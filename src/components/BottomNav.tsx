@@ -131,7 +131,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <div
             id="bottom-nav-bar"
             className="bg-white border-x border-t border-[#E1E6E2] rounded-t-[24px] sm:rounded-t-[28px] shadow-[0_-4px_24px_rgba(32,37,34,0.06)] px-2 pt-1.5 pb-2.5 sm:pb-3 flex items-center justify-between relative z-40"
-            style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))' }}
+            style={{ paddingBottom: 'calc(10px + var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)))' }}
           >
             {/* Left Navigation Items */}
             <div className="flex-1 flex items-center justify-around">

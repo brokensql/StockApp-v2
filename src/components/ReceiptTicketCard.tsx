@@ -15,6 +15,7 @@ interface ReceiptTicketCardProps {
   hideBrokenLine?: boolean;
   isPeekingShadow?: boolean;
   storeName?: string;
+  showAllProducts?: boolean;
 }
 
 export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
@@ -27,6 +28,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
   hideBrokenLine = false,
   isPeekingShadow = false,
   storeName,
+  showAllProducts = false,
 }) => {
   const [showConfetti, setShowConfetti] = React.useState(false);
 
@@ -265,33 +267,48 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             </span>
           </div>
 
-          <div className={`divide-y divide-[#F1F3F0] ${hideThankYou ? 'max-h-40 my-0.5' : 'max-h-52 my-1'} overflow-y-auto pr-1`}>
-            {(maxItems && transaction.items.length > maxItems
-              ? transaction.items.slice(0, maxItems)
-              : transaction.items
-            ).map((item, idx) => (
-              <div key={idx} className={`${hideThankYou ? 'py-1.5' : 'py-2.5'} flex items-center justify-between text-[13px]`}>
-                <div className="min-w-0 pr-3 flex-1">
-                  <p className="font-semibold text-[#202522] truncate leading-snug">{item.name}</p>
-                  <p className="text-[11.5px] text-[#68716C] mt-0.5 tabular-nums">
-                    {item.quantity} × {formatCurrency(item.unitPrice)}
-                  </p>
-                </div>
-                <span className="font-bold text-[#202522] tabular-nums flex-shrink-0">
-                  {formatCurrency(item.quantity * item.unitPrice)}
-                </span>
-              </div>
-            ))}
+          {(() => {
+            const isUncapped = showAllProducts || (!hideThankYou && maxItems === undefined);
+            const itemsToRender =
+              maxItems && !isUncapped && transaction.items.length > maxItems
+                ? transaction.items.slice(0, maxItems)
+                : transaction.items;
 
-            {/* 3rd section: 3 dots indicating continuation if items exceed maxItems */}
-            {maxItems && transaction.items.length > maxItems && (
-              <div className="py-1 flex items-center justify-center select-none" aria-label="More items">
-                <span className="text-[14px] font-black tracking-[0.35em] text-[#929A95] pl-1 leading-none">
-                  •••
-                </span>
+            return (
+              <div
+                className={`divide-y divide-[#F1F3F0] ${
+                  isUncapped
+                    ? 'my-1'
+                    : hideThankYou
+                    ? 'max-h-40 my-0.5 overflow-y-auto pr-1'
+                    : 'max-h-52 my-1 overflow-y-auto pr-1'
+                }`}
+              >
+                {itemsToRender.map((item, idx) => (
+                  <div key={idx} className={`${hideThankYou ? 'py-1.5' : 'py-2.5'} flex items-center justify-between text-[13px]`}>
+                    <div className="min-w-0 pr-3 flex-1">
+                      <p className="font-semibold text-[#202522] truncate leading-snug">{item.name}</p>
+                      <p className="text-[11.5px] text-[#68716C] mt-0.5 tabular-nums">
+                        {item.quantity} × {formatCurrency(item.unitPrice)}
+                      </p>
+                    </div>
+                    <span className="font-bold text-[#202522] tabular-nums flex-shrink-0">
+                      {formatCurrency(item.quantity * item.unitPrice)}
+                    </span>
+                  </div>
+                ))}
+
+                {/* 3 dots indicating continuation if items exceed maxItems on capped view */}
+                {!isUncapped && maxItems && transaction.items.length > maxItems && (
+                  <div className="py-1 flex items-center justify-center select-none" aria-label="More items">
+                    <span className="text-[14px] font-black tracking-[0.35em] text-[#929A95] pl-1 leading-none">
+                      •••
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* Subtotal, Payment Method, Cash Received & Change Due Summary */}
           <div className={`${hideThankYou ? 'pt-1.5 space-y-1' : 'pt-3 space-y-1.5'} border-t border-[#E1E6E2] text-[12.5px]`}>

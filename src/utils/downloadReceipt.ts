@@ -43,10 +43,12 @@ function generateCanvasReceipt(
 ): string {
   const width = 420;
   const itemsCount = transaction.items?.length || 0;
-  // Estimate height based on number of items
-  const baseHeight = 610;
+  const parsedCashNum = typeof cashTendered === 'string' ? parseFloat(cashTendered) || 0 : (cashTendered || 0);
+  const hasCashExtraLines = transaction.paymentMethod === 'cash' && parsedCashNum > 0;
+  // Estimate height generously based on number of items, payment details and barcode
+  const baseHeight = hasCashExtraLines ? 690 : 640;
   const itemRowHeight = 44;
-  const height = Math.max(710, baseHeight + itemsCount * itemRowHeight);
+  const height = Math.max(740, baseHeight + itemsCount * itemRowHeight);
 
   const canvas = document.createElement('canvas');
   const scale = 2; // High-DPI 2x retina
@@ -352,11 +354,15 @@ export async function downloadReceiptTicket(
     // Attempt 1: High-fidelity DOM capture via html-to-image
     if (receiptElement) {
       try {
+        const fullWidth = receiptElement.scrollWidth || receiptElement.offsetWidth;
+        const fullHeight = receiptElement.scrollHeight || receiptElement.offsetHeight;
         dataUrl = await toPng(receiptElement, {
           quality: 0.98,
           pixelRatio: 2,
           backgroundColor: '#F9FAF8',
           cacheBust: true,
+          width: fullWidth,
+          height: fullHeight,
           filter: (node) => {
             // Exclude dynamic confetti particles from the downloaded receipt
             if (node instanceof HTMLElement && node.classList.contains('confetti-particle')) {

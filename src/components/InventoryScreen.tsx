@@ -161,7 +161,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       className="w-full max-w-[430px] mx-auto flex flex-col"
-      style={{ paddingBottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))' }}
+      style={{ paddingBottom: 'calc(5.75rem + var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)))' }}
     >
       {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons */}
       <header
@@ -400,7 +400,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           <div
             id="inventory-fab-portal-container"
             className="fixed left-0 right-0 z-40 flex justify-center pointer-events-none"
-            style={{ bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))' }}
+            style={{ bottom: 'calc(5.75rem + var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)))' }}
           >
             <div className="w-full max-w-[430px] px-5 flex justify-end pointer-events-auto">
               <motion.button
