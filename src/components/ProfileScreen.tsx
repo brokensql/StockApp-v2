@@ -102,7 +102,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       }, 5000);
     } catch (err: unknown) {
       console.error('Restore failed:', err);
-      toast.error('Failed to restore data from backup.');
+      toast.error(err instanceof Error ? err.message : 'Failed to restore data from backup.');
       setIsRestoring(false);
     }
   };
@@ -128,7 +128,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (PNG, JPEG, WebP, etc.)');
+      toast.error('Please select a valid image file (PNG, JPEG, WebP, etc.)');
       return;
     }
 
@@ -146,7 +146,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       }
     } catch (err) {
       console.error('Failed to save profile photo to phone storage:', err);
-      alert('Failed to process image. Please try another photo.');
+      toast.error('Failed to save photo to offline storage. Please try another image.');
     } finally {
       setIsUploadingPhoto(false);
       if (fileInputRef.current) {

@@ -23,6 +23,8 @@ import { SwipeDeck } from '@/components/ui/swipe-deck';
 import {
   calculatePHTSalesGrowth,
   getPHTParts,
+  getTransactionTimestamp,
+  isTransactionInPHTPeriod,
 } from '../utils/philippineDate';
 
 interface HomeScreenProps {
@@ -109,14 +111,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   // Sales in current month (PHT)
   const currentMonthSales = useMemo(() => {
-    const currentYearMonth = `${phtDate.year}-${String(phtDate.month).padStart(2, '0')}`;
     return sales
-      .filter((s) => {
-        const parts = getPHTParts(s.createdAt || s.timestamp || Date.now());
-        return parts.dateKey.startsWith(currentYearMonth);
-      })
+      .filter((s) => isTransactionInPHTPeriod(s, 'month'))
       .reduce((acc, s) => acc + (s.total || 0), 0);
-  }, [sales, phtDate]);
+  }, [sales]);
 
   // Growth calculation in PHT
   const growthMetrics = useMemo(() => calculatePHTSalesGrowth(sales), [sales]);

@@ -20,6 +20,17 @@ import { Capacitor } from '@capacitor/core';
 import { NavTab, Product, SaleItem, SaleTransaction, UserProfile } from './types';
 import { validateCartStock } from './utils/stockValidation';
 import {
+  loadProducts,
+  saveProducts,
+  loadSales,
+  saveSales,
+  loadProfile,
+  saveProfile,
+  completeSaleTransaction,
+  deleteSaleTransaction,
+  clearSalesTransactions,
+} from './services/storageService';
+import {
   deleteProductImage,
   clearAllProductImages,
   pruneOrphanProductImages,
@@ -38,47 +49,6 @@ import {
   ONBOARDED_STORAGE_KEY,
   CLEAN_SLATE_KEY,
 } from './utils/storageKeys';
-
-const DEFAULT_PROFILE: UserProfile = {
-  ownerName: 'Store Owner',
-  storeName: 'My Store',
-  email: '',
-  phone: '',
-  address: '',
-  businessType: 'Retail & Grocery',
-  currency: 'PHP (₱)',
-};
-
-/**
- * Safe JSON parser with auto-quarantine for corrupted records (F3).
- * Preserves the corrupted string with a timestamped key instead of silently wiping it.
- */
-function safeParseStorage<T>(key: string): { data: T | null; corrupted: boolean } {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw || !raw.trim()) {
-      return { data: null, corrupted: false };
-    }
-    try {
-      const parsed = JSON.parse(raw);
-      return { data: parsed, corrupted: false };
-    } catch {
-      const corruptKey = `${key}_corrupt_${Date.now()}`;
-      try {
-        localStorage.setItem(corruptKey, raw);
-        localStorage.removeItem(key);
-      } catch (storageErr) {
-        console.error('Failed to preserve corrupt data', storageErr);
-      }
-      setTimeout(() => {
-        toast.error('Saved data was corrupted; it has been preserved for recovery. Starting fresh.');
-      }, 300);
-      return { data: null, corrupted: true };
-    }
-  } catch {
-    return { data: null, corrupted: false };
-  }
-}
 
 function getInitialOnboarded(): boolean {
   try {
@@ -148,97 +118,15 @@ function getInitialOnboarded(): boolean {
 }
 
 function getInitialProfile(): UserProfile {
-  try {
-    const saved =
-      localStorage.getItem(PROFILE_STORAGE_KEY) ||
-      localStorage.getItem(PROFILE_BACKUP_KEY);
-    let profile = { ...DEFAULT_PROFILE };
-    if (saved) {
-      profile = { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
-      // Profile avatar is stored solely in IndexedDB on device to avoid storage churn
-      delete profile.avatarUrl;
-    }
-
-    // Redundant restoration from individual keys if available
-    const ownerBackup = localStorage.getItem(OWNER_NAME_BACKUP_KEY);
-    if (ownerBackup && ownerBackup.trim()) {
-      profile.ownerName = ownerBackup;
-    }
-    const storeBackup = localStorage.getItem(STORE_NAME_BACKUP_KEY);
-    if (storeBackup && storeBackup.trim()) {
-      profile.storeName = storeBackup;
-    }
-    return profile;
-  } catch (e) {
-    console.error('Failed to load profile from localStorage', e);
-  }
-  return DEFAULT_PROFILE;
-}
-
-function deduplicateProducts(prods: Product[]): Product[] {
-  const seenIds = new Set<string>();
-  const seenSkus = new Set<string>();
-  const deduplicated: Product[] = [];
-
-  for (const p of prods) {
-    if (seenIds.has(p.id)) continue;
-    const cleanSku = p.sku ? p.sku.trim().toLowerCase() : '';
-
-    if (cleanSku && seenSkus.has(cleanSku)) continue;
-
-    seenIds.add(p.id);
-    if (cleanSku) seenSkus.add(cleanSku);
-    deduplicated.push(p);
-  }
-
-  return deduplicated;
+  return loadProfile();
 }
 
 function getInitialProducts(): Product[] {
-  try {
-    // Migration: ensure clean slate on first run or when reset
-    const hasCleanSlate = localStorage.getItem(CLEAN_SLATE_KEY);
-    if (!hasCleanSlate) {
-      localStorage.setItem(CLEAN_SLATE_KEY, 'true');
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify([]));
-      return [];
-    }
-
-    const { data } = safeParseStorage<Product[]>(PRODUCTS_STORAGE_KEY);
-    if (data && Array.isArray(data)) {
-      return deduplicateProducts(data);
-    }
-  } catch (e) {
-    console.error('Failed to load products from localStorage', e);
-  }
-  return [];
+  return loadProducts();
 }
 
 function getInitialSales(): SaleTransaction[] {
-  try {
-    const hasCleanSlate = localStorage.getItem(CLEAN_SLATE_KEY);
-    if (!hasCleanSlate) {
-      return [];
-    }
-    const primary = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_KEY);
-    if (primary.data && Array.isArray(primary.data)) {
-      return primary.data;
-    }
-
-    // Mirror fallback if primary key missing or corrupted (F2)
-    const mirror = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_MIRROR_KEY);
-    if (mirror.data && Array.isArray(mirror.data)) {
-      setTimeout(() => {
-        toast.warning('Recovered sales from backup mirror after storage issue.');
-      }, 500);
-      return mirror.data;
-    }
-  } catch (e) {
-    console.error('Failed to load sales from localStorage', e);
-  }
-  return [];
+  return loadSales();
 }
 
 export default function App() {
@@ -268,33 +156,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    try {
-      // Exclude avatarUrl from localStorage to prevent quota bloat and avoid stale image churn
-      const { avatarUrl, ...profileWithoutAvatar } = userProfile;
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileWithoutAvatar));
-      localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(profileWithoutAvatar));
-      if (userProfile.ownerName && userProfile.ownerName.trim() && userProfile.ownerName !== 'Store Owner') {
-        localStorage.setItem(OWNER_NAME_BACKUP_KEY, userProfile.ownerName);
-        localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
-        localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-      }
-      if (userProfile.storeName && userProfile.storeName.trim() && userProfile.storeName !== 'My Store') {
-        localStorage.setItem(STORE_NAME_BACKUP_KEY, userProfile.storeName);
-        localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
-        localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-      }
-    } catch (e) {
-      console.error('Failed to save profile to localStorage', e);
-    }
+    saveProfile(userProfile);
   }, [userProfile]);
 
   useEffect(() => {
-    try {
-      // Store products in localStorage without raw image strings to guarantee localStorage never exceeds quota
-      const safeProducts = products.map(({ imageUrl, ...rest }) => rest);
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
-    } catch (e) {
-      console.error('Failed to save products to localStorage', e);
+    const saved = saveProducts(products);
+    if (!saved) {
       toast.error(
         'Storage full — your last change was NOT saved. Clear some product images or export a backup now.',
         { duration: 8000 }
@@ -303,12 +170,8 @@ export default function App() {
   }, [products]);
 
   useEffect(() => {
-    try {
-      const serialized = JSON.stringify(sales);
-      localStorage.setItem(SALES_STORAGE_KEY, serialized);
-      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, serialized);
-    } catch (e) {
-      console.error('Failed to save sales to localStorage', e);
+    const saved = saveSales(sales);
+    if (!saved) {
       toast.error(
         'Storage full — your last change was NOT saved. Clear some product images or export a backup now.',
         { duration: 8000 }
@@ -317,18 +180,13 @@ export default function App() {
   }, [sales]);
 
   useEffect(() => {
-    const handleOnline = () => {
-      toast.success('Online');
-    };
     const handleOffline = () => {
       toast.error('No internet');
     };
 
-    window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
@@ -545,48 +403,60 @@ export default function App() {
   const handleCompleteSale = (
     newTransaction: SaleTransaction,
     updatedProducts: Product[]
-  ) => {
-    // Robust centralized validation: verify that no item in transaction was out of stock or exceeds stock
-    const validation = validateCartStock(newTransaction.items, products);
-    if (!validation.isValid) {
-      const names = validation.invalidItems.map((i) => `"${i.name}"`).join(', ');
-      toast.error(`Cannot complete sale: ${names} ${validation.invalidItems.length === 1 ? 'is' : 'are'} out of stock.`);
-      return;
+  ): boolean => {
+    // Atomically validate and persist inventory change and sale record
+    const result = completeSaleTransaction(
+      newTransaction,
+      updatedProducts,
+      sales,
+      products
+    );
+
+    if (!result.success) {
+      toast.error(result.error || 'Failed to complete sale.');
+      return false;
     }
 
     setSales((prev) => [newTransaction, ...prev]);
     setProducts(updatedProducts);
     toast.success('Sale completed');
+    return true;
   };
 
   const handleDeleteSale = (transactionId: string, restoreStock = false) => {
-    const saleToDelete = sales.find((s) => s.id === transactionId);
-    if (!saleToDelete) return;
+    const result = deleteSaleTransaction(
+      transactionId,
+      sales,
+      products,
+      restoreStock
+    );
 
-    if (restoreStock && saleToDelete.items && saleToDelete.items.length > 0) {
-      setProducts((prevProducts) => {
-        return prevProducts.map((prod) => {
-          const soldItem = saleToDelete.items.find((item) => item.productId === prod.id);
-          if (soldItem && soldItem.quantity > 0) {
-            return { ...prod, stock: prod.stock + soldItem.quantity };
-          }
-          return prod;
-        });
-      });
+    if (!result.success) {
+      toast.error(result.error || 'Failed to delete sale.');
+      return;
     }
 
-    setSales((prev) => prev.filter((s) => s.id !== transactionId));
+    setSales(result.updatedSales);
+    setProducts(result.updatedProducts);
+
+    const txNum = result.deletedSale?.transactionNumber || 'Sale';
     toast.success(
       restoreStock
-        ? `Sale ${saleToDelete.transactionNumber} deleted & stock restored`
-        : `Sale ${saleToDelete.transactionNumber} deleted from history`
+        ? `Sale ${txNum} deleted & stock restored`
+        : `Sale ${txNum} deleted from history`
     );
   };
 
   const handleClearSales = (saleIdsToDelete: string[]) => {
     if (!saleIdsToDelete || saleIdsToDelete.length === 0) return;
-    const idSet = new Set(saleIdsToDelete);
-    setSales((prev) => prev.filter((s) => !idSet.has(s.id)));
+    const result = clearSalesTransactions(saleIdsToDelete, sales);
+
+    if (!result.success) {
+      toast.error(result.error || 'Failed to clear sales.');
+      return;
+    }
+
+    setSales(result.updatedSales);
     toast.success(
       `Removed ${saleIdsToDelete.length} ${saleIdsToDelete.length === 1 ? 'sale record' : 'sale records'} from history`
     );

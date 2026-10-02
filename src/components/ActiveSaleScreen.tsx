@@ -27,6 +27,7 @@ import {
   getProductAvailableStock,
 } from '../utils/stockValidation';
 import { downloadReceiptTicket } from '../utils/downloadReceipt';
+import { generateEntityId } from '../utils/idGenerator';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { useProductImages } from '../hooks/useProductImages';
@@ -56,7 +57,7 @@ const CheckoutCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src
 
 interface ActiveSaleScreenProps {
   products: Product[];
-  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => void;
+  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
   onCancelSale: () => void;
   initialItems?: SaleItem[];
   existingSales?: SaleTransaction[];
@@ -282,7 +283,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
     const txNumber = getNextReceiptId(existingSales);
 
     const newTransaction: SaleTransaction = {
-      id: `tx-${nowEpoch}`,
+      id: generateEntityId('tx'),
       transactionNumber: txNumber,
       timestamp: timeStr,
       createdAt: nowEpoch,
@@ -309,8 +310,10 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       return prod;
     });
 
-    setCompletedTx(newTransaction);
-    onCompleteSale(newTransaction, updatedProducts);
+    const success = onCompleteSale(newTransaction, updatedProducts);
+    if (success !== false) {
+      setCompletedTx(newTransaction);
+    }
   };
 
   const handleScanSuccess = (barcode: string) => {

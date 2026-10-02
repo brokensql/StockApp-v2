@@ -8,7 +8,7 @@ interface StoreScreenProps {
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
-  onCompleteSale?: (transaction: SaleTransaction, updatedProducts: Product[]) => void;
+  onCompleteSale?: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
   initialSubTab?: 'inventory' | 'sales';
   initialAddModalOpen?: boolean;
   initialSku?: string;

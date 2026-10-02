@@ -16,7 +16,12 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Product, SaleTransaction } from '../types';
-import { getTransactionTimestamp, formatPHTTimestamp } from '../utils/philippineDate';
+import {
+  getTransactionTimestamp,
+  formatPHTTimestamp,
+  getPHTParts,
+  isTransactionInPHTPeriod,
+} from '../utils/philippineDate';
 import { RevenueStatisticsChart, RevenueTimeframe } from './RevenueStatisticsChart';
 import { CategoryDonutChart } from './CategoryDonutChart';
 import { getProductColor } from '../utils/productColors';
@@ -34,44 +39,10 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
 }) => {
   const [timeframe, setTimeframe] = useState<RevenueTimeframe>('day');
 
-  // Filter sales based on selected timeframe in Philippine Time
+  // Filter sales based on selected timeframe in Philippine Time (Asia/Manila)
   const filteredSales = useMemo(() => {
     if (sales.length === 0) return [];
-
-    const now = new Date();
-    // UTC+8 offset calculation
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    const phtNow = new Date(utcTime + 8 * 3600000);
-
-    const startOfToday = new Date(phtNow);
-    startOfToday.setHours(0, 0, 0, 0);
-
-    return sales.filter((s) => {
-      const txTimestamp = getTransactionTimestamp(s);
-      const txPht = new Date(txTimestamp + 8 * 3600000);
-
-      if (timeframe === 'day') {
-        return txPht >= startOfToday;
-      }
-
-      if (timeframe === 'week') {
-        const sevenDaysAgo = new Date(startOfToday);
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-        return txPht >= sevenDaysAgo;
-      }
-
-      if (timeframe === 'month') {
-        const startOfMonth = new Date(phtNow.getFullYear(), phtNow.getMonth(), 1);
-        return txPht >= startOfMonth;
-      }
-
-      if (timeframe === 'year') {
-        const startOfYear = new Date(phtNow.getFullYear(), 0, 1);
-        return txPht >= startOfYear;
-      }
-
-      return true;
-    });
+    return sales.filter((s) => isTransactionInPHTPeriod(s, timeframe));
   }, [sales, timeframe]);
 
   // Aggregate Metrics
@@ -107,8 +78,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
     const daysSet = new Set(
       filteredSales.map((s) => {
         const ts = getTransactionTimestamp(s);
-        const pht = new Date(ts + 8 * 3600000);
-        return `${pht.getFullYear()}-${pht.getMonth() + 1}-${pht.getDate()}`;
+        return getPHTParts(ts).dateKey;
       })
     );
     return Math.max(1, daysSet.size);

@@ -29,23 +29,7 @@
 @font-face {
   font-family: 'Satoshi';
   src: url('/fonts/satoshi-700.woff2') format('woff2');
-  font-weight: 600;
-  font-display: block;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/satoshi-700.woff2') format('woff2');
   font-weight: 700;
-  font-display: block;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/satoshi-900.woff2') format('woff2');
-  font-weight: 800;
   font-display: block;
   font-style: normal;
 }

@@ -13,7 +13,7 @@ import {
 interface SalesScreenProps {
   products: Product[];
   sales: SaleTransaction[];
-  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => void;
+  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
   onDeleteSale?: (saleId: string, restoreStock?: boolean) => void;
   onClearSales?: (saleIds: string[]) => void;
   onBack?: () => void;
@@ -109,8 +109,10 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
   };
 
   const handleSaleCompleted = (transaction: SaleTransaction, updatedProducts: Product[]) => {
-    onCompleteSale(transaction, updatedProducts);
-    setIsActiveSaleOpen(false);
+    const success = onCompleteSale(transaction, updatedProducts);
+    if (success !== false) {
+      setIsActiveSaleOpen(false);
+    }
   };
 
   const handleStartSale = () => {

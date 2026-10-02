@@ -5,6 +5,8 @@ import { SaleTransaction } from '../types';
 import {
   getPHTParts,
   getPHTTodayMidnightEpoch,
+  getPHTYesterdayDateKey,
+  getPHTDaysInMonth,
   getTransactionTimestamp,
   PHILIPPINES_TIMEZONE,
 } from '../utils/philippineDate';
@@ -66,9 +68,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
     const byHourYesterday: Record<number, number> = {};
 
     const todayParts = getPHTParts(new Date());
-    const midnightToday = getPHTTodayMidnightEpoch();
-    const midnightYesterday = midnightToday - 24 * 3600 * 1000;
-    const yesterdayParts = getPHTParts(midnightYesterday + 12 * 3600 * 1000);
+    const yesterdayDateKey = getPHTYesterdayDateKey();
 
     for (const s of sales) {
       const epoch = getTransactionTimestamp(s);
@@ -77,7 +77,7 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
 
       if (parts.dateKey === todayParts.dateKey) {
         byHourToday[parts.hour] = (byHourToday[parts.hour] || 0) + s.total;
-      } else if (parts.dateKey === yesterdayParts.dateKey) {
+      } else if (parts.dateKey === yesterdayDateKey) {
         byHourYesterday[parts.hour] = (byHourYesterday[parts.hour] || 0) + s.total;
       }
     }
@@ -184,9 +184,14 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
       });
     } else if (timeframe === 'month') {
       // Month: 4 Weeks of the current month
-      const startOfMonth = new Date(Date.UTC(currentParts.year, currentParts.month - 1, 1));
-      const endOfMonth = new Date(Date.UTC(currentParts.year, currentParts.month, 0));
-      rangeStr = `${formatDayMonthYear(startOfMonth)} - ${formatDayMonthYear(endOfMonth)}`;
+      const daysInCurrentMonth = getPHTDaysInMonth(currentParts.year, currentParts.month);
+      const prevMonth = currentParts.month === 1 ? 12 : currentParts.month - 1;
+      const prevYear = currentParts.month === 1 ? currentParts.year - 1 : currentParts.year;
+      const prevDaysInMonth = getPHTDaysInMonth(prevYear, prevMonth);
+
+      const startOfMonthStr = `01 ${monthNames[currentParts.month - 1]}, ${currentParts.year}`;
+      const endOfMonthStr = `${String(daysInCurrentMonth).padStart(2, '0')} ${monthNames[currentParts.month - 1]}, ${currentParts.year}`;
+      rangeStr = `${startOfMonthStr} - ${endOfMonthStr}`;
 
       const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
       weeks.forEach((wName, idx) => {
@@ -194,17 +199,17 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
         let prevVal = 0;
         // Group days 1-7, 8-14, 15-21, 22-end
         const startDay = idx * 7 + 1;
-        const endDay = idx === 3 ? endOfMonth.getDate() : (idx + 1) * 7;
+        const endDay = idx === 3 ? daysInCurrentMonth : (idx + 1) * 7;
 
         for (let d = startDay; d <= endDay; d++) {
           const key = `${currentParts.year}-${String(currentParts.month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           curVal += salesByDate[key] || 0;
 
           // Previous month day
-          const prevMonth = currentParts.month === 1 ? 12 : currentParts.month - 1;
-          const prevYear = currentParts.month === 1 ? currentParts.year - 1 : currentParts.year;
-          const prevKey = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          prevVal += salesByDate[prevKey] || 0;
+          if (d <= prevDaysInMonth) {
+            const prevKey = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            prevVal += salesByDate[prevKey] || 0;
+          }
         }
 
         currentSum += curVal;

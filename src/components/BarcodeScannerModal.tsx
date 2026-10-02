@@ -667,9 +667,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         const constraints: MediaStreamConstraints = {
           video: {
             facingMode: { ideal: facingMode },
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 60, min: 30 },
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            frameRate: { ideal: 30, min: 15 },
           },
           audio: false,
         };

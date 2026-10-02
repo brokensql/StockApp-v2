@@ -184,29 +184,33 @@ export async function saveProductImage(
     finalDataUrl = await compressImage(imageInput, 400, 0.82);
   }
 
-  // Update memory cache
-  memoryCache[productId] = finalDataUrl;
-
   // Persist to IndexedDB
-  try {
-    const db = await getDB();
-    if (db) {
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
-        const record: ImageRecord = {
-          id: productId,
-          dataUrl: finalDataUrl,
-          updatedAt: Date.now(),
-        };
-        const req = store.put(record);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-  } catch (err) {
-    console.warn(`Failed to persist image for product ${productId} in IndexedDB:`, err);
+  const db = await getDB();
+  if (!db) {
+    throw new Error('Offline database (IndexedDB) is unavailable on this device.');
   }
+
+  await new Promise<void>((resolve, reject) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const record: ImageRecord = {
+        id: productId,
+        dataUrl: finalDataUrl,
+        updatedAt: Date.now(),
+      };
+      const req = store.put(record);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error || new Error(`Failed to persist image for product ${productId}`));
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+      tx.onabort = () => reject(new Error('IndexedDB transaction was aborted'));
+    } catch (e) {
+      reject(e);
+    }
+  });
+
+  // Update memory cache after persistence succeeds
+  memoryCache[productId] = finalDataUrl;
 
   // Broadcast event so UI hooks re-render automatically
   if (typeof window !== 'undefined') {
@@ -401,27 +405,32 @@ export async function saveProfileImage(fileOrBlobOrDataUrl: File | Blob | string
     finalDataUrl = await compressImage(fileOrBlobOrDataUrl, 400, 0.85);
   }
 
-  memoryCache[PROFILE_AVATAR_KEY] = finalDataUrl;
-
-  try {
-    const db = await getDB();
-    if (db) {
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
-        const record: ImageRecord = {
-          id: PROFILE_AVATAR_KEY,
-          dataUrl: finalDataUrl,
-          updatedAt: Date.now(),
-        };
-        const req = store.put(record);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-  } catch (err) {
-    console.warn('Failed to save profile avatar in IndexedDB:', err);
+  // Persist to IndexedDB
+  const db = await getDB();
+  if (!db) {
+    throw new Error('Offline database (IndexedDB) is unavailable on this device.');
   }
+
+  await new Promise<void>((resolve, reject) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const record: ImageRecord = {
+        id: PROFILE_AVATAR_KEY,
+        dataUrl: finalDataUrl,
+        updatedAt: Date.now(),
+      };
+      const req = store.put(record);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error || new Error('Failed to save profile avatar in IndexedDB'));
+      tx.onerror = () => reject(tx.error || new Error('IndexedDB transaction failed'));
+      tx.onabort = () => reject(new Error('IndexedDB transaction was aborted'));
+    } catch (e) {
+      reject(e);
+    }
+  });
+
+  memoryCache[PROFILE_AVATAR_KEY] = finalDataUrl;
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, AlertCircle, Camera, Check, ChevronDown, ScanLine, Loader2, Upload } from 'lucide-react';
 import { Product } from '../types';
+import { toast } from 'sonner';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { STANDARD_CATEGORIES } from '../data/categories';
 import {
@@ -10,6 +11,7 @@ import {
   deleteProductImage,
   compressImage,
 } from '../utils/imageStorage';
+import { generateEntityId } from '../utils/idGenerator';
 
 interface ProductDetailModalProps {
   isOpen: boolean;
@@ -264,7 +266,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       ? product.id
       : matchingExistingProduct
       ? matchingExistingProduct.id
-      : `prod-${Date.now()}`;
+      : generateEntityId('prod');
 
     // Persist or delete image in offline IndexedDB
     if (!imagePreview) {
@@ -272,9 +274,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         console.error('Failed to delete product image from IDB:', err)
       );
     } else if (hasImageChanged) {
-      saveProductImage(targetId, imagePreview).catch((err) =>
-        console.error('Failed to save product image:', err)
-      );
+      saveProductImage(targetId, imagePreview).catch((err) => {
+        console.error('Failed to save product image to IndexedDB:', err);
+        toast.error('Could not save product photo to offline storage.');
+      });
     }
 
     const savedProduct: Product = {

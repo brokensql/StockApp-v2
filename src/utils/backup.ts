@@ -9,7 +9,9 @@ import {
   getProfileImage,
   saveProfileImage,
   deleteProfileImage,
+  pruneOrphanProductImages,
 } from './imageStorage';
+import { getPHTParts } from './philippineDate';
 import {
   PROFILE_STORAGE_KEY,
   PROFILE_BACKUP_KEY,
@@ -24,7 +26,7 @@ import {
 } from './storageKeys';
 
 export interface BackupPayload {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   exportedAt: string;
   storeName: string;
   products: Product[];
@@ -38,6 +40,8 @@ export interface BackupPayload {
 /**
  * Builds the comprehensive on-device backup JSON string containing all products,
  * sales ledger history, store identity, and compressed offline image assets.
+ * Uses schemaVersion 2: normalized structure where product metadata and image assets
+ * are cleanly separated to prevent multi-megabyte image duplication.
  */
 export async function buildBackupPayload(): Promise<string> {
   // Load products from localStorage
@@ -91,14 +95,16 @@ export async function buildBackupPayload(): Promise<string> {
   const images = await getAllProductImages();
   const profileImage = await getProfileImage();
 
-  // Merge images into products array for portable completeness
-  const productsWithImages: Product[] = products.map((prod) => ({
-    ...prod,
-    imageUrl: prod.imageUrl || images[prod.id] || undefined,
-  }));
+  // Normalized schemaVersion 2: store metadata only in products, images in separate map
+  const cleanProducts: Product[] = products.map(({ imageUrl, ...rest }) => rest);
 
   // Derive last receipt sequence
   let maxSeq = 0;
+  const storedSeq = localStorage.getItem('sage_last_receipt_seq');
+  if (storedSeq) {
+    const n = parseInt(storedSeq, 10);
+    if (!isNaN(n)) maxSeq = n;
+  }
   for (const s of sales) {
     const match = (s.transactionNumber || s.id || '').match(/SA-(\d+)/i);
     if (match) {
@@ -108,10 +114,10 @@ export async function buildBackupPayload(): Promise<string> {
   }
 
   const payload: BackupPayload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     storeName: profile.storeName || 'My Store',
-    products: productsWithImages,
+    products: cleanProducts,
     sales,
     profile,
     images,
@@ -128,12 +134,12 @@ export async function buildBackupPayload(): Promise<string> {
  */
 export async function saveBackupFile(): Promise<string> {
   const payloadStr = await buildBackupPayload();
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const hh = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
+  const parts = getPHTParts(new Date());
+  const yyyy = parts.year;
+  const mm = String(parts.month).padStart(2, '0');
+  const dd = String(parts.day).padStart(2, '0');
+  const hh = String(parts.hour).padStart(2, '0');
+  const min = String(parts.minute).padStart(2, '0');
   const filename = `stockapp-backup-${yyyy}${mm}${dd}-${hh}${min}.json`;
 
   const isNative =
@@ -179,7 +185,60 @@ export async function saveBackupFile(): Promise<string> {
 }
 
 /**
+ * Validates an individual product record from backup payload.
+ */
+function validateProductRecord(p: unknown, index: number): Product {
+  if (!p || typeof p !== 'object') {
+    throw new Error(`Corrupted product record at index ${index}: expected an object.`);
+  }
+  const obj = p as Record<string, unknown>;
+  if (typeof obj.id !== 'string' || !obj.id.trim()) {
+    throw new Error(`Corrupted product at index ${index}: missing or invalid product ID.`);
+  }
+  if (typeof obj.name !== 'string' || !obj.name.trim()) {
+    throw new Error(`Corrupted product "${String(obj.id)}": missing or invalid product name.`);
+  }
+  const price = Number(obj.price);
+  if (isNaN(price) || price < 0) {
+    throw new Error(`Corrupted product "${String(obj.name)}": invalid price.`);
+  }
+  const stock = Number(obj.stock);
+  if (isNaN(stock)) {
+    throw new Error(`Corrupted product "${String(obj.name)}": invalid stock.`);
+  }
+  return {
+    id: String(obj.id).trim(),
+    name: String(obj.name).trim(),
+    price,
+    stock,
+    category: typeof obj.category === 'string' ? obj.category : 'General',
+    sku: typeof obj.sku === 'string' ? obj.sku : undefined,
+    lowStockThreshold: typeof obj.lowStockThreshold === 'number' && !isNaN(obj.lowStockThreshold) ? obj.lowStockThreshold : 5,
+    unit: typeof obj.unit === 'string' ? obj.unit : 'pcs',
+  };
+}
+
+/**
+ * Validates an individual sale transaction record from backup payload.
+ */
+function validateSaleRecord(s: unknown, index: number): SaleTransaction {
+  if (!s || typeof s !== 'object') {
+    throw new Error(`Corrupted sale record at index ${index}: expected an object.`);
+  }
+  const obj = s as Record<string, unknown>;
+  if (typeof obj.id !== 'string' || !obj.id.trim()) {
+    throw new Error(`Corrupted sale at index ${index}: missing or invalid transaction ID.`);
+  }
+  const total = Number(obj.total);
+  if (isNaN(total) || total < 0) {
+    throw new Error(`Corrupted sale at index ${index}: invalid total amount.`);
+  }
+  return obj as unknown as SaleTransaction;
+}
+
+/**
  * Validates an uploaded backup file and returns a summary without applying destructive changes.
+ * Supports both schemaVersion 1 and schemaVersion 2.
  */
 export async function restoreBackupFromFile(file: File): Promise<BackupSummary> {
   const text = await file.text();
@@ -196,9 +255,10 @@ export async function restoreBackupFromFile(file: File): Promise<BackupSummary> 
 
   const data = parsed as Record<string, unknown>;
 
-  if (data.schemaVersion !== 1) {
+  const version = Number(data.schemaVersion);
+  if (version !== 1 && version !== 2) {
     throw new Error(
-      `Unsupported backup schema version (${String(data.schemaVersion)}). Expected version 1.`
+      `Unsupported backup schema version (${String(data.schemaVersion)}). Expected version 1 or 2.`
     );
   }
 
@@ -210,8 +270,28 @@ export async function restoreBackupFromFile(file: File): Promise<BackupSummary> 
     throw new Error('Corrupted backup file: "sales" must be a valid array.');
   }
 
-  const images = (data.images && typeof data.images === 'object') ? data.images : {};
-  const imageCount = Object.keys(images).length;
+  // Deep validation of products and sales
+  for (let i = 0; i < data.products.length; i++) {
+    validateProductRecord(data.products[i], i);
+  }
+  for (let i = 0; i < data.sales.length; i++) {
+    validateSaleRecord(data.sales[i], i);
+  }
+
+  const images = (data.images && typeof data.images === 'object') ? (data.images as Record<string, string>) : {};
+  let imageCount = Object.keys(images).length;
+
+  // For schemaVersion 1, also count embedded product images
+  if (version === 1 && imageCount === 0) {
+    let embeddedCount = 0;
+    for (const p of data.products as Product[]) {
+      if (p && p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('data:')) {
+        embeddedCount++;
+      }
+    }
+    imageCount = embeddedCount;
+  }
+
   const storeName =
     typeof data.storeName === 'string' && data.storeName.trim()
       ? data.storeName
@@ -220,7 +300,7 @@ export async function restoreBackupFromFile(file: File): Promise<BackupSummary> 
       : 'My Store';
 
   return {
-    schemaVersion: 1,
+    schemaVersion: version as 1 | 2,
     exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : new Date().toISOString(),
     storeName,
     productCount: data.products.length,
@@ -231,8 +311,12 @@ export async function restoreBackupFromFile(file: File): Promise<BackupSummary> 
 }
 
 /**
- * Restores all records wholesale from a validated backup payload and reloads the application.
- * Never merges — fully replaces existing on-device data.
+ * Restores all records wholesale from a validated backup payload in a staged, transactional manner.
+ * 1. Validates all records and image payloads.
+ * 2. Takes complete snapshots of existing localStorage and IndexedDB states.
+ * 3. Stages and writes images to IndexedDB. If write fails, rolls back IndexedDB to original snapshot.
+ * 4. Commits verified state to localStorage. If commit fails, rolls back both localStorage and IndexedDB.
+ * 5. Only after successful commit, prunes obsolete orphan images and reloads.
  */
 export async function applyRestorePayload(backupData: unknown): Promise<void> {
   if (!backupData || typeof backupData !== 'object') {
@@ -240,38 +324,108 @@ export async function applyRestorePayload(backupData: unknown): Promise<void> {
   }
 
   const payload = backupData as BackupPayload;
+  if (!Array.isArray(payload.products) || !Array.isArray(payload.sales)) {
+    throw new Error('Backup data contains invalid product or sales structures.');
+  }
 
-  // 1. Clear existing IndexedDB image stores
-  await clearAllProductImages().catch(() => {});
-  await deleteProfileImage().catch(() => {});
+  // 1. Validate all product and sale entities before touching any storage
+  const validatedProducts = payload.products.map((p, i) => validateProductRecord(p, i));
+  const validatedSales = payload.sales.map((s, i) => validateSaleRecord(s, i));
 
-  // 2. Restore images into IndexedDB
+  // 2. Snapshot current localStorage state for rollback
+  const localStorageSnapshot: Record<string, string | null> = {
+    [PRODUCTS_STORAGE_KEY]: localStorage.getItem(PRODUCTS_STORAGE_KEY),
+    [SALES_STORAGE_KEY]: localStorage.getItem(SALES_STORAGE_KEY),
+    [SALES_STORAGE_MIRROR_KEY]: localStorage.getItem(SALES_STORAGE_MIRROR_KEY),
+    [PROFILE_STORAGE_KEY]: localStorage.getItem(PROFILE_STORAGE_KEY),
+    [PROFILE_BACKUP_KEY]: localStorage.getItem(PROFILE_BACKUP_KEY),
+    [OWNER_NAME_BACKUP_KEY]: localStorage.getItem(OWNER_NAME_BACKUP_KEY),
+    [STORE_NAME_BACKUP_KEY]: localStorage.getItem(STORE_NAME_BACKUP_KEY),
+    [ONBOARDED_STORAGE_KEY]: localStorage.getItem(ONBOARDED_STORAGE_KEY),
+    [HAS_ENTERED_NAME_KEY]: localStorage.getItem(HAS_ENTERED_NAME_KEY),
+    [CLEAN_SLATE_KEY]: localStorage.getItem(CLEAN_SLATE_KEY),
+    sage_last_receipt_seq: localStorage.getItem('sage_last_receipt_seq'),
+  };
+
+  // 3. Snapshot current IndexedDB image state for rollback
+  const originalImages = await getAllProductImages();
+  const originalAvatar = await getProfileImage();
+
+  // Rollback helper for IndexedDB
+  const rollbackIndexedDB = async () => {
+    try {
+      await clearAllProductImages();
+      for (const [id, dataUrl] of Object.entries(originalImages)) {
+        await saveProductImage(id, dataUrl);
+      }
+      if (originalAvatar) {
+        await saveProfileImage(originalAvatar);
+      } else {
+        await deleteProfileImage();
+      }
+    } catch (e) {
+      console.error('Critical rollback failure in IndexedDB:', e);
+    }
+  };
+
+  // Rollback helper for localStorage
+  const rollbackLocalStorage = () => {
+    for (const [key, val] of Object.entries(localStorageSnapshot)) {
+      if (val !== null) {
+        localStorage.setItem(key, val);
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+  };
+
+  // 4. Stage images from payload (supporting both v2 images map and legacy v1 embedded images)
+  const stagedImages: Record<string, string> = {};
   if (payload.images && typeof payload.images === 'object') {
     for (const [productId, dataUrl] of Object.entries(payload.images)) {
       if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
-        await saveProductImage(productId, dataUrl).catch(() => {});
+        stagedImages[productId] = dataUrl;
       }
     }
   }
 
-  // Also check if any product has an embedded dataUrl
+  // Legacy v1 embedded image fallback
   for (const p of payload.products) {
-    if (p.imageUrl && p.imageUrl.startsWith('data:')) {
-      await saveProductImage(p.id, p.imageUrl).catch(() => {});
+    if (p.id && p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('data:')) {
+      if (!stagedImages[p.id]) {
+        stagedImages[p.id] = p.imageUrl;
+      }
     }
   }
 
-  // Restore avatar if present
-  if (payload.profileImage && typeof payload.profileImage === 'string' && payload.profileImage.startsWith('data:')) {
-    await saveProfileImage(payload.profileImage).catch(() => {});
-  } else if (payload.profile?.avatarUrl && payload.profile.avatarUrl.startsWith('data:')) {
-    await saveProfileImage(payload.profile.avatarUrl).catch(() => {});
+  const avatarDataUrl =
+    (typeof payload.profileImage === 'string' && payload.profileImage.startsWith('data:') && payload.profileImage) ||
+    (typeof payload.profile?.avatarUrl === 'string' && payload.profile.avatarUrl.startsWith('data:') && payload.profile.avatarUrl) ||
+    null;
+
+  // 5. Transactional write to IndexedDB
+  try {
+    for (const [productId, dataUrl] of Object.entries(stagedImages)) {
+      await saveProductImage(productId, dataUrl);
+    }
+
+    if (avatarDataUrl) {
+      await saveProfileImage(avatarDataUrl);
+    } else {
+      await deleteProfileImage();
+    }
+  } catch (err) {
+    console.error('Failed to write images during restore, rolling back IndexedDB:', err);
+    await rollbackIndexedDB();
+    throw new Error(
+      `Image restoration failed (${err instanceof Error ? err.message : 'storage quota exceeded'}). Original state was preserved.`
+    );
   }
 
-  // 3. Clean products for localStorage to avoid quota overflow
-  const safeProducts = payload.products.map(({ imageUrl, ...rest }) => rest);
+  // 6. Clean products for localStorage
+  const safeProducts = validatedProducts.map(({ imageUrl, ...rest }) => rest);
 
-  // 4. Clean profile without embedded avatar dataUrl
+  // 7. Clean profile without embedded avatar dataUrl
   const userProfile = payload.profile || {
     ownerName: 'Store Owner',
     storeName: payload.storeName || 'My Store',
@@ -283,24 +437,48 @@ export async function applyRestorePayload(backupData: unknown): Promise<void> {
   };
   const { avatarUrl, ...cleanProfile } = userProfile;
 
-  // 5. Write to localStorage
-  localStorage.setItem(CLEAN_SLATE_KEY, 'true');
-  localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
-  localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
-  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(payload.sales));
-  localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify(payload.sales));
-  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(cleanProfile));
-  localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(cleanProfile));
+  // 8. Commit to localStorage with automatic rollback of both localStorage & IndexedDB on error
+  try {
+    localStorage.setItem(CLEAN_SLATE_KEY, 'true');
+    localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
+    localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(validatedSales));
+    localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify(validatedSales));
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(cleanProfile));
+    localStorage.setItem(PROFILE_BACKUP_KEY, JSON.stringify(cleanProfile));
 
-  if (cleanProfile.ownerName && cleanProfile.ownerName.trim()) {
-    localStorage.setItem(OWNER_NAME_BACKUP_KEY, cleanProfile.ownerName);
-    localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
-  }
-  if (cleanProfile.storeName && cleanProfile.storeName.trim()) {
-    localStorage.setItem(STORE_NAME_BACKUP_KEY, cleanProfile.storeName);
-    localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
+    if (cleanProfile.ownerName && cleanProfile.ownerName.trim()) {
+      localStorage.setItem(OWNER_NAME_BACKUP_KEY, cleanProfile.ownerName);
+      localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
+    }
+    if (cleanProfile.storeName && cleanProfile.storeName.trim()) {
+      localStorage.setItem(STORE_NAME_BACKUP_KEY, cleanProfile.storeName);
+      localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
+    }
+
+    if (payload.lastReceiptSeq) {
+      const seq = parseInt(String(payload.lastReceiptSeq), 10);
+      if (!isNaN(seq) && seq > 0) {
+        localStorage.setItem('sage_last_receipt_seq', String(seq));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to commit localStorage during restore, rolling back all stores:', err);
+    rollbackLocalStorage();
+    await rollbackIndexedDB();
+    throw new Error(
+      `Restore failed during commit (${err instanceof Error ? err.message : 'storage quota exceeded'}). Original state was restored.`
+    );
   }
 
-  // 6. Reload application to cleanly mount all state from fresh restored data
+  // 9. Prune obsolete orphan images that are no longer part of restored product set
+  try {
+    const activeProductIds = validatedProducts.map((p) => p.id);
+    await pruneOrphanProductImages(activeProductIds, Boolean(avatarDataUrl));
+  } catch (pruneErr) {
+    console.warn('Non-fatal: failed to prune orphan images after restore commit:', pruneErr);
+  }
+
+  // 10. Reload application to cleanly mount all state from verified restored data
   window.location.reload();
 }
