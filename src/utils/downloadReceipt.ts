@@ -66,7 +66,7 @@ function generateCanvasReceipt(
     getStoredStoreName();
 
   // Background canvas tint
-  ctx.fillStyle = '#F9FAF8';
+  ctx.fillStyle = '#F7F9FB';
   ctx.fillRect(0, 0, width, height);
 
   const margin = 16;
@@ -121,7 +121,7 @@ function generateCanvasReceipt(
   const notchRadius = 14;
 
   // Left Notch cutout
-  ctx.fillStyle = '#F9FAF8';
+  ctx.fillStyle = '#F7F9FB';
   ctx.beginPath();
   ctx.arc(cardX, notchY, notchRadius, -Math.PI / 2, Math.PI / 2);
   ctx.fill();
@@ -359,7 +359,7 @@ export async function downloadReceiptTicket(
         dataUrl = await toPng(receiptElement, {
           quality: 0.98,
           pixelRatio: 2,
-          backgroundColor: '#F9FAF8',
+          backgroundColor: '#F7F9FB',
           cacheBust: true,
           width: fullWidth,
           height: fullHeight,

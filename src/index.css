@@ -105,7 +105,7 @@
   --color-primary-pressed: #1E5A22;
   --color-primary-tint: #E8F3E8;
 
-  --color-canvas: #F9FAF8;
+  --color-canvas: #F7F9FB;
   --color-surface: #FFFFFF;
   --color-surface-soft: #F1F3F0;
 
@@ -172,7 +172,7 @@ body.capacitor-native,
 
   body {
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #F9FAF8;
+    background-color: #F7F9FB;
     color: #202522;
     min-height: 100vh;
     min-height: 100dvh;

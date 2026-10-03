@@ -636,10 +636,21 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
         {activePoint && (() => {
           const curVal = activePoint.pt.currentValue;
           const prevVal = activePoint.pt.previousValue;
-          const isUp = curVal >= prevVal;
-          const diffPct = prevVal > 0
-            ? Math.abs(Math.round(((curVal - prevVal) / prevVal) * 100))
-            : (curVal > 0 ? 100 : 0);
+          const hasPrev = prevVal > 0;
+          
+          // If the matching previous cycle is 0, check the preceding point in the chart sequence
+          const prevSequentialVal = activeIndex > 0 ? dataset[activeIndex - 1].currentValue : 0;
+          const hasSequentialPrev = !hasPrev && prevSequentialVal > 0;
+
+          const baselineVal = hasPrev ? prevVal : hasSequentialPrev ? prevSequentialVal : 0;
+          const hasBaseline = baselineVal > 0;
+
+          const isUp = curVal >= baselineVal;
+          const diffPct = hasBaseline
+            ? Math.abs(Math.round(((curVal - baselineVal) / baselineVal) * 100))
+            : curVal > 0
+            ? 100
+            : 0;
 
           return (
             <motion.div
@@ -660,20 +671,34 @@ export const RevenueStatisticsChart: React.FC<RevenueStatisticsChartProps> = ({
               <div className="text-right">
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold ${
-                    isUp
+                    curVal === 0 && baselineVal === 0
+                      ? 'bg-[#F1F3F0] text-[#68716C]'
+                      : isUp
                       ? 'bg-[#E8F3E8] text-[#2F7D32]'
                       : 'bg-[#FDF0EE] text-[#D94841]'
                   }`}
                 >
-                  {isUp ? (
-                    <TrendingUp size={13} strokeWidth={2.4} />
+                  {curVal === 0 && baselineVal === 0 ? (
+                    <span>0%</span>
                   ) : (
-                    <TrendingDown size={13} strokeWidth={2.4} />
+                    <>
+                      {isUp ? (
+                        <TrendingUp size={13} strokeWidth={2.4} />
+                      ) : (
+                        <TrendingDown size={13} strokeWidth={2.4} />
+                      )}
+                      <span>{isUp ? `+${diffPct}%` : `-${diffPct}%`}</span>
+                    </>
                   )}
-                  <span>{diffPct}%</span>
                 </span>
-                <span className="text-[11px] text-[#929A95] mt-1 block text-right">
-                  vs previous period
+                <span className="text-[11px] text-[#929A95] mt-1 block text-right tabular-nums">
+                  {hasPrev
+                    ? `vs ${formatCurrency(prevVal)} prev cycle`
+                    : hasSequentialPrev
+                    ? `vs ${formatCurrency(prevSequentialVal)} prev ${timeframe === 'day' ? 'slot' : timeframe === 'week' ? 'day' : 'period'}`
+                    : curVal > 0
+                    ? `prev period: ₱0.00`
+                    : 'no sales in period'}
                 </span>
               </div>
             </motion.div>

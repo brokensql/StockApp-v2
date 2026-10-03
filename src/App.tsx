@@ -28,7 +28,6 @@ import {
   saveProfile,
   completeSaleTransaction,
   deleteSaleTransaction,
-  clearSalesTransactions,
 } from './services/storageService';
 import {
   deleteProductImage,
@@ -48,6 +47,7 @@ import {
   SALES_STORAGE_MIRROR_KEY,
   ONBOARDED_STORAGE_KEY,
   CLEAN_SLATE_KEY,
+  SALES_PAGE_CLEARED_IDS_KEY,
 } from './utils/storageKeys';
 
 function getInitialOnboarded(): boolean {
@@ -257,6 +257,7 @@ export default function App() {
       localStorage.removeItem(HAS_ENTERED_NAME_KEY);
       localStorage.removeItem(OWNER_NAME_BACKUP_KEY);
       localStorage.removeItem(STORE_NAME_BACKUP_KEY);
+      localStorage.removeItem(SALES_PAGE_CLEARED_IDS_KEY);
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
       localStorage.removeItem(SALES_STORAGE_KEY);
       localStorage.removeItem(SALES_STORAGE_MIRROR_KEY);
@@ -302,9 +303,9 @@ export default function App() {
           StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
           StatusBar.setBackgroundColor({ color: '#2F7D32' }).catch(() => {});
         } else {
-          // Other screens have off-white #F9FAF8 header: use light style (crisp dark text/icons)
+          // Other screens have off-white #F7F9FB header: use light style (crisp dark text/icons)
           StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#F9FAF8' }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: '#F7F9FB' }).catch(() => {});
         }
       }
     } catch {
@@ -447,21 +448,6 @@ export default function App() {
     );
   };
 
-  const handleClearSales = (saleIdsToDelete: string[]) => {
-    if (!saleIdsToDelete || saleIdsToDelete.length === 0) return;
-    const result = clearSalesTransactions(saleIdsToDelete, sales);
-
-    if (!result.success) {
-      toast.error(result.error || 'Failed to clear sales.');
-      return;
-    }
-
-    setSales(result.updatedSales);
-    toast.success(
-      `Removed ${saleIdsToDelete.length} ${saleIdsToDelete.length === 1 ? 'sale record' : 'sale records'} from history`
-    );
-  };
-
   const getHeaderTitle = (tab: NavTab): string => {
     switch (tab) {
       case 'home':
@@ -481,7 +467,7 @@ export default function App() {
   };
 
   return (
-    <div id="app-root" className="w-full min-h-[100dvh] bg-[#F9FAF8] font-sans antialiased text-[#202522] flex flex-col items-center">
+    <div id="app-root" className="w-full min-h-[100dvh] bg-[#F7F9FB] font-sans antialiased text-[#202522] flex flex-col items-center">
       <Toaster
         position="top-center"
         toastOptions={{
@@ -516,7 +502,7 @@ export default function App() {
         />
       ) : activeSaleSession.isOpen ? (
         /* Dedicated 1 Whole Page Sale / Checkout Screen */
-        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F9FAF8]">
+        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F7F9FB]">
           <ActiveSaleScreen
             products={products}
             existingSales={sales}
@@ -532,12 +518,12 @@ export default function App() {
           />
         </div>
       ) : (
-        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F9FAF8]">
+        <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col relative bg-[#F7F9FB]">
           {/* Glassmorphic Page Header */}
           {activeTab !== 'home' && activeTab !== 'store' && activeTab !== 'inventory' && (
             <header
               id="page-header"
-              className="sticky top-0 z-30 w-full bg-[#F9FAF8]/85 backdrop-blur-md select-none border-b border-transparent"
+              className="sticky top-0 z-30 w-full bg-[#F7F9FB]/85 backdrop-blur-md select-none border-b border-transparent"
               style={{
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
@@ -545,7 +531,7 @@ export default function App() {
               }}
             >
               {activeTab === 'sales' ? (
-                <div className="px-5 pt-3 pb-1 flex flex-col items-start relative">
+                <div className="h-16 sm:h-[68px] px-5 flex items-center gap-2 relative">
                   <button
                     type="button"
                     onClick={() => handleSelectTab('home')}
@@ -556,7 +542,7 @@ export default function App() {
                   </button>
                   <h1
                     id="page-header-title"
-                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left leading-tight mt-1"
+                    className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left leading-tight"
                   >
                     Sales
                   </h1>
@@ -620,7 +606,6 @@ export default function App() {
                 storeName={userProfile.storeName}
                 onCompleteSale={handleCompleteSale}
                 onDeleteSale={handleDeleteSale}
-                onClearSales={handleClearSales}
                 onBack={() => setActiveTab('home')}
                 onStartNewSale={handleQuickNewSale}
               />

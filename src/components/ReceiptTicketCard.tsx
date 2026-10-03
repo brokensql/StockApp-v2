@@ -152,17 +152,17 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
         ) : (
           <>
             {/* Top Header Section */}
-            <div className={`${cardBgClass} rounded-t-[28px] pt-5 px-6 pb-2 text-center`}>
-              {/* App's Icon Picture (substantially enlarged, tight gap to store name) */}
+            <div className={`${cardBgClass} rounded-t-[28px] pt-4 sm:pt-5 px-6 pb-2 text-center flex flex-col items-center`}>
+              {/* App's Icon Picture (enlarged, tight snug gap to store name) */}
               <img
                 src="/icon_192.png"
                 alt="App icon"
-                className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-1 object-contain select-none"
+                className="w-36 h-36 sm:w-40 sm:h-40 mx-auto object-contain select-none block"
                 referrerPolicy="no-referrer"
               />
 
-              {/* Store Name in place of Thank you (preserves original case, snug spacing) */}
-              <h1 className="text-[22px] sm:text-[25px] font-extrabold text-[#202522] tracking-tight leading-tight line-clamp-2 select-none">
+              {/* Store Name in place of Thank you (preserves original case, reduced gap directly under logo) */}
+              <h1 className="text-[22px] sm:text-[25px] font-extrabold text-[#202522] tracking-tight leading-tight line-clamp-2 select-none -mt-1 sm:-mt-1.5">
                 {displayStoreName}
               </h1>
               <p className="text-[13px] text-[#68716C] mt-1 max-w-[260px] mx-auto leading-relaxed">

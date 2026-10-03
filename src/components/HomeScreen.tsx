@@ -4,7 +4,6 @@ import {
   Receipt,
   User,
   ChevronDown,
-  ChevronRight,
   Banknote,
   Wallet,
   Eye,
@@ -205,7 +204,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto min-h-screen flex flex-col bg-[#F9FAF8]"
+      className="w-full max-w-[430px] mx-auto min-h-screen flex flex-col bg-[#F7F9FB]"
       style={{
         paddingBottom: 'calc(5.75rem + env(safe-area-inset-bottom, 8px))',
       }}
@@ -380,7 +379,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* ============================================================ */}
       {/* CURVED WHITE CONTENT SHEET (CARDS & OVERVIEW)                 */}
       {/* ============================================================ */}
-      <div className="flex-1 bg-[#F9FAF8] rounded-t-[30px] sm:rounded-t-[34px] -mt-6 relative z-20 pt-6 px-5 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+      <div className="flex-1 bg-[#F7F9FB] rounded-t-[30px] sm:rounded-t-[34px] -mt-6 relative z-20 pt-6 px-5 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
         {/* Section Header: Store Overview & Details > */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[17px] font-bold text-[#202522]">
@@ -391,10 +390,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             type="button"
             id="home-details-button"
             onClick={() => onNavigate && onNavigate('statistics')}
-            className="flex items-center gap-0.5 text-[13px] font-semibold text-[#68716C] hover:text-[#202522] transition-colors cursor-pointer"
+            className="text-[13px] font-semibold text-[#68716C] hover:text-[#202522] transition-colors cursor-pointer"
           >
-            <span>Details</span>
-            <ChevronRight size={15} strokeWidth={2.2} />
+            Details
           </button>
         </div>
 

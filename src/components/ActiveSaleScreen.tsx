@@ -354,7 +354,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         id="sale-success-full-page"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F9FAF8] px-4 pt-4 pb-8 flex flex-col"
+        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] px-4 pt-4 pb-8 flex flex-col"
         style={{
           paddingTop: 'calc(1.25rem + var(--safe-area-top, env(safe-area-inset-top, 0px)))',
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
@@ -423,7 +423,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F9FAF8] flex flex-col justify-between"
+      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col justify-between"
     >
       <div
         className="px-5 pt-6"

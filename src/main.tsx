@@ -19,7 +19,7 @@ if (isNative) {
   // Configure Android / iOS status bar
   StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
   StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-  StatusBar.setBackgroundColor({ color: '#F9FAF8' }).catch(() => {});
+  StatusBar.setBackgroundColor({ color: '#F7F9FB' }).catch(() => {});
 }
 
 // Initialize PWA auto-updater and session/cookie verification

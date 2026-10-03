@@ -206,15 +206,15 @@ const AnimatedTicket = React.forwardRef<HTMLDivElement, TicketProps>(
           <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background" />
 
           <div className="p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 mx-auto mb-1 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto flex items-center justify-center">
               <img
                 src="/icon_192.png"
                 alt="App icon"
-                className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-border"
+                className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-border"
                 referrerPolicy="no-referrer"
               />
             </div>
-            <h1 className="text-2xl font-semibold mt-4">Confirmed</h1>
+            <h1 className="text-2xl font-semibold mt-2">Confirmed</h1>
             <p className="text-muted-foreground mt-1">
               Your ticket has been issued successfully
             </p>

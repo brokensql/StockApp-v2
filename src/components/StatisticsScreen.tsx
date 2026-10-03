@@ -169,7 +169,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
     const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.lowStockThreshold).length;
     const outOfStock = products.filter((p) => p.stock === 0).length;
 
-    const inStockPct = total > 0 ? Math.round((inStock / total) * 100) : 100;
+    const inStockPct = total > 0 ? Math.round((inStock / total) * 100) : 0;
     const lowStockPct = total > 0 ? Math.round((lowStock / total) * 100) : 0;
     const outOfStockPct = total > 0 ? Math.round((outOfStock / total) * 100) : 0;
 
@@ -328,8 +328,8 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
         />
       </div>
 
-      {/* Inventory Health Section - container-less flat layout matching screenshot */}
-      <section aria-label="Inventory Health" className="mb-6">
+      {/* Inventory Health Section - Clean Horizontal Progress Bars matching requested design */}
+      <section aria-label="Inventory Health" className="mb-7 select-none">
         <div className="flex items-center justify-between mb-3 px-0.5">
           <h2 className="text-[17px] font-bold text-[#202522]">
             Inventory health
@@ -338,60 +338,61 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
             <button
               type="button"
               onClick={() => onNavigateToStore('inventory')}
-              className="text-[13px] font-medium text-[#202522] hover:text-black hover:underline transition-colors cursor-pointer"
+              className="text-[13px] font-medium text-[#202522] hover:text-black transition-colors cursor-pointer"
             >
               Manage stock →
             </button>
           )}
         </div>
 
-        {/* Multi-segment bar directly on screen */}
-        <div className="w-full bg-[#E1E6E2] h-2.5 sm:h-3 rounded-full overflow-hidden flex my-3.5">
-          <div
-            className="bg-[#2F7D32] h-full transition-all"
-            style={{ width: `${stockHealth.inStockPct}%` }}
-            title={`In Stock: ${stockHealth.inStock}`}
-          />
-          <div
-            className="bg-[#D99426] h-full transition-all"
-            style={{ width: `${stockHealth.lowStockPct}%` }}
-            title={`Low Stock: ${stockHealth.lowStock}`}
-          />
-          <div
-            className="bg-[#D94841] h-full transition-all"
-            style={{ width: `${stockHealth.outOfStockPct}%` }}
-            title={`Out of Stock: ${stockHealth.outOfStock}`}
-          />
-        </div>
+        {/* 3 Metric Rows matching the requested design */}
+        <div
+          id="inventory-health-container"
+          className="space-y-4 pt-1"
+        >
+          {[
+            {
+              id: 'in-stock',
+              label: 'In Stock',
+              percentage: stockHealth.inStockPct,
+              fillColor: '#2F7D32', // Vibrant green
+            },
+            {
+              id: 'low-stock',
+              label: 'Low Stock',
+              percentage: stockHealth.lowStockPct,
+              fillColor: '#E5A020', // Warm amber
+            },
+            {
+              id: 'out-of-stock',
+              label: 'Out of Stock',
+              percentage: stockHealth.outOfStockPct,
+              fillColor: '#D94841', // Vibrant red
+            },
+          ].map((metric) => (
+            <div key={metric.id} className="w-full">
+              {/* Top row: Label on left, Percentage on right */}
+              <div className="flex items-baseline justify-between mb-1.5">
+                <span className="text-[14px] sm:text-[14.5px] font-semibold text-[#202522]">
+                  {metric.label}
+                </span>
+                <span className="text-[14.5px] sm:text-[15px] font-bold text-[#202522] tabular-nums">
+                  {metric.percentage}%
+                </span>
+              </div>
 
-        <div className="grid grid-cols-3 gap-2 text-center pt-1">
-          <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
-              <span className="w-2 h-2 rounded-full bg-[#2F7D32]" />
-              <span>In Stock</span>
+              {/* Full-width rounded horizontal progress bar */}
+              <div className="w-full bg-[#E8EDE9] h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${metric.percentage}%`,
+                    backgroundColor: metric.fillColor,
+                  }}
+                />
+              </div>
             </div>
-            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
-              {stockHealth.inStock}
-            </p>
-          </div>
-          <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
-              <span className="w-2 h-2 rounded-full bg-[#D99426]" />
-              <span>Low Stock</span>
-            </div>
-            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
-              {stockHealth.lowStock}
-            </p>
-          </div>
-          <div>
-            <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#68716C]">
-              <span className="w-2 h-2 rounded-full bg-[#D94841]" />
-              <span>Out of Stock</span>
-            </div>
-            <p className="text-[16px] font-bold text-[#202522] tabular-nums mt-1">
-              {stockHealth.outOfStock}
-            </p>
-          </div>
+          ))}
         </div>
       </section>
       </motion.div>

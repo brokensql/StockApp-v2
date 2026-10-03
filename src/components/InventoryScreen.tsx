@@ -166,7 +166,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons */}
       <header
         id="page-header"
-        className="sticky top-0 z-30 w-full bg-[#F9FAF8]/90 backdrop-blur-md border-b border-transparent select-none"
+        className="sticky top-0 z-30 w-full bg-[#F7F9FB]/90 backdrop-blur-md border-b border-transparent select-none"
         style={{
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',

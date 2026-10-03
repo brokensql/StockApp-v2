@@ -23,6 +23,7 @@ import {
   SALES_STORAGE_MIRROR_KEY,
   ONBOARDED_STORAGE_KEY,
   CLEAN_SLATE_KEY,
+  SALES_PAGE_CLEARED_IDS_KEY,
 } from './storageKeys';
 
 export interface BackupPayload {
@@ -455,6 +456,8 @@ export async function applyRestorePayload(backupData: unknown): Promise<void> {
       localStorage.setItem(STORE_NAME_BACKUP_KEY, cleanProfile.storeName);
       localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
     }
+
+    localStorage.removeItem(SALES_PAGE_CLEARED_IDS_KEY);
 
     if (payload.lastReceiptSeq) {
       const seq = parseInt(String(payload.lastReceiptSeq), 10);
