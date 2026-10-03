@@ -429,13 +429,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <button
               type="button"
               onClick={handleCancel}
-              className="flex-1 py-2.5 border border-[#E1E6E2] bg-white text-[#202522] rounded-xl text-[14px] font-medium hover:bg-[#F4F6F4] transition-colors cursor-pointer"
+              className="flex-1 py-2.5 border border-[#E1E6E2] bg-white text-[#202522] rounded-full text-[14px] font-medium hover:bg-[#F4F6F4] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-[#2F7D32] text-white rounded-xl text-[14px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] transition-colors cursor-pointer shadow-2xs"
+              className="flex-1 py-2.5 bg-[#2F7D32] text-white rounded-full text-[14px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] transition-colors cursor-pointer shadow-[0_4px_14px_rgba(47,125,50,0.2)]"
             >
               Save Changes
             </button>
@@ -550,7 +550,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       type="button"
                       onClick={() => setPendingRestore(null)}
                       disabled={isRestoring}
-                      className="flex-1 py-2 bg-white border border-[#E1E6E2] rounded-lg text-[13px] font-medium text-[#202522] hover:bg-[#F2F4F2] cursor-pointer"
+                      className="flex-1 py-2 bg-white border border-[#E1E6E2] rounded-full text-[13px] font-medium text-[#202522] hover:bg-[#F2F4F2] cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -558,7 +558,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       type="button"
                       onClick={handleConfirmRestore}
                       disabled={isRestoring}
-                      className="flex-1 py-2 bg-[#2F7D32] text-white rounded-lg text-[13px] font-medium hover:bg-[#256B29] cursor-pointer flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 bg-[#2F7D32] text-white rounded-full text-[13px] font-medium hover:bg-[#256B29] active:bg-[#1E5A22] cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                     >
                       {isRestoring ? (
                         <>

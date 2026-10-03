@@ -30,6 +30,8 @@ import { Product, SaleItem, SaleTransaction } from '../types';
 import { ProductThumbnail } from './ProductThumbnail';
 import { useProductImages } from '../hooks/useProductImages';
 import { STANDARD_CATEGORIES } from '../data/categories';
+import { shoppingCartData } from '../assets/lottie';
+import { LottieAnimation } from './LottieAnimation';
 
 // Web standard Native BarcodeDetector interface
 interface DetectedBarcode {
@@ -1476,29 +1478,36 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
                 {/* Bottom Floating Bar: Summary & Checkout + Switcher */}
                 <div
-                  className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center gap-2.5 px-4 pt-6 bg-gradient-to-t from-[#F7F9FB] via-[#F7F9FB]/95 to-transparent pointer-events-none"
+                  className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center gap-3.5 sm:gap-4 px-4 pt-6 bg-gradient-to-t from-[#F7F9FB] via-[#F7F9FB]/95 to-transparent pointer-events-none"
                   style={{
                     paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
                   }}
                 >
                   {/* Floating Checkout Summary Bar (Sales Mode only) */}
                   {!isInventoryMode && totalQuantity > 0 && (
-                    <div className="w-full max-w-sm flex items-center justify-between px-4 py-2.5 bg-[#161816]/95 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl text-white pointer-events-auto">
-                      <div className="flex flex-col text-left leading-tight">
-                        <span className="text-[11px] text-gray-300 font-medium">
+                    <div className="relative w-full max-w-[250px] sm:max-w-[270px] h-[54px] sm:h-[56px] flex items-center justify-between pl-4 sm:pl-4.5 pr-0 bg-[#EEF2F4] backdrop-blur-md rounded-full border border-[#DAE1E4] shadow-lg text-[#202522] pointer-events-auto">
+                      <div className="flex flex-col text-left leading-tight py-0.5 min-w-0 pr-2">
+                        <span className="text-[11px] text-[#586265] font-normal whitespace-nowrap">
                           {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in cart
                         </span>
-                        <span className="text-[15px] font-bold text-white">
+                        <span className="text-[15px] font-bold text-[#202522] tracking-tight">
                           ₱{totalAmount.toFixed(2)}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        aria-label="Proceed to checkout"
+                        className="-mr-2.5 sm:-mr-3 w-[82px] sm:w-[90px] h-[58px] sm:h-[62px] rounded-full bg-white hover:bg-[#F2F4F2] active:bg-[#E5EAE6] text-[#202522] flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.16)] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none overflow-hidden relative"
                       >
-                        <span>Checkout</span>
-                        <ChevronRight size={15} strokeWidth={2.5} />
+                        <div className="absolute inset-0 m-auto w-[88px] h-[88px] sm:w-[98px] sm:h-[98px] flex items-center justify-center pointer-events-none shrink-0 origin-center scale-[1.65] -translate-y-2.5">
+                          <LottieAnimation
+                            animationData={shoppingCartData}
+                            loop={true}
+                            autoplay={true}
+                            className="w-full h-full flex items-center justify-center"
+                          />
+                        </div>
                       </button>
                     </div>
                   )}
@@ -1663,7 +1672,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsCategoryFilterOpen(false)}
-                            className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white text-[13px] font-bold shadow-xs transition-all cursor-pointer shrink-0"
+                            className="px-5 py-2 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[13px] font-bold shadow-[0_4px_14px_rgba(47,125,50,0.2)] transition-all cursor-pointer shrink-0"
                           >
                             Done
                           </button>
@@ -1905,27 +1914,34 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
                 {/* Bottom Floating Bar */}
                 <div
-                  className="relative z-30 flex flex-col items-center gap-3 p-4 pt-0"
+                  className="relative z-30 flex flex-col items-center gap-3.5 sm:gap-4 p-4 pt-0"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Floating Checkout Summary Bar if items have been scanned (Sales Mode only) */}
                   {!isInventoryMode && totalQuantity > 0 && (
-                    <div className="w-full max-w-xs flex items-center justify-between px-4 py-2.5 bg-[#161816]/90 backdrop-blur-md rounded-2xl border border-white/15 shadow-2xl text-white">
-                      <div className="flex flex-col text-left leading-tight">
-                        <span className="text-[11px] text-gray-300 font-medium">
+                    <div className="relative w-full max-w-[250px] sm:max-w-[270px] h-[54px] sm:h-[56px] flex items-center justify-between pl-4 sm:pl-4.5 pr-0 bg-[#EEF2F4]/95 backdrop-blur-md rounded-full border border-[#DAE1E4] shadow-xl text-[#202522]">
+                      <div className="flex flex-col text-left leading-tight py-0.5 min-w-0 pr-2">
+                        <span className="text-[11px] text-[#586265] font-normal whitespace-nowrap">
                           {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in cart
                         </span>
-                        <span className="text-[15px] font-bold text-white">
+                        <span className="text-[15px] font-bold text-[#202522] tracking-tight">
                           ₱{totalAmount.toFixed(2)}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white font-bold text-[13px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                        aria-label="Proceed to checkout"
+                        className="-mr-2.5 sm:-mr-3 w-[82px] sm:w-[90px] h-[58px] sm:h-[62px] rounded-full bg-white hover:bg-[#F2F4F2] active:bg-[#E5EAE6] text-[#202522] flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.16)] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none overflow-hidden relative"
                       >
-                        <span>Checkout</span>
-                        <ChevronRight size={15} strokeWidth={2.5} />
+                        <div className="absolute inset-0 m-auto w-[88px] h-[88px] sm:w-[98px] sm:h-[98px] flex items-center justify-center pointer-events-none shrink-0 origin-center scale-[1.65] -translate-y-2.5">
+                          <LottieAnimation
+                            animationData={shoppingCartData}
+                            loop={true}
+                            autoplay={true}
+                            className="w-full h-full flex items-center justify-center"
+                          />
+                        </div>
                       </button>
                     </div>
                   )}

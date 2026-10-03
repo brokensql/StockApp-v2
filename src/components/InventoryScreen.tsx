@@ -637,7 +637,7 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCategoryFilterOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white text-[13px] font-bold shadow-xs transition-all cursor-pointer shrink-0"
+                  className="px-5 py-2 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[13px] font-bold shadow-[0_4px_14px_rgba(47,125,50,0.2)] transition-all cursor-pointer shrink-0"
                 >
                   Done
                 </button>

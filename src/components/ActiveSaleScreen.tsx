@@ -354,14 +354,17 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
         id="sale-success-full-page"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] px-4 pt-4 pb-8 flex flex-col"
-        style={{
-          paddingTop: 'calc(1.25rem + var(--safe-area-top, env(safe-area-inset-top, 0px)))',
-          paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
-        }}
+        className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col"
       >
-        {/* Top Header with Back Button */}
-        <header className="mb-4 flex items-center justify-between flex-shrink-0">
+        {/* Sticky Top Header with Back Button */}
+        <header
+          className="sticky top-0 z-30 w-full bg-[#F7F9FB]/95 backdrop-blur-md border-b border-transparent select-none px-4 py-3 flex-shrink-0"
+          style={{
+            paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 10px)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
           <button
             id="btn-receipt-back-to-home"
             type="button"
@@ -374,42 +377,49 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
           </button>
         </header>
 
-        {/* Printable / Downloadable Receipt Ticket with Full Product Breakdown */}
-        <div ref={receiptContainerRef} className="w-full flex-1 flex flex-col justify-start pb-2">
-          <ReceiptTicketCard
-            transaction={completedTx}
-            cashTendered={cashTendered}
-            changeAmount={changeAmount}
-            storeName={storeName || completedTx.storeName}
-            showAllProducts={true}
-          />
-        </div>
-
-        {/* Bottom Download Receipt Action - Guaranteed no overlap with ticket */}
         <div
-          className="pt-6 pb-2 w-full flex-shrink-0 mt-4"
-          style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
+          className="px-4 pt-2 pb-8 flex-1 flex flex-col justify-between"
+          style={{
+            paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
+          }}
         >
-          <button
-            id="btn-download-receipt"
-            type="button"
-            onClick={handleDownloadReceipt}
-            disabled={isDownloading}
-            className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_4px_16px_rgba(47,125,50,0.28)] active:scale-[0.98] transition-all disabled:opacity-75 select-none"
-            aria-label="Download receipt"
+          {/* Printable / Downloadable Receipt Ticket with Full Product Breakdown */}
+          <div ref={receiptContainerRef} className="w-full flex-1 flex flex-col justify-start pb-2">
+            <ReceiptTicketCard
+              transaction={completedTx}
+              cashTendered={cashTendered}
+              changeAmount={changeAmount}
+              storeName={storeName || completedTx.storeName}
+              showAllProducts={true}
+            />
+          </div>
+
+          {/* Bottom Download Receipt Action - Guaranteed no overlap with ticket */}
+          <div
+            className="pt-6 pb-2 w-full flex-shrink-0 mt-4"
+            style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
           >
-            {isDownloading ? (
-              <>
-                <Loader2 size={19} className="animate-spin" />
-                <span>Downloading receipt...</span>
-              </>
-            ) : (
-              <>
-                <Download size={19} strokeWidth={2.2} />
-                <span>Download receipt</span>
-              </>
-            )}
-          </button>
+            <button
+              id="btn-download-receipt"
+              type="button"
+              onClick={handleDownloadReceipt}
+              disabled={isDownloading}
+              className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15.5px] font-semibold rounded-full flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_4px_16px_rgba(47,125,50,0.28)] active:scale-[0.98] transition-all disabled:opacity-75 select-none"
+              aria-label="Download receipt"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 size={19} className="animate-spin" />
+                  <span>Downloading receipt...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={19} strokeWidth={2.2} />
+                  <span>Download receipt</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </motion.div>
     );
@@ -423,17 +433,18 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col justify-between"
+      className="w-full max-w-[430px] mx-auto min-h-[100dvh] bg-[#F7F9FB] flex flex-col"
     >
-      <div
-        className="px-5 pt-6"
+      {/* Sticky Top Header so it doesn't get covered when scrolling */}
+      <header
+        className="sticky top-0 z-30 w-full bg-[#F7F9FB]/95 backdrop-blur-md border-b border-transparent select-none px-5 py-3 flex-shrink-0"
         style={{
-          paddingTop: 'calc(1.25rem + var(--safe-area-top, env(safe-area-inset-top, 0px)))',
-          paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))',
+          paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 10px)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
         }}
       >
-        {/* Top Header */}
-        <header className="mb-4 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               id="btn-back-to-home"
@@ -447,7 +458,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
             <div>
               <h1
                 id="active-sale-page-title"
-                className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-tight leading-tight"
+                className="text-[24px] sm:text-[26px] font-bold text-[#202522] tracking-tight leading-tight"
               >
                 Sale Checkout
               </h1>
@@ -467,8 +478,15 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               <span>Add</span>
             </button>
           </div>
-        </header>
+        </div>
+      </header>
 
+      <div
+        className="px-5 pt-3 flex-1 flex flex-col justify-between"
+        style={{
+          paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         {/* Stock Warning Banner */}
         {stockWarning && (
           <div

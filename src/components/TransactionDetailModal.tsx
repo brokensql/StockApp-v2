@@ -127,7 +127,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 type="button"
                 onClick={handleDownloadReceipt}
                 disabled={isDownloading}
-                className="w-full h-12 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-[0.99] text-white text-[14px] font-semibold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#2F7D32]/25 disabled:opacity-75 disabled:cursor-not-allowed select-none"
+                className="w-full h-12.5 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-[0.99] text-white text-[14.5px] font-semibold rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_4px_14px_rgba(47,125,50,0.25)] disabled:opacity-75 disabled:cursor-not-allowed select-none"
               >
                 {isDownloading ? (
                   <>

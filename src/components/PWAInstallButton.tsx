@@ -68,14 +68,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={handleInstallClick}
-              className="px-3 py-1.5 rounded-lg bg-[#2F7D32] text-white text-[12px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-95 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full bg-[#2F7D32] text-white text-[12px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-95 transition-all cursor-pointer shadow-2xs"
             >
               {isIOS ? 'Instructions' : 'Install'}
             </button>
             <button
               type="button"
               onClick={handleDismiss}
-              className="p-1 text-[#6E746F] hover:text-[#252825] rounded-md transition-colors cursor-pointer"
+              className="p-1 text-[#6E746F] hover:text-[#252825] rounded-full transition-colors cursor-pointer"
               aria-label="Dismiss install banner"
             >
               <X size={16} />
@@ -127,7 +127,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
-                className="w-full py-2.5 rounded-xl bg-[#2F7D32] text-white text-[13px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer text-center"
+                className="w-full py-2.5 rounded-full bg-[#2F7D32] text-white text-[13px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer text-center shadow-xs"
               >
                 Got It
               </button>

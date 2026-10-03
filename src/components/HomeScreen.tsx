@@ -520,7 +520,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <button
                 type="button"
                 onClick={onNewSaleClick}
-                className="inline-flex items-center justify-center px-4 py-2.5 bg-[#2F7D32] text-white text-[14px] font-semibold rounded-xl hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer shadow-sm"
+                className="inline-flex items-center justify-center px-6 py-3 bg-[#2F7D32] text-white text-[14px] font-semibold rounded-full hover:bg-[#256B29] active:bg-[#1E5A22] active:scale-98 transition-all cursor-pointer shadow-[0_4px_14px_rgba(47,125,50,0.25)]"
               >
                 Record your first sale
               </button>
