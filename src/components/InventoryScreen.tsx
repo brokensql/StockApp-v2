@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'motion/react';
-import { Search, Plus, X, Package, PackageOpen, SearchX } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Plus, X, Package, PackageOpen, SearchX, SlidersHorizontal, Check } from 'lucide-react';
 import { Product, InventoryFilter } from '../types';
 import { ProductDetailModal } from './ProductDetailModal';
 import { useProductImages } from '../hooks/useProductImages';
+import { STANDARD_CATEGORIES } from '../data/categories';
 
 const InventoryCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src, alt }) => {
   const [error, setError] = useState(false);
@@ -48,6 +49,8 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<InventoryFilter>('all');
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(initialAddModalOpen);
   const [dynamicInitialSku, setDynamicInitialSku] = useState(initialSku || '');
@@ -66,6 +69,32 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
     }
   }, [initialSku]);
 
+  // Category statistics & list of all categories
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      const cat = (p.category || 'General').trim();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    const set = new Set<string>();
+    // Add all categories that exist in products first
+    Object.keys(counts).forEach((c) => set.add(c));
+    // Add standard categories
+    STANDARD_CATEGORIES.forEach((c) => set.add(c));
+
+    return Array.from(set)
+      .map((catName) => ({
+        name: catName,
+        count: counts[catName] || 0,
+      }))
+      .sort((a, b) => {
+        if (a.count > 0 && b.count === 0) return -1;
+        if (a.count === 0 && b.count > 0) return 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [products]);
+
   // Compute counts for tabs
   const filterCounts = useMemo(() => {
     const total = products.length;
@@ -75,16 +104,24 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
     return { all: total, in_stock: inStock, low_stock: lowStock, out_of_stock: outOfStock };
   }, [products]);
 
-  // Filter and search logic
+  // Filter and search logic with multiple categories
   const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const hasCategoryFilter = selectedCategories.length > 0;
+
     return products.filter((product) => {
+      // Category filter match
+      if (hasCategoryFilter) {
+        const prodCat = (product.category || 'General').trim().toLowerCase();
+        const matchesCat = selectedCategories.some(
+          (cat) => cat.trim().toLowerCase() === prodCat
+        );
+        if (!matchesCat) return false;
+      }
+
       // Search match
-      const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
-        query === '' ||
-        product.name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        (product.sku && product.sku.toLowerCase().includes(query));
+        queryMatch(product, q);
 
       if (!matchesSearch) return false;
 
@@ -100,7 +137,28 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
       }
       return true;
     });
-  }, [products, searchQuery, activeFilter]);
+  }, [products, searchQuery, activeFilter, selectedCategories]);
+
+  function queryMatch(product: Product, q: string) {
+    if (!q) return true;
+    return (
+      product.name.toLowerCase().includes(q) ||
+      product.category.toLowerCase().includes(q) ||
+      (product.sku && product.sku.toLowerCase().includes(q))
+    );
+  }
+
+  // Toggle category in multi-select
+  const handleToggleCategory = useCallback((catName: string) => {
+    setSelectedCategories((prev) => {
+      const exists = prev.some((c) => c.toLowerCase() === catName.toLowerCase());
+      if (exists) {
+        return prev.filter((c) => c.toLowerCase() !== catName.toLowerCase());
+      } else {
+        return [...prev, catName];
+      }
+    });
+  }, []);
 
   const handleOpenAddModal = () => {
     setSelectedProduct(null);
@@ -173,9 +231,9 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           paddingTop: 'var(--safe-area-top, env(safe-area-inset-top, 0px))',
         }}
       >
-        <div className="px-5 pt-3 pb-2.5">
+        <div className="px-5 pt-3 pb-3 space-y-3">
           {/* Header Title on Left */}
-          <div className="h-10 sm:h-11 flex items-center justify-start mb-2">
+          <div className="h-10 sm:h-11 flex items-center justify-start pb-0.5">
             <h1
               id="page-header-title"
               className="text-[26px] sm:text-[28px] font-bold text-[#202522] tracking-[-0.02em] text-left"
@@ -184,10 +242,10 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
             </h1>
           </div>
 
-          {/* Curvy Search Bar (rounded-full, scanner removed) */}
-          <div className="relative mb-2.5">
+          {/* Curvy Search Bar with inside Filter Button */}
+          <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#68716C]">
-              <Search size={18} strokeWidth={2} />
+              <Search size={19} strokeWidth={2} />
             </div>
             <input
               id="inventory-search-input"
@@ -195,24 +253,40 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products..."
-              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
+              className="w-full h-12 sm:h-12.5 pl-11.5 pr-22 bg-white border border-[#E1E6E2] rounded-full text-[14.5px] text-[#202522] placeholder:text-[#68716C]/60 focus:outline-none focus:border-[#2F7D32] focus:ring-2 focus:ring-[#2F7D32]/25 shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-all"
             />
-            {searchQuery && (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="w-6.5 h-6.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#68716C] hover:text-[#202522] cursor-pointer"
-                aria-label="Clear search"
+                id="inventory-search-category-filter-button"
+                onClick={() => setIsCategoryFilterOpen(true)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
+                  selectedCategories.length > 0 || isCategoryFilterOpen
+                    ? 'bg-[#2F7D32] text-white shadow-xs'
+                    : 'text-[#68716C] hover:text-[#202522] hover:bg-[#F2F4F2]'
+                }`}
+                aria-label="Filter by categories"
+                title="Filter by categories"
               >
-                <X size={16} />
+                <SlidersHorizontal size={18} strokeWidth={2.3} />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Filter Tabs / Buttons */}
           <nav
             aria-label="Stock status filters"
-            className="grid grid-cols-[0.85fr_1.05fr_1.05fr_1.25fr] gap-1.5 sm:gap-2 w-full py-0.5 select-none"
+            className="grid grid-cols-[0.85fr_1.05fr_1.05fr_1.25fr] gap-1.5 sm:gap-2 w-full pt-0.5 pb-0.5 select-none"
           >
             {filters.map((filter) => {
               const isSelected = activeFilter === filter.id;
@@ -280,16 +354,19 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
                 ? `No products matching "${searchQuery}" in this filter.`
                 : 'No products currently match this filter.'}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setActiveFilter('all');
-              }}
-              className="h-10 px-4 bg-white border border-[#E1E6E2] text-[#202522] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F6F4] transition-colors"
-            >
-              <span>Reset filters</span>
-            </button>
+            {(searchQuery || activeFilter !== 'all' || selectedCategories.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveFilter('all');
+                  setSelectedCategories([]);
+                }}
+                className="h-10 px-4 bg-white border border-[#E1E6E2] text-[#202522] text-[14px] font-medium rounded-xl inline-flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F6F4] transition-colors"
+              >
+                <span>Reset filters</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -423,6 +500,152 @@ export const InventoryScreen: React.FC<InventoryScreenProps> = ({
           </div>,
           document.body
         )}
+
+      {/* Category Selection Pop-up Modal */}
+      <AnimatePresence>
+        {isCategoryFilterOpen && (
+          <div
+            id="inventory-category-modal-overlay"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-none"
+            onClick={() => setIsCategoryFilterOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-[#DEE3DE] flex flex-col max-h-[80vh]"
+            >
+              {/* Modal Top Header with Title and X button */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#F0F2F0]">
+                <div>
+                  <h3 className="text-[17px] font-bold text-[#202522]">Categories</h3>
+                  <p className="text-[12px] text-[#68716C] mt-0.5">
+                    Select one or more categories
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryFilterOpen(false)}
+                  className="w-8 h-8 rounded-full bg-[#F2F4F2] hover:bg-[#E5E9E5] text-[#202522] flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close categories"
+                >
+                  <X size={17} strokeWidth={2.2} />
+                </button>
+              </div>
+
+              {/* Scrollable Categories List */}
+              <div className="flex-1 overflow-y-auto py-3 space-y-1.5 pr-1 max-h-[55vh]">
+                {/* All Categories Option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([])}
+                  className={`w-full px-3.5 py-2.5 rounded-2xl text-[13.5px] font-medium transition-all cursor-pointer flex items-center justify-between ${
+                    selectedCategories.length === 0
+                      ? 'bg-[#2F7D32] text-white font-semibold shadow-xs'
+                      : 'bg-[#F7F9FB] hover:bg-[#F2F4F2] text-[#202522] border border-[#DEE3DE]/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                        selectedCategories.length === 0
+                          ? 'bg-white text-[#2F7D32]'
+                          : 'border border-[#DEE3DE] bg-white'
+                      }`}
+                    >
+                      {selectedCategories.length === 0 && (
+                        <Check size={13} strokeWidth={3} />
+                      )}
+                    </div>
+                    <span>All categories</span>
+                  </div>
+                  <span
+                    className={`text-[11.5px] px-2 py-0.5 rounded-full font-bold ${
+                      selectedCategories.length === 0
+                        ? 'bg-white/20 text-white'
+                        : 'bg-white text-[#68716C] border border-[#DEE3DE]'
+                    }`}
+                  >
+                    {products.length}
+                  </span>
+                </button>
+
+                {/* Each Category Option with green container when selected */}
+                {categoryStats.map((cat) => {
+                  const isSelected = selectedCategories.some(
+                    (c) => c.toLowerCase() === cat.name.toLowerCase()
+                  );
+                  return (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => handleToggleCategory(cat.name)}
+                      className={`w-full px-3.5 py-2.5 rounded-2xl text-[13.5px] font-medium transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-[#2F7D32] text-white font-semibold shadow-xs'
+                          : 'bg-[#F7F9FB] hover:bg-[#F2F4F2] text-[#202522] border border-[#DEE3DE]/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'bg-white text-[#2F7D32]'
+                              : 'border border-[#DEE3DE] bg-white'
+                          }`}
+                        >
+                          {isSelected && <Check size={13} strokeWidth={3} />}
+                        </div>
+                        <span>{cat.name}</span>
+                      </div>
+                      {cat.count > 0 && (
+                        <span
+                          className={`text-[11.5px] px-2 py-0.5 rounded-full font-bold ${
+                            isSelected
+                              ? 'bg-white/20 text-white'
+                              : 'bg-white text-[#68716C] border border-[#DEE3DE]'
+                          }`}
+                        >
+                          {cat.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Modal Footer with Selection Status & Apply Button */}
+              <div className="pt-3 border-t border-[#F0F2F0] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[12px] text-[#68716C] truncate">
+                    {selectedCategories.length === 0
+                      ? 'Showing all categories'
+                      : `${selectedCategories.length} selected`}
+                  </span>
+                  {selectedCategories.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories([])}
+                      className="text-[12px] font-medium text-[#68716C] hover:text-[#202522] hover:underline cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryFilterOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white text-[13px] font-bold shadow-xs transition-all cursor-pointer shrink-0"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Product Detail / Edit Modal */}
       <ProductDetailModal

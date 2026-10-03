@@ -11,7 +11,7 @@ export interface UserProfile {
   avatarUrl?: string;
 }
 
-export type InventoryFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+export type InventoryFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock' | 'categories';
 
 export interface Product {
   id: string;

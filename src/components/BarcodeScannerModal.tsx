@@ -22,12 +22,14 @@ import {
   Minus,
   Barcode,
   Package,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import { Product, SaleItem, SaleTransaction } from '../types';
 import { ProductThumbnail } from './ProductThumbnail';
 import { useProductImages } from '../hooks/useProductImages';
+import { STANDARD_CATEGORIES } from '../data/categories';
 
 // Web standard Native BarcodeDetector interface
 interface DetectedBarcode {
@@ -159,6 +161,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [inputMethod, setInputMethod] = useState<'barcode' | 'key'>('barcode');
   const [searchQuery, setSearchQuery] = useState('');
   const [barcodeFilter, setBarcodeFilter] = useState<'all' | 'with-barcode' | 'without-barcode'>('all');
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const { images } = useProductImages();
 
   // Undo / Redo history state
@@ -923,6 +927,33 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
   };
 
+  // Category statistics & list of all categories
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      const cat = (p.category || 'General').trim();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    const set = new Set<string>();
+    // Add all categories that exist in products first
+    Object.keys(counts).forEach((c) => set.add(c));
+    // Add standard categories
+    STANDARD_CATEGORIES.forEach((c) => set.add(c));
+
+    return Array.from(set)
+      .map((catName) => ({
+        name: catName,
+        count: counts[catName] || 0,
+      }))
+      .sort((a, b) => {
+        // Categories with products come first, then alphabetical
+        if (a.count > 0 && b.count === 0) return -1;
+        if (a.count === 0 && b.count > 0) return 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [products]);
+
   // Counts for the barcode presence filter
   const barcodeFilterCounts = useMemo(() => {
     const all = products.length;
@@ -931,13 +962,23 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     return { all, withBarcode, withoutBarcode };
   }, [products]);
 
-  // Filtered products based on search input and barcode filter ("All", "With barcodes", "Without barcodes")
+  // Filtered products based on search input, barcode filter, and multiple categories
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const hasCategoryFilter = selectedCategories.length > 0;
+
     return products.filter((p) => {
       const hasBarcode = Boolean(p.sku && p.sku.trim().length > 0);
       if (barcodeFilter === 'with-barcode' && !hasBarcode) return false;
       if (barcodeFilter === 'without-barcode' && hasBarcode) return false;
+
+      if (hasCategoryFilter) {
+        const prodCat = (p.category || 'General').trim().toLowerCase();
+        const matchesCat = selectedCategories.some(
+          (cat) => cat.trim().toLowerCase() === prodCat
+        );
+        if (!matchesCat) return false;
+      }
 
       if (q) {
         const nameMatch = p.name.toLowerCase().includes(q);
@@ -947,7 +988,19 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       }
       return true;
     });
-  }, [products, searchQuery, barcodeFilter]);
+  }, [products, searchQuery, barcodeFilter, selectedCategories]);
+
+  // Toggle category selection for multi-select
+  const handleToggleCategory = useCallback((catName: string) => {
+    setSelectedCategories((prev) => {
+      const exists = prev.some((c) => c.toLowerCase() === catName.toLowerCase());
+      if (exists) {
+        return prev.filter((c) => c.toLowerCase() !== catName.toLowerCase());
+      } else {
+        return [...prev, catName];
+      }
+    });
+  }, []);
 
   // Add a product to the cart (accumulates with barcodes scanned in "Barcode" view)
   const handleAddProductToCart = useCallback(
@@ -1132,16 +1185,16 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             )}
           </AnimatePresence>
 
-          {/* Smooth transition between Key and Barcode camera views */}
+          {/* Transition between Key and Barcode camera views (no sliding animation) */}
           <AnimatePresence mode="wait" initial={false}>
             {inputMethod === 'key' ? (
               /* INVENTORY SELECTION "KEY" VIEW (Full Page) */
               <motion.div
                 key="manual-key"
-                initial={{ opacity: 0, x: 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
-                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
                 className="relative z-10 w-full h-full flex-1 flex flex-col bg-[#F7F9FB] text-[#252825] overflow-hidden select-none"
               >
                 {/* Sticky Header with Left-Aligned Title, Curvy Search Bar, and Filter Buttons (matching Inventory page) */}
@@ -1153,9 +1206,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     WebkitBackdropFilter: 'blur(12px)',
                   }}
                 >
-                  <div className="px-4 sm:px-5 pt-1 pb-3 space-y-3">
+                  <div className="px-4 sm:px-5 pt-2 pb-3.5 space-y-3.5">
                     {/* Top Row: Left-Aligned Title + Close Button */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pb-0.5">
                       <div className="flex items-center gap-2.5">
                         <button
                           type="button"
@@ -1169,44 +1222,55 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                           <h2 className="text-[22px] sm:text-[24px] font-bold text-[#252825] tracking-tight text-left leading-tight">
                             {isInventoryMode ? 'Select Product' : 'Product Inventory'}
                           </h2>
-                          <p className="text-[12px] text-[#6E746F] text-left leading-none mt-0.5">
-                            {products.length} {products.length === 1 ? 'product' : 'products'} total
-                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Search Row: Curvy on both ends */}
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Search
-                          size={18}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717671] pointer-events-none"
-                        />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search products, barcodes, category..."
-                          className="w-full h-10.5 pl-11 pr-10 bg-white border border-[#DEE3DE] rounded-full text-[13.5px] text-[#252825] placeholder:text-[#8E948F] focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all shadow-2xs"
-                        />
+                    {/* Search Row with inside Filter Button */}
+                    <div className="relative">
+                      <Search
+                        size={19}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717671] pointer-events-none"
+                      />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search products, barcodes, category..."
+                        className="w-full h-12 pl-11.5 pr-22 bg-white border border-[#DEE3DE] rounded-full text-[14px] text-[#252825] placeholder:text-[#8E948F] focus:outline-none focus:border-[#2F7D32] focus:ring-2 focus:ring-[#2F7D32]/25 transition-all shadow-2xs"
+                      />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         {searchQuery.length > 0 && (
                           <button
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6.5 h-6.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer transition-colors"
                             aria-label="Clear search"
                           >
-                            <X size={14} />
+                            <X size={13} />
                           </button>
                         )}
+                        <button
+                          type="button"
+                          id="search-category-filter-button"
+                          onClick={() => setIsCategoryFilterOpen(true)}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
+                            selectedCategories.length > 0 || isCategoryFilterOpen
+                              ? 'bg-[#2F7D32] text-white shadow-xs'
+                              : 'text-[#68716C] hover:text-[#202522] hover:bg-[#F2F4F2]'
+                          }`}
+                          aria-label="Filter by categories"
+                          title="Filter by categories"
+                        >
+                          <SlidersHorizontal size={18} strokeWidth={2.3} />
+                        </button>
                       </div>
                     </div>
 
                     {/* Filter Tabs / Buttons: Seen completely without horizontal scroll, increased height, smooth tween transition, no number badges */}
                     <nav
                       aria-label="Product filter options"
-                      className="grid grid-cols-[0.8fr_1.1fr_1.1fr] gap-1.5 sm:gap-2 w-full py-0.5 select-none"
+                      className="grid grid-cols-[0.8fr_1.1fr_1.1fr] gap-1.5 sm:gap-2 w-full pt-0.5 pb-0.5 select-none"
                     >
                       {[
                         { id: 'all' as const, label: 'All' },
@@ -1263,12 +1327,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <p className="text-[13px] text-[#717671] mt-1 max-w-xs">
                         Try changing your search keywords or choosing "All" to view every product in your inventory.
                       </p>
-                      {(searchQuery || barcodeFilter !== 'all') && (
+                      {(searchQuery || barcodeFilter !== 'all' || selectedCategories.length > 0) && (
                         <button
                           type="button"
                           onClick={() => {
                             setSearchQuery('');
                             setBarcodeFilter('all');
+                            setSelectedCategories([]);
                           }}
                           className="mt-4 px-4 py-2 rounded-xl bg-[#F2F4F2] hover:bg-[#E5E9E5] text-[#252825] text-[13px] font-semibold cursor-pointer transition-colors"
                         >
@@ -1461,15 +1526,161 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Category Selection Pop-up Modal */}
+                <AnimatePresence>
+                  {isCategoryFilterOpen && (
+                    <div
+                      id="barcode-category-modal-overlay"
+                      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-none"
+                      onClick={() => setIsCategoryFilterOpen(false)}
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.94, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.94, y: 12 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-[#DEE3DE] flex flex-col max-h-[80vh]"
+                      >
+                        {/* Modal Top Header with Title and X button */}
+                        <div className="flex items-center justify-between pb-3.5 border-b border-[#F0F2F0]">
+                          <div>
+                            <h3 className="text-[17px] font-bold text-[#202522]">Categories</h3>
+                            <p className="text-[12px] text-[#68716C] mt-0.5">
+                              Select one or more categories
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsCategoryFilterOpen(false)}
+                            className="w-8 h-8 rounded-full bg-[#F2F4F2] hover:bg-[#E5E9E5] text-[#202522] flex items-center justify-center transition-colors cursor-pointer"
+                            aria-label="Close categories"
+                          >
+                            <X size={17} strokeWidth={2.2} />
+                          </button>
+                        </div>
+
+                        {/* Scrollable Categories List */}
+                        <div className="flex-1 overflow-y-auto py-3 space-y-1.5 pr-1 max-h-[55vh]">
+                          {/* All Categories Option */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCategories([])}
+                            className={`w-full px-3.5 py-2.5 rounded-2xl text-[13.5px] font-medium transition-all cursor-pointer flex items-center justify-between ${
+                              selectedCategories.length === 0
+                                ? 'bg-[#2F7D32] text-white font-semibold shadow-xs'
+                                : 'bg-[#F7F9FB] hover:bg-[#F2F4F2] text-[#202522] border border-[#DEE3DE]/60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                                  selectedCategories.length === 0
+                                    ? 'bg-white text-[#2F7D32]'
+                                    : 'border border-[#DEE3DE] bg-white'
+                                }`}
+                              >
+                                {selectedCategories.length === 0 && (
+                                  <Check size={13} strokeWidth={3} />
+                                )}
+                              </div>
+                              <span>All categories</span>
+                            </div>
+                            <span
+                              className={`text-[11.5px] px-2 py-0.5 rounded-full font-bold ${
+                                selectedCategories.length === 0
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-white text-[#68716C] border border-[#DEE3DE]'
+                              }`}
+                            >
+                              {products.length}
+                            </span>
+                          </button>
+
+                          {/* Each Category Option with green container when selected */}
+                          {categoryStats.map((cat) => {
+                            const isSelected = selectedCategories.some(
+                              (c) => c.toLowerCase() === cat.name.toLowerCase()
+                            );
+                            return (
+                              <button
+                                key={cat.name}
+                                type="button"
+                                onClick={() => handleToggleCategory(cat.name)}
+                                className={`w-full px-3.5 py-2.5 rounded-2xl text-[13.5px] font-medium transition-all cursor-pointer flex items-center justify-between ${
+                                  isSelected
+                                    ? 'bg-[#2F7D32] text-white font-semibold shadow-xs'
+                                    : 'bg-[#F7F9FB] hover:bg-[#F2F4F2] text-[#202522] border border-[#DEE3DE]/60'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <div
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                                      isSelected
+                                        ? 'bg-white text-[#2F7D32]'
+                                        : 'border border-[#DEE3DE] bg-white'
+                                    }`}
+                                  >
+                                    {isSelected && <Check size={13} strokeWidth={3} />}
+                                  </div>
+                                  <span>{cat.name}</span>
+                                </div>
+                                {cat.count > 0 && (
+                                  <span
+                                    className={`text-[11.5px] px-2 py-0.5 rounded-full font-bold ${
+                                      isSelected
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-white text-[#68716C] border border-[#DEE3DE]'
+                                    }`}
+                                  >
+                                    {cat.count}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Modal Footer with Selection Status & Apply Button */}
+                        <div className="pt-3 border-t border-[#F0F2F0] flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[12px] text-[#68716C] truncate">
+                              {selectedCategories.length === 0
+                                ? 'Showing all categories'
+                                : `${selectedCategories.length} selected`}
+                            </span>
+                            {selectedCategories.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedCategories([])}
+                                className="text-[12px] font-medium text-[#68716C] hover:text-[#202522] hover:underline cursor-pointer"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsCategoryFilterOpen(false)}
+                            className="px-4 py-2 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white text-[13px] font-bold shadow-xs transition-all cursor-pointer shrink-0"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             ) : (
               /* LIVE CAMERA BARCODE SCANNER VIEW (Full Page) */
               <motion.div
                 key="camera-barcode"
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 24 }}
-                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
                 className="relative z-10 flex-1 w-full h-full bg-black/20 overflow-hidden flex flex-col justify-between cursor-pointer pt-[max(var(--safe-area-top,env(safe-area-inset-top)),16px)] pb-[max(var(--safe-area-bottom,env(safe-area-inset-bottom)),16px)]"
                 onClick={handleViewfinderTap}
               >

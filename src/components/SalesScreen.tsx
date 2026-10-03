@@ -243,7 +243,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search product or receipt #..."
-              className="w-full h-11 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14px] text-[#202522] placeholder:text-[#929A95] focus:outline-none focus:border-[#2F7D32] focus:ring-1 focus:ring-[#2F7D32] shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-colors"
+              className="w-full h-11 pl-11 pr-10 bg-white border border-[#E1E6E2] rounded-full text-[14px] text-[#202522] placeholder:text-[#929A95] focus:outline-none focus:border-[#2F7D32] focus:ring-2 focus:ring-[#2F7D32]/25 shadow-[0_2px_6px_rgba(32,37,34,0.02)] transition-all"
             />
             {searchQuery && (
               <button
