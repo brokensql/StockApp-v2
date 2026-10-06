@@ -254,7 +254,7 @@ body.capacitor-native,
     margin-right: auto !important;
     width: -moz-fit-content !important;
     width: fit-content !important;
-    max-width: calc(100vw - 32px) !important;
+    max-width: min(calc(100vw - 32px), 390px) !important;
     background-color: #0F172A !important;
     color: #FFFFFF !important;
     border: 1px solid rgba(51, 65, 85, 0.4) !important;
@@ -269,13 +269,17 @@ body.capacitor-native,
     gap: 8px !important;
     pointer-events: auto !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   [data-sonner-toaster] [data-sonner-toast] [data-content] {
-    width: fit-content !important;
-    max-width: fit-content !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: min(calc(100vw - 88px), 320px) !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
   }
 
   [data-sonner-toaster] [data-sonner-toast] [data-title] {
@@ -284,7 +288,11 @@ body.capacitor-native,
     font-size: 13.5px !important;
     line-height: 1.35 !important;
     white-space: nowrap !important;
-    width: fit-content !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
   }
 
   [data-sonner-toaster] [data-sonner-toast] [data-description] {
@@ -294,7 +302,11 @@ body.capacitor-native,
     line-height: 1.35 !important;
     margin-top: 2px !important;
     white-space: nowrap !important;
-    width: fit-content !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
   }
 
   [data-sonner-toaster] [data-sonner-toast] [data-icon] {

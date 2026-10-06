@@ -57,7 +57,7 @@ const CheckoutCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src
 
 interface ActiveSaleScreenProps {
   products: Product[];
-  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
+  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | Promise<boolean> | void;
   onCancelSale: () => void;
   initialItems?: SaleItem[];
   existingSales?: SaleTransaction[];
@@ -254,7 +254,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   };
 
   // Handle finalize sale
-  const handleFinalizeSale = () => {
+  const handleFinalizeSale = async () => {
     if (cart.length === 0) return;
 
     const freshValidation = validateCartStock(cart, products);
@@ -310,7 +310,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       return prod;
     });
 
-    const success = onCompleteSale(newTransaction, updatedProducts);
+    const success = await onCompleteSale(newTransaction, updatedProducts);
     if (success !== false) {
       setCompletedTx(newTransaction);
     }

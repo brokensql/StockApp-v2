@@ -2,6 +2,7 @@ import buyOnlineData from './buy-online.json';
 import setUpLayoutData from './set-up-layout.json';
 import jobSuccessData from './job-success.json';
 import shoppingCartData from './shopping-cart.json';
+import boxAssembleData from './box-assemble.json';
 
 /**
  * Lottie animation assets repository.
@@ -13,9 +14,10 @@ export const LOTTIE_ANIMATIONS = {
   setUpLayout: setUpLayoutData,
   jobSuccess: jobSuccessData,
   shoppingCart: shoppingCartData,
+  boxAssemble: boxAssembleData,
 } as const;
 
 export type LottieAnimationKey = keyof typeof LOTTIE_ANIMATIONS;
 
-export { buyOnlineData, setUpLayoutData, jobSuccessData, shoppingCartData };
+export { buyOnlineData, setUpLayoutData, jobSuccessData, shoppingCartData, boxAssembleData };
 export default LOTTIE_ANIMATIONS;

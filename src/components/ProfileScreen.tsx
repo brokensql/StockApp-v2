@@ -28,6 +28,9 @@ import {
   restoreBackupFromFile,
   applyRestorePayload,
 } from '../utils/backup';
+import { StorageHealthModal } from './StorageHealthModal';
+import { BackupReminderModal } from './BackupReminderModal';
+import { HardDrive, ShieldCheck } from 'lucide-react';
 
 interface ProfileScreenProps {
   profile?: UserProfile;
@@ -58,6 +61,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<BackupSummary | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
+  const [showResetBackupReminder, setShowResetBackupReminder] = useState(false);
+  const [showRestoreBackupReminder, setShowRestoreBackupReminder] = useState(false);
   const restoreFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportBackup = async () => {
@@ -493,9 +499,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Data & Backup Section */}
           <section aria-label="Data and Backup" className="pt-2">
             <div className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
-              <div className="flex items-center gap-2 mb-2">
-                <Database size={16} className="text-[#2F7D32]" />
-                <h3 className="text-[14px] font-semibold text-[#202522]">Data & Backup</h3>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Database size={16} className="text-[#2F7D32]" />
+                  <h3 className="text-[14px] font-semibold text-[#202522]">Data & Backup</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHealthModal(true)}
+                  className="py-1 px-2.5 bg-[#E8F3E8] hover:bg-[#D5EBD5] border border-[#81B783] rounded-full text-[11px] font-semibold text-[#2F7D32] flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <ShieldCheck size={13} />
+                  <span>Storage Health</span>
+                </button>
               </div>
               <p className="text-[12px] text-[#68716C] mb-3.5 leading-relaxed">
                 Export an offline snapshot of your products, sales history, and store identity to your device, or restore from a previous JSON backup.
@@ -556,7 +572,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={handleConfirmRestore}
+                      onClick={() => setShowRestoreBackupReminder(true)}
                       disabled={isRestoring}
                       className="flex-1 py-2 bg-[#2F7D32] text-white rounded-full text-[13px] font-medium hover:bg-[#256B29] active:bg-[#1E5A22] cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                     >
@@ -566,7 +582,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                           <span>Restoring...</span>
                         </>
                       ) : (
-                        <span>Yes, Restore</span>
+                        <span>Continue Restore...</span>
                       )}
                     </button>
                   </div>
@@ -579,45 +595,54 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {onResetAllData && (
             <section aria-label="Danger Zone" className="pt-2">
               <div className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
-                {!confirmResetData ? (
-                  <button
-                    id="clear-all-data-button"
-                    type="button"
-                    onClick={() => setConfirmResetData(true)}
-                    className="w-full py-3 bg-white hover:bg-[#FDF0EE] border border-[#E1E6E2] hover:border-[#FADCDA] rounded-xl text-[#D94841] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                    <span>Clear All Data (Start Fresh)</span>
-                  </button>
-                ) : (
-                  <div className="p-4 bg-[#FDF0EE] border border-[#FADCDA] rounded-xl text-center">
-                    <p className="text-[13px] font-medium text-[#202522] mb-3">
-                      Are you sure? This removes all products and sales, and returns to setup.
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setConfirmResetData(false)}
-                        className="px-4 py-2 bg-white border border-[#E1E6E2] rounded-lg text-[13px] font-medium text-[#202522] hover:bg-[#FAFBFB] cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onResetAllData();
-                          setConfirmResetData(false);
-                        }}
-                        className="px-4 py-2 bg-[#D94841] text-white rounded-lg text-[13px] font-medium hover:bg-[#B83832] cursor-pointer"
-                      >
-                        Yes, Clear All
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <button
+                  id="clear-all-data-button"
+                  type="button"
+                  onClick={() => setShowResetBackupReminder(true)}
+                  className="w-full py-3 bg-white hover:bg-[#FDF0EE] border border-[#E1E6E2] hover:border-[#FADCDA] rounded-xl text-[#D94841] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={16} />
+                  <span>Clear All Data (Start Fresh)</span>
+                </button>
               </div>
             </section>
           )}
+
+          {/* Storage Health Check Modal */}
+          <StorageHealthModal
+            isOpen={showHealthModal}
+            onClose={() => setShowHealthModal(false)}
+          />
+
+          {/* Backup Reminder for Factory Reset */}
+          <BackupReminderModal
+            isOpen={showResetBackupReminder}
+            title="Warning: Resetting Store Data"
+            description="You are about to clear all product inventory, sales history, and store setup. This is a permanent destructive operation."
+            destructiveActionLabel="Yes, Clear All Data"
+            onProceed={() => {
+              setShowResetBackupReminder(false);
+              if (onResetAllData) {
+                onResetAllData();
+                toast.success('All data has been reset.');
+              }
+            }}
+            onCancel={() => setShowResetBackupReminder(false)}
+          />
+
+          {/* Backup Reminder for Restore Overwrite */}
+          <BackupReminderModal
+            isOpen={showRestoreBackupReminder}
+            title="Warning: Overwriting Existing Database"
+            description="Restoring will completely replace your current inventory and sales records with the selected backup file. Download a safety backup of your current database first?"
+            destructiveActionLabel="Yes, Overwrite & Restore"
+            onProceed={() => {
+              setShowRestoreBackupReminder(false);
+              handleConfirmRestore();
+            }}
+            onCancel={() => setShowRestoreBackupReminder(false)}
+          />
+
         </div>
       )}
     </motion.div>

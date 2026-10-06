@@ -3,6 +3,17 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Media } from '@capacitor-community/media';
 import { Product, SaleTransaction, UserProfile, BackupSummary } from '../types';
 import {
+  getAllProducts,
+  getAllSales,
+  getProfileFromIDB,
+  getReceiptSequenceFromIDB,
+  saveAllProducts,
+  saveAllSales,
+  saveProfileToIDB,
+  saveReceiptSequenceToIDB,
+  isIndexedDBAvailable,
+} from '../db/indexedDbRepository';
+import {
   getAllProductImages,
   saveProductImage,
   clearAllProductImages,
@@ -45,26 +56,44 @@ export interface BackupPayload {
  * are cleanly separated to prevent multi-megabyte image duplication.
  */
 export async function buildBackupPayload(): Promise<string> {
-  // Load products from localStorage
+  // Load products from IndexedDB as primary, localStorage as fallback
   let products: Product[] = [];
-  try {
-    const rawProds = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-    if (rawProds) {
-      products = JSON.parse(rawProds);
+  if (isIndexedDBAvailable()) {
+    try {
+      products = await getAllProducts();
+    } catch (e) {
+      console.warn('IDB products read fallback to localStorage:', e);
     }
-  } catch (e) {
-    console.error('Failed to read products for backup:', e);
+  }
+  if (products.length === 0) {
+    try {
+      const rawProds = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+      if (rawProds) {
+        products = JSON.parse(rawProds);
+      }
+    } catch (e) {
+      console.error('Failed to read products for backup:', e);
+    }
   }
 
-  // Load sales from localStorage
+  // Load sales from IndexedDB as primary, localStorage as fallback
   let sales: SaleTransaction[] = [];
-  try {
-    const rawSales = localStorage.getItem(SALES_STORAGE_KEY);
-    if (rawSales) {
-      sales = JSON.parse(rawSales);
+  if (isIndexedDBAvailable()) {
+    try {
+      sales = await getAllSales();
+    } catch (e) {
+      console.warn('IDB sales read fallback to localStorage:', e);
     }
-  } catch (e) {
-    console.error('Failed to read sales for backup:', e);
+  }
+  if (sales.length === 0) {
+    try {
+      const rawSales = localStorage.getItem(SALES_STORAGE_KEY);
+      if (rawSales) {
+        sales = JSON.parse(rawSales);
+      }
+    } catch (e) {
+      console.error('Failed to read sales for backup:', e);
+    }
   }
 
   // Load profile
@@ -77,6 +106,16 @@ export async function buildBackupPayload(): Promise<string> {
     businessType: 'Retail & Grocery',
     currency: 'PHP (₱)',
   };
+  if (isIndexedDBAvailable()) {
+    try {
+      const idbProf = await getProfileFromIDB();
+      if (idbProf) {
+        profile = { ...profile, ...idbProf };
+      }
+    } catch (e) {
+      console.warn('IDB profile read fallback:', e);
+    }
+  }
   try {
     const rawProfile =
       localStorage.getItem(PROFILE_STORAGE_KEY) ||
@@ -472,6 +511,23 @@ export async function applyRestorePayload(backupData: unknown): Promise<void> {
     throw new Error(
       `Restore failed during commit (${err instanceof Error ? err.message : 'storage quota exceeded'}). Original state was restored.`
     );
+  }
+
+  // 8b. Commit to IndexedDB stores for durable persistence
+  if (isIndexedDBAvailable()) {
+    try {
+      await saveAllProducts(validatedProducts);
+      await saveAllSales(validatedSales);
+      await saveProfileToIDB(cleanProfile);
+      if (payload.lastReceiptSeq) {
+        const seq = parseInt(String(payload.lastReceiptSeq), 10);
+        if (!isNaN(seq) && seq > 0) {
+          await saveReceiptSequenceToIDB(seq);
+        }
+      }
+    } catch (idbErr) {
+      console.warn('Non-fatal: IDB restore sync error:', idbErr);
+    }
   }
 
   // 9. Prune obsolete orphan images that are no longer part of restored product set

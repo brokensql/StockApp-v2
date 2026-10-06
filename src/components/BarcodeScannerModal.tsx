@@ -1145,47 +1145,57 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             className="absolute inset-0 w-full h-full object-cover pointer-events-none bg-black"
           />
 
-          {/* In-Modal Toaster using Navy Blue Format, strictly hugging text width */}
-          <AnimatePresence>
-            {scanToast && (
-              <motion.div
-                key={scanToast.id}
-                initial={{ opacity: 0, y: -14, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="absolute top-4 sm:top-5 left-0 right-0 mx-auto z-50 pointer-events-none w-fit max-w-[calc(100vw-32px)] px-3.5 py-2 rounded-[14px] bg-[#0F172A] text-white shadow-[0_8px_24px_-4px_rgba(15,23,42,0.45)] border border-slate-700/50 flex items-center gap-2 select-none whitespace-nowrap"
-              >
-                <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    scanToast.type === 'success'
-                      ? 'text-[#4ADE80]'
-                      : scanToast.type === 'warning'
-                      ? 'text-[#FBBF24]'
-                      : 'text-[#38BDF8]'
-                  }`}
+          {/* In-Modal Toaster using Navy Blue Format, centered and responsive to long names */}
+          <div
+            className="fixed inset-x-0 z-[100] flex justify-center pointer-events-none px-4"
+            style={{
+              top: 'max(calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 14px), 16px)',
+            }}
+          >
+            <AnimatePresence>
+              {scanToast && (
+                <motion.div
+                  key={scanToast.id}
+                  initial={{ opacity: 0, y: -16, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12, scale: 0.94 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-[14px] bg-[#0F172A] text-white shadow-[0_8px_28px_-4px_rgba(15,23,42,0.5)] border border-slate-700/60 max-w-[min(calc(100vw-32px),390px)] w-auto min-w-[180px] box-border select-none overflow-hidden"
                 >
-                  {scanToast.type === 'success' ? (
-                    <Check size={14} strokeWidth={2.8} />
-                  ) : scanToast.type === 'warning' ? (
-                    <AlertCircle size={14} strokeWidth={2.5} />
-                  ) : (
-                    <ScanLine size={14} strokeWidth={2.5} />
-                  )}
-                </div>
-                <div className="w-fit flex flex-col leading-tight">
-                  <span className="text-[13px] font-semibold text-white whitespace-nowrap">
-                    {scanToast.title}
-                  </span>
-                  {scanToast.subtitle && (
-                    <span className="text-[11px] font-medium text-[#CBD5E1] whitespace-nowrap mt-0.5">
-                      {scanToast.subtitle}
+                  <div
+                    className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                      scanToast.type === 'success'
+                        ? 'text-[#4ADE80]'
+                        : scanToast.type === 'warning'
+                        ? 'text-[#FBBF24]'
+                        : 'text-[#38BDF8]'
+                    }`}
+                  >
+                    {scanToast.type === 'success' ? (
+                      <Check size={14} strokeWidth={2.8} />
+                    ) : scanToast.type === 'warning' ? (
+                      <AlertCircle size={14} strokeWidth={2.5} />
+                    ) : (
+                      <ScanLine size={14} strokeWidth={2.5} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
+                    <span
+                      className="text-[13px] font-semibold text-white truncate block w-full leading-snug tracking-normal"
+                      title={scanToast.title}
+                    >
+                      {scanToast.title}
                     </span>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    {scanToast.subtitle && (
+                      <span className="text-[11px] font-medium text-[#CBD5E1] truncate block w-full mt-0.5 leading-tight">
+                        {scanToast.subtitle}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Transition between Key and Barcode camera views (no sliding animation) */}
           <AnimatePresence mode="wait" initial={false}>

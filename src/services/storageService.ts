@@ -1,9 +1,3 @@
-/**
- * Storage Service & Repository Layer
- * Provides safe, transactional, offline-first persistence for products, sales, and profile.
- * Ensures sales completion and inventory adjustments are atomically validated and persisted.
- */
-
 import { Product, SaleTransaction, UserProfile, SaleItem } from '../types';
 import { validateCartStock } from '../utils/stockValidation';
 import {
@@ -17,9 +11,39 @@ import {
   HAS_ENTERED_NAME_KEY,
   ONBOARDED_STORAGE_KEY,
   CLEAN_SLATE_KEY,
+  RECEIPT_SEQUENCE_KEY,
 } from '../utils/storageKeys';
+import {
+  openRepositoryDB,
+  closeRepositoryDB,
+  migrateFromLocalStorage,
+  getAllProducts,
+  getAllSales,
+  saveAllProducts,
+  saveAllSales,
+  completeSaleTransactionInIDB,
+  deleteSaleTransactionInIDB,
+  clearSalesTransactionsInIDB,
+  isIndexedDBAvailable,
+  getProfileFromIDB,
+  saveProfileToIDB,
+  getReceiptSequenceFromIDB,
+  saveReceiptSequenceToIDB,
+  incrementReceiptSequenceInIDB,
+  getImageMetadataFromIDB,
+  saveImageMetadataToIDB,
+  getAllImageMetadataFromIDB,
+  deleteImageMetadataFromIDB,
+  checkStorageHealth,
+  recoverCorruptedDatabase,
+  CompleteSaleOptions,
+  SaleExecutionResult,
+  DeleteSaleResult,
+  StorageHealthReport,
+  CorruptionRecoveryResult,
+} from '../db/indexedDbRepository';
 
-export const DEFAULT_PROFILE: UserProfile = {
+const DEFAULT_PROFILE: UserProfile = {
   ownerName: 'Store Owner',
   storeName: 'My Store',
   email: '',
@@ -30,37 +54,24 @@ export const DEFAULT_PROFILE: UserProfile = {
 };
 
 /**
- * Safe JSON parser with auto-quarantine for corrupted records.
- * Preserves the corrupted string with a timestamped key instead of silently wiping it.
+ * Safely parses JSON from localStorage with corrupt-data protection.
  */
-export function safeParseStorage<T>(key: string): { data: T | null; corrupted: boolean } {
+function safeParseStorage<T>(key: string): { data: T | null; isCorrupted: boolean } {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw || !raw.trim()) {
-      return { data: null, corrupted: false };
-    }
-    try {
-      const parsed = JSON.parse(raw);
-      return { data: parsed, corrupted: false };
-    } catch {
-      const corruptKey = `${key}_corrupt_${Date.now()}`;
-      try {
-        localStorage.setItem(corruptKey, raw);
-        localStorage.removeItem(key);
-      } catch (storageErr) {
-        console.error('Failed to preserve corrupt data', storageErr);
-      }
-      return { data: null, corrupted: true };
-    }
-  } catch {
-    return { data: null, corrupted: false };
+    if (!raw) return { data: null, isCorrupted: false };
+    const parsed = JSON.parse(raw);
+    return { data: parsed, isCorrupted: false };
+  } catch (e) {
+    console.error(`Corrupted storage detected for key "${key}":`, e);
+    return { data: null, isCorrupted: true };
   }
 }
 
 /**
- * Deduplicates product records by unique ID and trimmed SKU.
+ * Ensures products have unique IDs and clean, non-duplicated SKUs.
  */
-export function deduplicateProducts(prods: Product[]): Product[] {
+function deduplicateProducts(prods: Product[]): Product[] {
   const seenIds = new Set<string>();
   const seenSkus = new Set<string>();
   const deduplicated: Product[] = [];
@@ -81,19 +92,27 @@ export function deduplicateProducts(prods: Product[]): Product[] {
 
 /**
  * Loads products from offline storage.
+ * 
+ * CRITICAL RULE: Does NOT automatically wipe valid data merely because CLEAN_SLATE_KEY
+ * or another marker key is missing! If products exist, they are preserved.
  */
 export function loadProducts(): Product[] {
   try {
+    const { data } = safeParseStorage<Product[]>(PRODUCTS_STORAGE_KEY);
+    if (data && Array.isArray(data) && data.length > 0) {
+      if (typeof localStorage !== 'undefined' && !localStorage.getItem(CLEAN_SLATE_KEY)) {
+        localStorage.setItem(CLEAN_SLATE_KEY, 'true');
+      }
+      return deduplicateProducts(data);
+    }
+
     const hasCleanSlate = localStorage.getItem(CLEAN_SLATE_KEY);
     if (!hasCleanSlate) {
+      // New installation: mark clean slate without wiping existing keys
       localStorage.setItem(CLEAN_SLATE_KEY, 'true');
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify([]));
       return [];
     }
 
-    const { data } = safeParseStorage<Product[]>(PRODUCTS_STORAGE_KEY);
     if (data && Array.isArray(data)) {
       return deduplicateProducts(data);
     }
@@ -104,38 +123,59 @@ export function loadProducts(): Product[] {
 }
 
 /**
- * Safely persists products to localStorage, stripping large data URLs to protect storage quota.
+ * Safely persists products to storage, writing to IndexedDB and mirroring to localStorage.
  */
 export function saveProducts(products: Product[]): boolean {
   try {
     const safeProducts = products.map(({ imageUrl, ...rest }) => rest);
     localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
+    if (isIndexedDBAvailable()) {
+      saveAllProducts(products).catch((err) =>
+        console.warn('Background IndexedDB products save error:', err)
+      );
+    }
     return true;
   } catch (e) {
     console.error('Failed to save products to localStorage:', e);
+    if (isIndexedDBAvailable()) {
+      saveAllProducts(products).catch((err) =>
+        console.warn('Background IndexedDB products save error after localStorage fail:', err)
+      );
+      return true;
+    }
     return false;
   }
 }
 
 /**
  * Loads sales from primary storage, falling back to backup mirror if corrupted.
+ * 
+ * CRITICAL RULE: Preserves existing sales even if CLEAN_SLATE_KEY is missing!
  */
 export function loadSales(): SaleTransaction[] {
   try {
-    const hasCleanSlate = localStorage.getItem(CLEAN_SLATE_KEY);
-    if (!hasCleanSlate) {
-      return [];
-    }
-
     const primary = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_KEY);
-    if (primary.data && Array.isArray(primary.data)) {
+    if (primary.data && Array.isArray(primary.data) && primary.data.length > 0) {
       return primary.data;
     }
 
     // Mirror fallback if primary key missing or corrupted
     const mirror = safeParseStorage<SaleTransaction[]>(SALES_STORAGE_MIRROR_KEY);
-    if (mirror.data && Array.isArray(mirror.data)) {
+    if (mirror.data && Array.isArray(mirror.data) && mirror.data.length > 0) {
       console.warn('Recovered sales from backup mirror after storage issue.');
+      return mirror.data;
+    }
+
+    const hasCleanSlate = localStorage.getItem(CLEAN_SLATE_KEY);
+    if (!hasCleanSlate) {
+      localStorage.setItem(CLEAN_SLATE_KEY, 'true');
+      return [];
+    }
+
+    if (primary.data && Array.isArray(primary.data)) {
+      return primary.data;
+    }
+    if (mirror.data && Array.isArray(mirror.data)) {
       return mirror.data;
     }
   } catch (e) {
@@ -145,7 +185,7 @@ export function loadSales(): SaleTransaction[] {
 }
 
 /**
- * Safely persists sales to both primary and mirror storage keys.
+ * Safely persists sales to both primary and mirror storage keys, and IndexedDB.
  */
 export function saveSales(sales: SaleTransaction[]): boolean {
   try {
@@ -156,9 +196,20 @@ export function saveSales(sales: SaleTransaction[]): boolean {
     } catch {
       // Mirror failure shouldn't abort if primary succeeded
     }
+    if (isIndexedDBAvailable()) {
+      saveAllSales(sales).catch((err) =>
+        console.warn('Background IndexedDB sales save error:', err)
+      );
+    }
     return true;
   } catch (e) {
     console.error('Failed to save sales to localStorage:', e);
+    if (isIndexedDBAvailable()) {
+      saveAllSales(sales).catch((err) =>
+        console.warn('Background IndexedDB sales save error after localStorage fail:', err)
+      );
+      return true;
+    }
     return false;
   }
 }
@@ -193,7 +244,7 @@ export function loadProfile(): UserProfile {
 }
 
 /**
- * Persists profile settings to localStorage.
+ * Persists profile settings to localStorage and IndexedDB.
  */
 export function saveProfile(userProfile: UserProfile): boolean {
   try {
@@ -212,33 +263,37 @@ export function saveProfile(userProfile: UserProfile): boolean {
       localStorage.setItem(HAS_ENTERED_NAME_KEY, 'true');
       localStorage.setItem(ONBOARDED_STORAGE_KEY, 'true');
     }
+
+    if (isIndexedDBAvailable()) {
+      saveProfileToIDB(userProfile).catch((err) =>
+        console.warn('Background IndexedDB profile save error:', err)
+      );
+    }
     return true;
   } catch (e) {
     console.error('Failed to save profile to localStorage:', e);
+    if (isIndexedDBAvailable()) {
+      saveProfileToIDB(userProfile).catch(() => {});
+      return true;
+    }
     return false;
   }
-}
-
-export interface SaleExecutionResult {
-  success: boolean;
-  transaction?: SaleTransaction;
-  updatedProducts?: Product[];
-  error?: string;
 }
 
 /**
  * Atomically completes a sale transaction:
  * 1. Validates cart items against current shelf stock.
- * 2. Deducts sold quantities from inventory.
- * 3. Persists both updated products and the sales ledger.
- * 4. Only marks operation successful after storage write succeeds; rolls back on quota failure.
+ * 2. Uses durable IndexedDB read-write transaction (when available) ensuring
+ *    inventory updates and sale ledger write both persist or neither persists.
+ * 3. Keeps localStorage mirror synchronized for fast boot and backwards compatibility.
  */
-export function completeSaleTransaction(
+export async function completeSaleTransaction(
   newTransaction: SaleTransaction,
   updatedProducts: Product[],
   currentSales: SaleTransaction[],
-  currentProducts: Product[]
-): SaleExecutionResult {
+  currentProducts: Product[],
+  options?: CompleteSaleOptions
+): Promise<SaleExecutionResult> {
   // Step 1: Validate stock
   const validation = validateCartStock(newTransaction.items, currentProducts);
   if (!validation.isValid) {
@@ -249,17 +304,47 @@ export function completeSaleTransaction(
     };
   }
 
-  // Preserve previous state snapshot for rollback if persistence fails
+  // Step 2: Use IndexedDB atomic transaction if available
+  if (isIndexedDBAvailable()) {
+    const idbResult = await completeSaleTransactionInIDB(
+      newTransaction,
+      updatedProducts,
+      currentProducts,
+      options
+    );
+
+    if (!idbResult.success) {
+      return idbResult;
+    }
+
+    // Mirror to localStorage on commit
+    try {
+      const safeProducts = updatedProducts.map(({ imageUrl, ...rest }) => rest);
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(safeProducts));
+      const nextSales = [newTransaction, ...currentSales];
+      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(nextSales));
+      localStorage.setItem(SALES_STORAGE_MIRROR_KEY, JSON.stringify(nextSales));
+
+      const match = (newTransaction.transactionNumber || '').match(/^SA-(\d+)$/i);
+      if (match) {
+        localStorage.setItem(RECEIPT_SEQUENCE_KEY, match[1]);
+      }
+    } catch {
+      // Non-fatal if localStorage quota exceeded, since IDB is our durable primary repository
+    }
+
+    return idbResult;
+  }
+
+  // Fallback for non-IndexedDB environments (SSR / test runner without IDB)
   const previousProductsRaw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
   const previousSalesRaw = localStorage.getItem(SALES_STORAGE_KEY);
   const previousMirrorRaw = localStorage.getItem(SALES_STORAGE_MIRROR_KEY);
 
   const nextSales = [newTransaction, ...currentSales];
 
-  // Step 2 & 3: Attempt atomic persistence
   const productsSaved = saveProducts(updatedProducts);
   if (!productsSaved) {
-    // Rollback
     if (previousProductsRaw !== null) localStorage.setItem(PRODUCTS_STORAGE_KEY, previousProductsRaw);
     return {
       success: false,
@@ -269,7 +354,6 @@ export function completeSaleTransaction(
 
   const salesSaved = saveSales(nextSales);
   if (!salesSaved) {
-    // Rollback both products and sales
     if (previousProductsRaw !== null) localStorage.setItem(PRODUCTS_STORAGE_KEY, previousProductsRaw);
     if (previousSalesRaw !== null) localStorage.setItem(SALES_STORAGE_KEY, previousSalesRaw);
     if (previousMirrorRaw !== null) localStorage.setItem(SALES_STORAGE_MIRROR_KEY, previousMirrorRaw);
@@ -286,24 +370,34 @@ export function completeSaleTransaction(
   };
 }
 
-export interface DeleteSaleResult {
-  success: boolean;
-  updatedSales: SaleTransaction[];
-  updatedProducts: Product[];
-  deletedSale?: SaleTransaction;
-  error?: string;
-}
-
 /**
  * Safely deletes a sale from history, optionally restoring the items to shelf stock.
- * Persists the resulting state atomically.
+ * Persists the resulting state atomically in IndexedDB with localStorage mirroring.
  */
-export function deleteSaleTransaction(
+export async function deleteSaleTransaction(
   transactionId: string,
   currentSales: SaleTransaction[],
   currentProducts: Product[],
   restoreStock = false
-): DeleteSaleResult {
+): Promise<DeleteSaleResult> {
+  if (isIndexedDBAvailable()) {
+    const idbResult = await deleteSaleTransactionInIDB(
+      transactionId,
+      currentSales,
+      currentProducts,
+      restoreStock
+    );
+
+    if (idbResult.success) {
+      try {
+        saveProducts(idbResult.updatedProducts);
+        saveSales(idbResult.updatedSales);
+      } catch {}
+    }
+
+    return idbResult;
+  }
+
   const saleToDelete = currentSales.find((s) => s.id === transactionId);
   if (!saleToDelete) {
     return {
@@ -327,7 +421,6 @@ export function deleteSaleTransaction(
 
   const nextSales = currentSales.filter((s) => s.id !== transactionId);
 
-  // Snapshot for rollback
   const previousProductsRaw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
   const previousSalesRaw = localStorage.getItem(SALES_STORAGE_KEY);
   const previousMirrorRaw = localStorage.getItem(SALES_STORAGE_MIRROR_KEY);
@@ -358,12 +451,27 @@ export function deleteSaleTransaction(
 /**
  * Safely deletes multiple sales from history and persists the updated ledger.
  */
-export function clearSalesTransactions(
+export async function clearSalesTransactions(
   saleIdsToDelete: string[],
   currentSales: SaleTransaction[]
-): { success: boolean; updatedSales: SaleTransaction[]; error?: string } {
+): Promise<{ success: boolean; updatedSales: SaleTransaction[]; error?: string }> {
   if (!saleIdsToDelete || saleIdsToDelete.length === 0) {
     return { success: true, updatedSales: currentSales };
+  }
+
+  if (isIndexedDBAvailable()) {
+    const idbResult = await clearSalesTransactionsInIDB(
+      saleIdsToDelete,
+      currentSales
+    );
+
+    if (idbResult.success) {
+      try {
+        saveSales(idbResult.updatedSales);
+      } catch {}
+    }
+
+    return idbResult;
   }
 
   const idSet = new Set(saleIdsToDelete);
@@ -388,3 +496,34 @@ export function clearSalesTransactions(
     updatedSales: nextSales,
   };
 }
+
+export {
+  openRepositoryDB,
+  closeRepositoryDB,
+  migrateFromLocalStorage,
+  getAllProducts,
+  getAllSales,
+  completeSaleTransactionInIDB,
+  deleteSaleTransactionInIDB,
+  clearSalesTransactionsInIDB,
+  isIndexedDBAvailable,
+  getProfileFromIDB,
+  saveProfileToIDB,
+  getReceiptSequenceFromIDB,
+  saveReceiptSequenceToIDB,
+  incrementReceiptSequenceInIDB,
+  getImageMetadataFromIDB,
+  saveImageMetadataToIDB,
+  getAllImageMetadataFromIDB,
+  deleteImageMetadataFromIDB,
+  checkStorageHealth,
+  recoverCorruptedDatabase,
+};
+
+export type {
+  CompleteSaleOptions,
+  SaleExecutionResult,
+  DeleteSaleResult,
+  StorageHealthReport,
+  CorruptionRecoveryResult,
+};

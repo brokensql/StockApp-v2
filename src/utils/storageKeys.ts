@@ -9,3 +9,4 @@ export const SALES_STORAGE_MIRROR_KEY = 'store_sales_mirror';
 export const ONBOARDED_STORAGE_KEY = 'sage_onboarding_completed';
 export const CLEAN_SLATE_KEY = 'sage_clean_slate_initialized_v2';
 export const SALES_PAGE_CLEARED_IDS_KEY = 'sage_sales_page_cleared_tx_ids';
+export const RECEIPT_SEQUENCE_KEY = 'sage_last_receipt_seq';

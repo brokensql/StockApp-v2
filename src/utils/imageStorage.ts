@@ -1,5 +1,10 @@
 // Offline image storage service using IndexedDB with client-side canvas compression
 // Guarantees zero network latency, persistent offline storage, and tiny memory footprint.
+import {
+  saveImageMetadataToIDB,
+  deleteImageMetadataFromIDB,
+  isIndexedDBAvailable,
+} from '../db/indexedDbRepository';
 
 const DB_NAME = 'pos_offline_db';
 const DB_VERSION = 1;
@@ -212,6 +217,16 @@ export async function saveProductImage(
   // Update memory cache after persistence succeeds
   memoryCache[productId] = finalDataUrl;
 
+  // Persist metadata to business-critical IndexedDB store
+  if (isIndexedDBAvailable()) {
+    saveImageMetadataToIDB({
+      id: productId,
+      sizeBytes: finalDataUrl.length,
+      mimeType: finalDataUrl.startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg',
+      updatedAt: Date.now(),
+    }).catch(() => {});
+  }
+
   // Broadcast event so UI hooks re-render automatically
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
@@ -297,6 +312,10 @@ export async function deleteProductImage(productId: string): Promise<void> {
   if (!productId) return;
 
   delete memoryCache[productId];
+
+  if (isIndexedDBAvailable()) {
+    deleteImageMetadataFromIDB(productId).catch(() => {});
+  }
 
   try {
     const db = await getDB();

@@ -11,6 +11,7 @@ export interface LottieAnimationProps {
   style?: React.CSSProperties;
   speed?: number;
   segments?: [number, number];
+  onComplete?: () => void;
 }
 
 export const LottieAnimation: React.FC<LottieAnimationProps> = ({
@@ -22,6 +23,7 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
   style,
   speed = 1,
   segments,
+  onComplete,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<AnimationItem | null>(null);
@@ -55,6 +57,12 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
           const targetSegments: [number, number] = segments || [0, 46];
           animRef.current.playSegments(targetSegments, true);
         }
+
+        if (onComplete) {
+          animRef.current.addEventListener('complete', () => {
+            onComplete();
+          });
+        }
       }
     } catch (err) {
       console.warn('Failed to load Lottie animation:', err);
@@ -66,7 +74,7 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
         animRef.current = null;
       }
     };
-  }, [animationData, path, loop, autoplay, speed, segments]);
+  }, [animationData, path, loop, autoplay, speed, segments, onComplete]);
 
   return <div ref={containerRef} className={className} style={style} />;
 };

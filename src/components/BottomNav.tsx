@@ -16,7 +16,7 @@ interface BottomNavProps {
   products?: Product[];
   sales?: SaleTransaction[];
   onAddProduct?: (product: Product) => void;
-  onCompleteSale?: (newTransaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
+  onCompleteSale?: (newTransaction: SaleTransaction, updatedProducts: Product[]) => boolean | Promise<boolean> | void;
   onQuickNewSale?: () => void;
   onQuickAddProduct?: () => void;
   onOpenActiveSale?: (params: { items?: SaleItem[] }) => void;

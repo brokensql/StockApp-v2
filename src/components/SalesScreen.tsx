@@ -11,11 +11,12 @@ import {
   getTransactionTimestamp,
 } from '../utils/philippineDate';
 import { SALES_PAGE_CLEARED_IDS_KEY } from '../utils/storageKeys';
+import { BackupReminderModal } from './BackupReminderModal';
 
 interface SalesScreenProps {
   products: Product[];
   sales: SaleTransaction[];
-  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | void;
+  onCompleteSale: (transaction: SaleTransaction, updatedProducts: Product[]) => boolean | Promise<boolean> | void;
   onDeleteSale?: (saleId: string, restoreStock?: boolean) => void;
   onClearSales?: (saleIds: string[]) => void;
   onBack?: () => void;
@@ -40,6 +41,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMethod, setFilterMethod] = useState<'all' | 'cash' | 'gcash' | 'card'>('all');
   const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
+  const [showClearBackupReminder, setShowClearBackupReminder] = useState(false);
   const [clearRange, setClearRange] = useState<'older_30' | 'older_90' | 'all'>('older_30');
 
   // Track sales cleared specifically from the Sales page view without touching global app data
@@ -145,8 +147,8 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
     })}`;
   };
 
-  const handleSaleCompleted = (transaction: SaleTransaction, updatedProducts: Product[]) => {
-    const success = onCompleteSale(transaction, updatedProducts);
+  const handleSaleCompleted = async (transaction: SaleTransaction, updatedProducts: Product[]) => {
+    const success = await onCompleteSale(transaction, updatedProducts);
     if (success !== false) {
       setIsActiveSaleOpen(false);
     }
@@ -310,7 +312,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               id="recent-sales-heading"
               className="text-[13.5px] font-semibold text-[#202522]"
             >
-              Recent sales
+              Sales history
             </h2>
             <button
               type="button"
@@ -373,7 +375,6 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
             </button>
           </div>
         ) : (
-          /* Recent Sales in Individual White Containers */
           <div
             id="recent-sales-list-container"
             className="space-y-2.5 pb-2"
@@ -383,7 +384,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 key={sale.id}
                 id={`sale-row-${sale.id}`}
                 onClick={() => setSelectedTransaction(sale)}
-                className="bg-white rounded-2xl border border-[#E1E6E2] p-3.5 sm:p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] flex items-center justify-between cursor-pointer hover:border-[#2F7D32]/40 active:scale-[0.99] transition-all group"
+                className="w-full h-13 sm:h-13.5 min-h-[52px] bg-white rounded-full border border-[#E1E6E2] px-5 sm:px-6 shadow-[0_4px_14px_rgba(32,37,34,0.06)] hover:shadow-[0_4px_18px_rgba(47,125,50,0.08)] flex items-center justify-between cursor-pointer hover:border-[#2F7D32]/60 active:scale-[0.98] transition-all group select-none"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -395,7 +396,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
               >
                 {/* Left: Product & Transaction Details */}
                 <div className="min-w-0 pr-3 flex-1">
-                  <p className="text-[14.5px] font-medium text-[#202522] truncate group-hover:text-[#2F7D32] transition-colors">
+                  <p className="text-[14px] sm:text-[14.5px] font-medium text-[#202522] truncate group-hover:text-[#2F7D32] transition-colors leading-snug">
                     {sale.primaryItemName}
                     {sale.items.length > 1 && (
                       <span className="text-[12px] font-normal text-[#929A95] ml-1.5">
@@ -403,7 +404,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                       </span>
                     )}
                   </p>
-                  <p className="text-[12px] text-[#68716C] mt-0.5 tabular-nums">
+                  <p className="text-[11.5px] sm:text-[12px] text-[#68716C] mt-0.5 tabular-nums leading-tight">
                     {formatPHTTimestamp(getTransactionTimestamp(sale))}
                     <span className="mx-1 text-[#C3C9C4]">·</span>
                     {sale.itemCount} {sale.itemCount === 1 ? 'unit' : 'units'}
@@ -414,10 +415,10 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
 
                 {/* Right: Amount & Receipt ID */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[15px] font-semibold text-[#202522] tabular-nums">
+                  <p className="text-[14.5px] sm:text-[15px] font-bold text-[#202522] tabular-nums leading-snug">
                     {formatCurrency(sale.total)}
                   </p>
-                  <p className="text-[11px] text-[#929A95] font-mono mt-0.5">
+                  <p className="text-[11px] text-[#929A95] font-mono mt-0.5 leading-tight">
                     {sale.transactionNumber}
                   </p>
                 </div>
@@ -561,7 +562,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 <button
                   type="button"
                   id="btn-confirm-clear-history"
-                  onClick={handleExecuteClearHistory}
+                  onClick={() => setShowClearBackupReminder(true)}
                   disabled={targetSalesToClear.length === 0}
                   className="flex-1 h-10 bg-[#D94841] hover:bg-[#B83832] active:bg-[#9B2F2A] disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-semibold rounded-xl transition-colors cursor-pointer shadow-xs"
                 >
@@ -574,6 +575,19 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Backup Reminder before clearing sales */}
+      <BackupReminderModal
+        isOpen={showClearBackupReminder}
+        title="Clear Sales Ledger Records"
+        description={`You are about to clear ${targetSalesToClear.length} sale transaction(s) from view. Download a backup copy of your sales records first?`}
+        destructiveActionLabel="Proceed with Clear"
+        onProceed={() => {
+          setShowClearBackupReminder(false);
+          handleExecuteClearHistory();
+        }}
+        onCancel={() => setShowClearBackupReminder(false)}
+      />
     </motion.div>
   );
 };

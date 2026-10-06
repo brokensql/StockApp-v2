@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Toaster, toast } from 'sonner';
+import { LottieSplashScreen } from './components/LottieSplashScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { StoreScreen } from './components/StoreScreen';
@@ -28,6 +29,10 @@ import {
   saveProfile,
   completeSaleTransaction,
   deleteSaleTransaction,
+  migrateFromLocalStorage,
+  getAllProducts,
+  getAllSales,
+  getProfileFromIDB,
 } from './services/storageService';
 import {
   deleteProductImage,
@@ -130,6 +135,7 @@ function getInitialSales(): SaleTransaction[] {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(getInitialOnboarded);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [products, setProducts] = useState<Product[]>(getInitialProducts);
@@ -144,6 +150,36 @@ export default function App() {
     }
     // Prune any orphan images in IDB that don't match any active products
     pruneOrphanProductImages(products.map((p) => p.id)).catch(() => {});
+
+    // Migrate existing localStorage data once, safely and idempotently into IndexedDB
+    migrateFromLocalStorage()
+      .then(async ({ migrated, productCount, saleCount }) => {
+        if (migrated) {
+          console.info(`Migrated ${productCount} products and ${saleCount} sales to IndexedDB repository.`);
+        }
+        // Hydrate from IndexedDB repository if populated
+        try {
+          const [dbProducts, dbSales, dbProfile] = await Promise.all([
+            getAllProducts(),
+            getAllSales(),
+            getProfileFromIDB(),
+          ]);
+          if (dbProducts && dbProducts.length > 0) {
+            setProducts(dbProducts);
+          }
+          if (dbSales && dbSales.length > 0) {
+            setSales(dbSales);
+          }
+          if (dbProfile && dbProfile.storeName) {
+            setUserProfile((prev) => ({ ...prev, ...dbProfile }));
+          }
+        } catch (fetchErr) {
+          console.warn('Failed to hydrate from IndexedDB:', fetchErr);
+        }
+      })
+      .catch((err) => {
+        console.warn('IndexedDB migration notice:', err);
+      });
 
     // Load offline profile avatar stored on device/phone
     getProfileImage().then((avatar) => {
@@ -401,12 +437,12 @@ export default function App() {
     toast.success('Deleted');
   };
 
-  const handleCompleteSale = (
+  const handleCompleteSale = async (
     newTransaction: SaleTransaction,
     updatedProducts: Product[]
-  ): boolean => {
-    // Atomically validate and persist inventory change and sale record
-    const result = completeSaleTransaction(
+  ): Promise<boolean> => {
+    // Atomically validate and persist inventory change and sale record in IndexedDB
+    const result = await completeSaleTransaction(
       newTransaction,
       updatedProducts,
       sales,
@@ -414,7 +450,14 @@ export default function App() {
     );
 
     if (!result.success) {
-      toast.error(result.error || 'Failed to complete sale.');
+      if (result.isQuotaError) {
+        toast.error(
+          'Storage Quota Exceeded! Neither inventory nor sale was saved. Please export a backup from Settings to protect your records.',
+          { duration: 10000 }
+        );
+      } else {
+        toast.error(result.error || 'Failed to complete sale.');
+      }
       return false;
     }
 
@@ -424,8 +467,8 @@ export default function App() {
     return true;
   };
 
-  const handleDeleteSale = (transactionId: string, restoreStock = false) => {
-    const result = deleteSaleTransaction(
+  const handleDeleteSale = async (transactionId: string, restoreStock = false) => {
+    const result = await deleteSaleTransaction(
       transactionId,
       sales,
       products,
@@ -493,6 +536,12 @@ export default function App() {
         }}
       />
       <OfflineIndicator />
+      {showSplash && (
+        <LottieSplashScreen
+          appName={userProfile.storeName || 'StockApp'}
+          onFinish={() => setShowSplash(false)}
+        />
+      )}
       {!hasOnboarded ? (
         <OnboardingScreen
           currentProfile={userProfile}
