@@ -178,6 +178,48 @@ jobs:
           grep -q "android.permission.CAMERA" "$MANIFEST" || sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA"/>\n  <application|' "$MANIFEST"
           grep -n "uses-permission" "$MANIFEST"
 
+      - name: Neutralize Android 12+ system splash icon (values-v31)
+        run: |
+          RES=android/app/src/main/res
+          mkdir -p "$RES/drawable"
+          cat > "$RES/drawable/transparent_splash.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#00000000"/>
+          </shape>
+          XML
+
+          mkdir -p "$RES/values-v31"
+          cat > "$RES/values-v31/styles.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+              <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
+                  <item name="windowActionBar">false</item>
+                  <item name="windowNoTitle">true</item>
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+          </resources>
+          XML
+          echo "--- values-v31/styles.xml ---"
+          cat "$RES/values-v31/styles.xml"
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
@@ -430,6 +472,48 @@ jobs:
             echo "### Notice: Release keystore secret (RELEASE_KEYSTORE_BASE64) not found." >> $GITHUB_STEP_SUMMARY
             echo "Building unsigned release APK." >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Neutralize Android 12+ system splash icon (values-v31)
+        run: |
+          RES=android/app/src/main/res
+          mkdir -p "$RES/drawable"
+          cat > "$RES/drawable/transparent_splash.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#00000000"/>
+          </shape>
+          XML
+
+          mkdir -p "$RES/values-v31"
+          cat > "$RES/values-v31/styles.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+              <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
+                  <item name="windowActionBar">false</item>
+                  <item name="windowNoTitle">true</item>
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+                  <item name="android:background">@color/splash_background</item>
+                  <item name="android:windowBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/transparent_splash</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+              </style>
+          </resources>
+          XML
+          echo "--- values-v31/styles.xml ---"
+          cat "$RES/values-v31/styles.xml"
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
