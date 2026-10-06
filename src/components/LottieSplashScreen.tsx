@@ -60,53 +60,29 @@ export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
           onClick={handleComplete}
-          className="fixed inset-0 z-[999999] flex flex-col items-center justify-center bg-[#F7F9FB] select-none cursor-pointer overflow-hidden"
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-[#F7F9FB] select-none cursor-pointer overflow-hidden"
           style={{
             paddingTop: 'env(safe-area-inset-top, 0px)',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
           aria-label="App Splash Screen"
         >
-          {/* Main Icon Container - Same color as splash background (#F7F9FB), balanced size */}
-          <div className="flex flex-col items-center justify-center -mt-6">
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              className="w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center bg-[#F7F9FB] rounded-3xl"
-            >
-              <LottieAnimation
-                animationData={boxAssembleData}
-                loop={false}
-                autoplay={true}
-                speed={1}
-                onComplete={handleComplete}
-                className="w-full h-full pointer-events-none"
-              />
-            </motion.div>
-
-            {/* Subtle Brand Title Below Icon */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4, ease: 'easeOut' }}
-              className="mt-3 text-center"
-            >
-              <h1 className="text-[20px] sm:text-[22px] font-bold text-[#202522] tracking-tight">
-                {appName}
-              </h1>
-              <p className="text-[12px] sm:text-[13px] font-medium text-[#68716C] mt-0.5 tracking-normal">
-                POS &amp; Inventory Management
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Bottom Version Indicator / Offline Ready mark */}
-          <div className="absolute bottom-6 sm:bottom-8 text-center pointer-events-none">
-            <span className="text-[11px] font-medium text-[#929A95]/80 tracking-wide uppercase">
-              Fast · Offline · Reliable
-            </span>
-          </div>
+          {/* Main Icon Container - Box only, bigger, seamlessly matching splash background (#F7F9FB) */}
+          <motion.div
+            initial={{ scale: 0.86, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="w-60 h-60 sm:w-72 sm:h-72 max-w-[80vw] max-h-[80vw] flex items-center justify-center bg-[#F7F9FB]"
+          >
+            <LottieAnimation
+              animationData={boxAssembleData}
+              loop={false}
+              autoplay={true}
+              speed={1}
+              onComplete={handleComplete}
+              className="w-full h-full pointer-events-none"
+            />
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

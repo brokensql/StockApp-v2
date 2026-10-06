@@ -21,5 +21,12 @@ export const LOTTIE_ANIMATIONS = {
 
 export type LottieAnimationKey = keyof typeof LOTTIE_ANIMATIONS;
 
-export { buyOnlineData, setUpLayoutData, jobSuccessData, shoppingCartData, boxAssembleData, targetHitData };
+export {
+  buyOnlineData,
+  setUpLayoutData,
+  jobSuccessData,
+  shoppingCartData,
+  boxAssembleData,
+  targetHitData,
+};
 export default LOTTIE_ANIMATIONS;
