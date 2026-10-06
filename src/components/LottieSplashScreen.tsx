@@ -18,14 +18,21 @@ export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
   const [isClosing, setIsClosing] = useState(false);
   const finishCalledRef = useRef(false);
 
+  // Keep the latest onFinish in a ref so handleComplete stays referentially stable.
+  // A changing onFinish identity (e.g. an inline arrow from App) would otherwise
+  // flow through into LottieAnimation's effect dependencies and restart the
+  // animation from frame 0 on every App re-render (IndexedDB hydration, avatar load).
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
+
   const handleComplete = useCallback(() => {
     if (finishCalledRef.current) return;
     finishCalledRef.current = true;
     setIsClosing(true);
     setTimeout(() => {
-      onFinish?.();
+      onFinishRef.current?.();
     }, 380);
-  }, [onFinish]);
+  }, []);
 
   useEffect(() => {
     // If native Capacitor is active, safely hide the native window splash
