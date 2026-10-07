@@ -27,6 +27,8 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<AnimationItem | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -46,6 +48,10 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
         autoplay: shouldPlaySegments ? false : autoplay,
         animationData,
         path,
+        rendererSettings: {
+          preserveAspectRatio: 'xMidYMid meet',
+          progressiveLoad: true,
+        },
       });
 
       if (animRef.current) {
@@ -58,11 +64,9 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
           animRef.current.playSegments(targetSegments, true);
         }
 
-        if (onComplete) {
-          animRef.current.addEventListener('complete', () => {
-            onComplete();
-          });
-        }
+        animRef.current.addEventListener('complete', () => {
+          onCompleteRef.current?.();
+        });
       }
     } catch (err) {
       console.warn('Failed to load Lottie animation:', err);
@@ -74,7 +78,7 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
         animRef.current = null;
       }
     };
-  }, [animationData, path, loop, autoplay, speed, segments, onComplete]);
+  }, [animationData, path, loop, autoplay, speed, segments]);
 
   return <div ref={containerRef} className={className} style={style} />;
 };

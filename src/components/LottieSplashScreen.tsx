@@ -7,31 +7,30 @@ import { Capacitor } from '@capacitor/core';
 interface LottieSplashScreenProps {
   onFinish?: () => void;
   appName?: string;
-  minDurationMs?: number;
+  speed?: number;
 }
 
 export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
   onFinish,
-  appName = 'StockApp',
-  minDurationMs = 2200,
+  speed = 0.52,
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const finishCalledRef = useRef(false);
 
   // Keep the latest onFinish in a ref so handleComplete stays referentially stable.
-  // A changing onFinish identity (e.g. an inline arrow from App) would otherwise
-  // flow through into LottieAnimation's effect dependencies and restart the
-  // animation from frame 0 on every App re-render (IndexedDB hydration, avatar load).
   const onFinishRef = useRef(onFinish);
   onFinishRef.current = onFinish;
 
   const handleComplete = useCallback(() => {
     if (finishCalledRef.current) return;
     finishCalledRef.current = true;
-    setIsClosing(true);
+    // Add a gentle hold so the user can enjoy the completed assembled box & checkmark badge
     setTimeout(() => {
-      onFinishRef.current?.();
-    }, 380);
+      setIsClosing(true);
+      setTimeout(() => {
+        onFinishRef.current?.();
+      }, 420);
+    }, 480);
   }, []);
 
   useEffect(() => {
@@ -48,15 +47,16 @@ export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
       }
     }
 
-    // Fallback maximum timer ensuring the splash never hangs even if animation pauses
+    // Dynamic safety timer matched to the slowed speed (150 frames @ 60fps / 0.52 ≈ 4.8s) + hold + margin
+    const expectedDurationMs = Math.ceil((150 / (60 * speed)) * 1000) + 1400;
     const maxTimer = window.setTimeout(() => {
       handleComplete();
-    }, minDurationMs + 400);
+    }, expectedDurationMs);
 
     return () => {
       clearTimeout(maxTimer);
     };
-  }, [handleComplete, minDurationMs]);
+  }, [handleComplete, speed]);
 
   return (
     <AnimatePresence>
@@ -64,8 +64,8 @@ export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
         <motion.div
           id="app-lottie-splash-screen"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
           onClick={handleComplete}
           className="fixed inset-0 z-[999999] flex items-center justify-center bg-[#F7F9FB] select-none cursor-pointer overflow-hidden"
           style={{
@@ -74,22 +74,20 @@ export const LottieSplashScreen: React.FC<LottieSplashScreenProps> = ({
           }}
           aria-label="App Splash Screen"
         >
-          {/* Main Icon Container - Box only, bigger, seamlessly matching splash background (#F7F9FB) */}
-          <motion.div
-            initial={{ scale: 0.86, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.45, ease: 'easeOut' }}
+          {/* Main Icon Container - Stable dimensions with no competing scale animation for glitch-free rendering */}
+          <div
             className="w-60 h-60 sm:w-72 sm:h-72 max-w-[80vw] max-h-[80vw] flex items-center justify-center bg-[#F7F9FB]"
+            style={{ transform: 'translateZ(0)', willChange: 'transform' }}
           >
             <LottieAnimation
               animationData={boxAssembleData}
               loop={false}
               autoplay={true}
-              speed={1}
+              speed={speed}
               onComplete={handleComplete}
               className="w-full h-full pointer-events-none"
             />
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
