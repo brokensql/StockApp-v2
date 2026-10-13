@@ -441,7 +441,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={triggerCamera}
-                          className="w-36 h-9.5 px-3 rounded-full bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                          className="w-36 h-9.5 px-3 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                         >
                           <Camera size={15} strokeWidth={2.2} />
                           <span>Take picture</span>
@@ -449,7 +449,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-36 h-9.5 px-3 rounded-full bg-white hover:bg-[#E8F3E8]/30 text-[#2F7D32] border border-[#2F7D32]/40 hover:border-[#2F7D32] text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
+                          className="w-36 h-9.5 px-3 rounded-xl bg-white hover:bg-[#E8F3E8]/30 text-[#2F7D32] border border-[#2F7D32]/40 hover:border-[#2F7D32] text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs whitespace-nowrap"
                         >
                           <Upload size={15} strokeWidth={2.2} />
                           <span>Upload image</span>
@@ -691,7 +691,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <button
                   id="btn-save-product"
                   type="submit"
-                  className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15px] font-semibold rounded-full flex items-center justify-center cursor-pointer transition-all shadow-[0_4px_14px_rgba(47,125,50,0.25)] active:scale-[0.99]"
+                  className="w-full h-13 bg-[#2F7D32] hover:bg-[#256B29] active:bg-[#1E5A22] text-white text-[15px] font-semibold rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-[0_4px_14px_rgba(47,125,50,0.25)] active:scale-[0.99]"
                 >
                   {isEditing
                     ? 'Save changes'

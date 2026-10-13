@@ -19,8 +19,6 @@ import { PWAInstallButton } from './PWAInstallButton';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { ScoopedMetricCard } from './ScoopedMetricCard';
 import { SwipeDeck } from '@/components/ui/swipe-deck';
-import { LottieAnimation } from './LottieAnimation';
-import { targetHitData } from '../assets/lottie';
 import {
   calculatePHTSalesGrowth,
   getPHTParts,
@@ -53,13 +51,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   // Derive date in PHT
   const phtDate = useMemo(() => getPHTParts(new Date()), []);
-  const currentMonthName = useMemo(() => {
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Manila',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-  }, []);
 
   // Products metrics
   const totalProducts = products.length;
@@ -116,18 +107,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       .filter((s) => isTransactionInPHTPeriod(s, 'month'))
       .reduce((acc, s) => acc + (s.total || 0), 0);
   }, [sales]);
-
-  // Goals & Monthly Target
-  const monthlyGoalTarget = useMemo(() => {
-    if (currentMonthSales <= 0) return 10000;
-    if (currentMonthSales < 10000) return 10000;
-    return Math.ceil((currentMonthSales * 1.2) / 5000) * 5000;
-  }, [currentMonthSales]);
-
-  const goalProgress = useMemo(() => {
-    if (monthlyGoalTarget <= 0) return 0;
-    return Math.min(100, (currentMonthSales / monthlyGoalTarget) * 100);
-  }, [currentMonthSales, monthlyGoalTarget]);
 
   // Growth calculation in PHT
   const growthMetrics = useMemo(() => calculatePHTSalesGrowth(sales), [sales]);
@@ -444,66 +423,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onClick={() => onNavigate && onNavigate('store')}
           />
         </div>
-
-        {/* Goals Section with Lottie Target Hit Animation */}
-        <section aria-label="Goals" className="mb-5">
-          <div className="flex items-center justify-between mb-3 px-0.5">
-            <h2 className="text-[17px] font-bold text-[#202522]">
-              Goals
-            </h2>
-            <span className="text-[12px] font-medium text-[#68716C]">
-              {currentMonthName}
-            </span>
-          </div>
-
-          <div
-            id="home-goals-card"
-            className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 sm:p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] flex items-center justify-between gap-3 overflow-hidden relative"
-          >
-            {/* Left: Goals Text & Progress Details */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11px] font-bold tracking-wide text-[#2F7D32] bg-[#E8F3E8] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2F7D32]" />
-                  {goalProgress >= 100 ? 'Target Hit!' : 'Monthly Target'}
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-[16px] sm:text-[17px] font-bold text-[#202522] tabular-nums tracking-tight">
-                  {isPriceHidden ? '••••••' : formatCurrency(currentMonthSales)}
-                </span>
-                <span className="text-[12.5px] font-medium text-[#929A95] tabular-nums">
-                  / {isPriceHidden ? '••••••' : formatCurrency(monthlyGoalTarget)}
-                </span>
-              </div>
-
-              <p className="text-[12px] text-[#68716C] mt-1 leading-snug truncate">
-                {goalProgress >= 100
-                  ? "Target reached! Excellent progress this month."
-                  : `${Math.round(goalProgress)}% of your monthly goal achieved.`}
-              </p>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-[#F0F3F1] h-2 rounded-full overflow-hidden mt-2.5">
-                <div
-                  className="bg-[#2F7D32] h-full rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${goalProgress}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Right: Lottie Animation Container */}
-            <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center -my-1 -mr-1">
-              <LottieAnimation
-                animationData={targetHitData}
-                loop={true}
-                autoplay={true}
-                className="w-full h-full"
-              />
-            </div>
-          </div>
-        </section>
 
         {/* Most Sold Products (Top 3 All-Time) */}
         <div

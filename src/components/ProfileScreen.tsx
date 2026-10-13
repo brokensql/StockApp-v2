@@ -1,26 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
-  User,
   Store,
-  Mail,
-  Phone,
-  MapPin,
-  Edit2,
-  Building2,
+  HardDrive,
   Trash2,
   Camera,
   Loader2,
   Download,
   Upload,
-  Database,
+  ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserProfile, BackupSummary } from '../types';
 import {
   saveProfileImage,
-  deleteProfileImage,
   getProfileImage,
 } from '../utils/imageStorage';
 import {
@@ -30,7 +24,6 @@ import {
 } from '../utils/backup';
 import { StorageHealthModal } from './StorageHealthModal';
 import { BackupReminderModal } from './BackupReminderModal';
-import { HardDrive, ShieldCheck } from 'lucide-react';
 
 interface ProfileScreenProps {
   profile?: UserProfile;
@@ -53,18 +46,92 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onUpdateProfile,
   onResetAllData,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [formData, setFormData] = useState<UserProfile>(profile);
-  const [confirmResetData, setConfirmResetData] = useState(false);
+  const [editingField, setEditingField] = useState<'storeName' | 'ownerName' | 'businessType' | null>(null);
+  const [tempValue, setTempValue] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const restoreFileInputRef = useRef<HTMLInputElement>(null);
+
   const [isExporting, setIsExporting] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<BackupSummary | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [showResetBackupReminder, setShowResetBackupReminder] = useState(false);
   const [showRestoreBackupReminder, setShowRestoreBackupReminder] = useState(false);
-  const restoreFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync formData when profile prop changes
+  useEffect(() => {
+    setFormData(profile);
+  }, [profile]);
+
+  // Load offline profile image if not attached
+  useEffect(() => {
+    if (!formData.avatarUrl) {
+      getProfileImage()
+        .then((avatar) => {
+          if (avatar) {
+            setFormData((prev) => ({ ...prev, avatarUrl: avatar }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (PNG, JPG, WebP).');
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+      const dataUrl = await saveProfileImage(file);
+      const updated: UserProfile = {
+        ...formData,
+        avatarUrl: dataUrl,
+      };
+      setFormData(updated);
+      if (onUpdateProfile) {
+        onUpdateProfile(updated);
+      }
+      toast.success('Photo updated');
+    } catch (err) {
+      console.error('Failed to save profile photo:', err);
+      toast.error('Failed to save photo.');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleStartEdit = (field: 'storeName' | 'ownerName' | 'businessType') => {
+    setEditingField(field);
+    setTempValue(formData[field] || '');
+  };
+
+  const handleSaveField = (field: 'storeName' | 'ownerName' | 'businessType') => {
+    const trimmed = tempValue.trim();
+    if (field === 'storeName' && !trimmed) {
+      toast.error('Store name cannot be empty.');
+      return;
+    }
+    const updated: UserProfile = {
+      ...formData,
+      [field]: trimmed || (field === 'ownerName' ? 'Store Owner' : formData[field]),
+    };
+    setFormData(updated);
+    if (onUpdateProfile) {
+      onUpdateProfile(updated);
+    }
+    setEditingField(null);
+    toast.success('Updated');
+  };
 
   const handleExportBackup = async () => {
     try {
@@ -100,101 +167,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     try {
       setIsRestoring(true);
       await applyRestorePayload(pendingRestore.backupData);
-      // applyRestorePayload ends with window.location.reload(); reset the spinner
-      // as a safety net in case the reload is deferred by the WebView.
       setTimeout(() => {
         setIsRestoring(false);
-        toast.warning('Restore applied — reload did not complete. Please close and reopen the app.');
+        toast.warning('Restore applied. Please reopen the app.');
       }, 5000);
     } catch (err: unknown) {
       console.error('Restore failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to restore data from backup.');
+      toast.error(err instanceof Error ? err.message : 'Failed to restore backup.');
       setIsRestoring(false);
     }
-  };
-
-  // Sync formData if profile prop updates externally
-  useEffect(() => {
-    setFormData(profile);
-  }, [profile]);
-
-  // Load offline profile image if not yet attached to profile
-  useEffect(() => {
-    if (!formData.avatarUrl) {
-      getProfileImage().then((avatar) => {
-        if (avatar) {
-          setFormData((prev) => ({ ...prev, avatarUrl: avatar }));
-        }
-      }).catch(() => {});
-    }
-  }, []);
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file (PNG, JPEG, WebP, etc.)');
-      return;
-    }
-
-    try {
-      setIsUploadingPhoto(true);
-      // Compresses client-side using HTML5 Canvas and saves directly on phone storage (IndexedDB)
-      const dataUrl = await saveProfileImage(file);
-      const updated: UserProfile = {
-        ...formData,
-        avatarUrl: dataUrl,
-      };
-      setFormData(updated);
-      if (onUpdateProfile) {
-        onUpdateProfile(updated);
-      }
-    } catch (err) {
-      console.error('Failed to save profile photo to phone storage:', err);
-      toast.error('Failed to save photo to offline storage. Please try another image.');
-    } finally {
-      setIsUploadingPhoto(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    try {
-      setIsUploadingPhoto(true);
-      // Remove immediately from device IndexedDB to eliminate storage churn
-      await deleteProfileImage();
-      const updated: UserProfile = {
-        ...formData,
-        avatarUrl: undefined,
-      };
-      setFormData(updated);
-      if (onUpdateProfile) {
-        onUpdateProfile(updated);
-      }
-    } catch (err) {
-      console.error('Failed to remove profile photo from IDB:', err);
-    } finally {
-      setIsUploadingPhoto(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onUpdateProfile) {
-      onUpdateProfile(formData);
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setFormData(profile);
-    setIsEditing(false);
   };
 
   return (
@@ -203,11 +184,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       className="w-full max-w-[430px] mx-auto px-5 pt-3 sm:pt-4"
-      style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
+      style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      {/* Hidden File Input for Phone Photo Selection */}
+      {/* Hidden File Inputs */}
       <input
         ref={fileInputRef}
         type="file"
@@ -216,435 +197,407 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         className="hidden"
         aria-hidden="true"
       />
+      <input
+        ref={restoreFileInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleSelectRestoreFile}
+        className="hidden"
+        aria-hidden="true"
+      />
 
-      {/* Profile Card with User Avatar, Name, Store, and Edit Pen */}
-      <div className="bg-white border border-[#E1E6E2] rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(32,37,34,0.02)] relative">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5 min-w-0 flex-1">
-            {/* Interactive Profile Avatar */}
-            <div className="relative flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingPhoto}
-                title="Change profile photo (stored on phone)"
-                aria-label="Upload profile photo"
-                className="w-14 h-14 rounded-full bg-[#E8F3E8] border border-[#81B783] overflow-hidden flex items-center justify-center text-[#2F7D32] shadow-2xs cursor-pointer hover:opacity-95 transition-all group relative focus:outline-none"
-              >
-                {formData.avatarUrl ? (
-                  <img
-                    src={formData.avatarUrl}
-                    alt={formData.ownerName}
-                    className="w-full h-full object-cover select-none"
-                  />
-                ) : (
-                  <User size={28} strokeWidth={1.8} />
-                )}
-
-                {/* Hover tint indicating tap to upload */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Camera size={16} className="text-white" />
-                </div>
-              </button>
-
-              {/* Camera icon badge */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingPhoto}
-                aria-label="Upload profile photo"
-                className="absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-[#2F7D32] hover:bg-[#25632A] text-white flex items-center justify-center shadow-xs border-2 border-white transition-colors cursor-pointer"
-              >
-                {isUploadingPhoto ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <Camera size={11} strokeWidth={2.4} />
-                )}
-              </button>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[19px] font-bold text-[#202522] truncate">
-                {formData.ownerName}
-              </h2>
-              <p className="text-[14px] font-medium text-[#68716C] mt-0.5 flex items-center gap-1.5 truncate">
-                <Store size={15} className="text-[#68716C] flex-shrink-0" />
-                <span>{formData.storeName}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Pen for editing profile inside the container with user's name */}
+      {/* Top Profile Avatar & Store Header */}
+      <div className="flex flex-col items-center text-center pt-2 pb-5">
+        <div className="relative mb-3">
           <button
-            id="edit-profile-button"
             type="button"
-            onClick={() => setIsEditing(!isEditing)}
-            aria-label={isEditing ? 'Cancel editing' : 'Edit profile'}
-            className="w-9 h-9 rounded-full border border-[#E1E6E2] bg-white hover:bg-[#F4F6F4] text-[#202522] flex items-center justify-center shadow-2xs cursor-pointer transition-colors flex-shrink-0 active:scale-95"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingPhoto}
+            aria-label="Change photo"
+            className="w-20 h-20 rounded-full bg-[#E8F3E8] border-2 border-white shadow-sm overflow-hidden flex items-center justify-center text-[#2F7D32] transition-transform active:scale-95 cursor-pointer relative group focus:outline-none"
           >
-            <Edit2 size={15} className="text-[#68716C]" />
+            {formData.avatarUrl ? (
+              <img
+                src={formData.avatarUrl}
+                alt={formData.storeName}
+                className="w-full h-full object-cover select-none"
+              />
+            ) : (
+              <Store size={34} strokeWidth={1.8} className="text-[#2F7D32]" />
+            )}
+            <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera size={18} className="text-white" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingPhoto}
+            aria-label="Upload photo"
+            className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-[#2F7D32] hover:bg-[#256B29] text-white flex items-center justify-center shadow-xs border-2 border-white cursor-pointer transition-colors"
+          >
+            {isUploadingPhoto ? (
+              <Loader2 size={11} className="animate-spin" />
+            ) : (
+              <Camera size={11} strokeWidth={2.4} />
+            )}
           </button>
         </div>
+
+        <h1 className="text-[20px] font-bold text-[#202522] tracking-tight leading-snug">
+          {formData.storeName || 'My Store'}
+        </h1>
+        <p className="text-[13.5px] text-[#68716C] mt-0.5 font-medium">
+          {formData.ownerName || 'Store Owner'}
+        </p>
       </div>
 
-      {/* Editable Form / Display View */}
-      {isEditing ? (
-        <form onSubmit={handleSave} className="bg-white border border-[#E1E6E2] rounded-2xl p-5 mb-5 space-y-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
-          <div className="flex items-center justify-between border-b border-[#E1E6E2] pb-3 mb-1">
-            <h3 className="text-[17px] font-bold text-[#202522]">Edit Profile Details</h3>
-            <span className="text-[12px] text-[#68716C]">Update store & account</span>
-          </div>
-
-          {/* Profile Photo Controls Inside Form */}
-          <div className="flex items-center gap-3.5 pb-3 border-b border-[#E1E6E2]">
-            <div className="w-14 h-14 rounded-full bg-[#E8F3E8] border border-[#81B783] overflow-hidden flex items-center justify-center text-[#2F7D32] shadow-2xs flex-shrink-0">
-              {formData.avatarUrl ? (
-                <img
-                  src={formData.avatarUrl}
-                  alt={formData.ownerName}
-                  className="w-full h-full object-cover select-none"
-                />
-              ) : (
-                <User size={28} strokeWidth={1.8} />
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingPhoto}
-                  className="px-3 py-1.5 rounded-xl border border-[#E1E6E2] bg-white hover:bg-[#F4F6F4] text-[12.5px] font-semibold text-[#202522] flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                >
-                  {isUploadingPhoto ? (
-                    <Loader2 size={13} className="animate-spin text-[#2F7D32]" />
-                  ) : (
-                    <Camera size={13} className="text-[#2F7D32]" />
-                  )}
-                  <span>{formData.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
-                </button>
-                {formData.avatarUrl && (
+      {/* Main Containers */}
+      <div className="space-y-4.5">
+        {/* Store Info Section */}
+        <div>
+          <p className="text-[12px] font-semibold text-[#68716C] px-1 mb-2">
+            Store info
+          </p>
+          <div className="space-y-2">
+            {/* Name Container */}
+            <div className="bg-white border border-[#E1E6E2] rounded-2xl px-4 py-3 shadow-2xs">
+              {editingField === 'storeName' ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-[#68716C] block mb-1">
+                      Name
+                    </span>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={tempValue}
+                      onChange={(e) => setTempValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveField('storeName');
+                        if (e.key === 'Escape') setEditingField(null);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-[#2F7D32] text-[13.5px] text-[#202522] focus:outline-none bg-white"
+                      placeholder="Store name"
+                    />
+                  </div>
                   <button
                     type="button"
-                    onClick={handleRemovePhoto}
-                    disabled={isUploadingPhoto}
-                    className="px-2.5 py-1.5 rounded-xl border border-[#E1E6E2] bg-white hover:bg-red-50 text-[12px] font-medium text-red-600 flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                    onClick={() => handleSaveField('storeName')}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0 pt-3"
                   >
-                    <Trash2 size={13} />
-                    <span>Remove</span>
+                    done
                   </button>
-                )}
-              </div>
-              <p className="text-[11px] text-[#68716C] mt-1">
-                Stored offline on your phone
-              </p>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-[12px] font-medium text-[#68716C] mb-1">Owner Name</label>
-            <input
-              type="text"
-              value={formData.ownerName}
-              onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
-              placeholder="Full name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-[#68716C] mb-1">Store Name</label>
-            <input
-              type="text"
-              value={formData.storeName}
-              onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
-              placeholder="Business or store name"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12px] font-medium text-[#68716C] mb-1">Business Type</label>
-              <select
-                value={formData.businessType}
-                onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
-              >
-                <option value="Retail & Grocery">Retail & Grocery</option>
-                <option value="Sari-Sari Store">Sari-Sari Store</option>
-                <option value="Supermarket & Convenience">Supermarket & Convenience</option>
-                <option value="Bakery & Food Stand">Bakery & Food Stand</option>
-                <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-                <option value="General Merchandising">General Merchandising</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-medium text-[#68716C] mb-1">Currency</label>
-              <select
-                value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors cursor-pointer"
-              >
-                <option value="PHP (₱)">PHP (₱) - Philippine Peso</option>
-                <option value="USD ($)">USD ($) - US Dollar</option>
-                <option value="EUR (€)">EUR (€) - Euro</option>
-                <option value="GBP (£)">GBP (£) - British Pound</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-[#68716C] mb-1">Email Address <span className="text-[#68716C]/70 font-normal">(Optional)</span></label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
-              placeholder="e.g. contact@email.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-[#68716C] mb-1">Phone Number <span className="text-[#68716C]/70 font-normal">(Optional)</span></label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors"
-              placeholder="e.g. +63 917 000 0000"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-[#68716C] mb-1">Business Address <span className="text-[#68716C]/70 font-normal">(Optional)</span></label>
-            <textarea
-              rows={2}
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3.5 py-2 rounded-xl border border-[#E1E6E2] text-[14px] text-[#202522] focus:outline-none focus:border-[#2F7D32] bg-[#FAFBFB] focus:bg-white transition-colors resize-none"
-              placeholder="Store location / address"
-            />
-          </div>
-
-          <div className="flex items-center gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="flex-1 py-2.5 border border-[#E1E6E2] bg-white text-[#202522] rounded-full text-[14px] font-medium hover:bg-[#F4F6F4] transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-2.5 bg-[#2F7D32] text-white rounded-full text-[14px] font-semibold hover:bg-[#256B29] active:bg-[#1E5A22] transition-colors cursor-pointer shadow-[0_4px_14px_rgba(47,125,50,0.2)]"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      ) : (
-        /* Business Info & Clear Data Section */
-        <div className="space-y-6">
-          <section aria-label="Business Details">
-            <h2 className="text-[15px] font-semibold text-[#202522] px-1 mb-2.5">
-              Business Contact
-            </h2>
-
-            <div className="bg-white border border-[#E1E6E2] rounded-2xl divide-y divide-[#E1E6E2] overflow-hidden shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
-              <div className="p-3.5 flex items-center gap-3">
-                <Building2 size={18} className="text-[#68716C] flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-[#68716C]">Business Type</p>
-                  <p className="text-[14px] font-semibold text-[#202522] truncate">{formData.businessType}</p>
                 </div>
-              </div>
-
-              <div className="p-3.5 flex items-center gap-3">
-                <Mail size={18} className="text-[#68716C] flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-[#68716C]">Email</p>
-                  <p className="text-[14px] font-medium text-[#202522] truncate">
-                    {formData.email || <span className="text-[#68716C]/70 italic font-normal">Not set (Optional)</span>}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 flex items-center gap-3">
-                <Phone size={18} className="text-[#68716C] flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-[#68716C]">Phone</p>
-                  <p className="text-[14px] font-medium text-[#202522] truncate">
-                    {formData.phone || <span className="text-[#68716C]/70 italic font-normal">Not set (Optional)</span>}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 flex items-center gap-3">
-                <MapPin size={18} className="text-[#68716C] flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-[#68716C]">Address</p>
-                  <p className="text-[14px] font-medium text-[#202522] truncate">
-                    {formData.address || <span className="text-[#68716C]/70 italic font-normal">Not set (Optional)</span>}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Data & Backup Section */}
-          <section aria-label="Data and Backup" className="pt-2">
-            <div className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Database size={16} className="text-[#2F7D32]" />
-                  <h3 className="text-[14px] font-semibold text-[#202522]">Data & Backup</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowHealthModal(true)}
-                  className="py-1 px-2.5 bg-[#E8F3E8] hover:bg-[#D5EBD5] border border-[#81B783] rounded-full text-[11px] font-semibold text-[#2F7D32] flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  <ShieldCheck size={13} />
-                  <span>Storage Health</span>
-                </button>
-              </div>
-              <p className="text-[12px] text-[#68716C] mb-3.5 leading-relaxed">
-                Export an offline snapshot of your products, sales history, and store identity to your device, or restore from a previous JSON backup.
-              </p>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleExportBackup}
-                  disabled={isExporting}
-                  className="py-2.5 px-3 bg-[#FAFBFB] hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[#202522] font-medium text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
-                >
-                  {isExporting ? <Loader2 size={15} className="animate-spin text-[#2F7D32]" /> : <Download size={15} className="text-[#2F7D32]" />}
-                  <span>Export Backup</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => restoreFileInputRef.current?.click()}
-                  disabled={isRestoring}
-                  className="py-2.5 px-3 bg-[#FAFBFB] hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[#202522] font-medium text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
-                >
-                  <Upload size={15} className="text-[#2F7D32]" />
-                  <span>Restore Backup</span>
-                </button>
-                <input
-                  ref={restoreFileInputRef}
-                  type="file"
-                  accept="application/json,.json"
-                  onChange={handleSelectRestoreFile}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Restore Confirmation Dialog */}
-              {pendingRestore && (
-                <div className="mt-3.5 p-3.5 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
-                  <div className="flex items-center gap-2 mb-2 text-[#202522] font-semibold text-[13px]">
-                    <AlertTriangle size={16} className="text-[#C07000] flex-shrink-0" />
-                    <span className="truncate">Restore: {pendingRestore.storeName}</span>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11.5px] font-medium text-[#68716C] block">
+                      Name
+                    </span>
+                    <span className="text-[14px] font-semibold text-[#202522] truncate block">
+                      {formData.storeName || 'My Store'}
+                    </span>
                   </div>
-                  <div className="text-[12px] text-[#68716C] space-y-1 mb-3">
-                    <p>• Products: <span className="font-semibold text-[#202522]">{pendingRestore.productCount}</span></p>
-                    <p>• Sales ledger: <span className="font-semibold text-[#202522]">{pendingRestore.salesCount}</span> transactions</p>
-                    <p>• Exported date: <span className="font-semibold text-[#202522]">{new Date(pendingRestore.exportedAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></p>
-                    <p className="text-[#D94841] font-medium pt-1">
-                      This replaces everything currently on this device.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPendingRestore(null)}
-                      disabled={isRestoring}
-                      className="flex-1 py-2 bg-white border border-[#E1E6E2] rounded-full text-[13px] font-medium text-[#202522] hover:bg-[#F2F4F2] cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowRestoreBackupReminder(true)}
-                      disabled={isRestoring}
-                      className="flex-1 py-2 bg-[#2F7D32] text-white rounded-full text-[13px] font-medium hover:bg-[#256B29] active:bg-[#1E5A22] cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                    >
-                      {isRestoring ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          <span>Restoring...</span>
-                        </>
-                      ) : (
-                        <span>Continue Restore...</span>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit('storeName')}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0"
+                  >
+                    edit
+                  </button>
                 </div>
               )}
             </div>
-          </section>
 
-          {/* Reset / Clear Data Option */}
-          {onResetAllData && (
-            <section aria-label="Danger Zone" className="pt-2">
-              <div className="bg-white border border-[#E1E6E2] rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.02)]">
+            {/* Owner Container */}
+            <div className="bg-white border border-[#E1E6E2] rounded-2xl px-4 py-3 shadow-2xs">
+              {editingField === 'ownerName' ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-[#68716C] block mb-1">
+                      Owner
+                    </span>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={tempValue}
+                      onChange={(e) => setTempValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveField('ownerName');
+                        if (e.key === 'Escape') setEditingField(null);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-[#2F7D32] text-[13.5px] text-[#202522] focus:outline-none bg-white"
+                      placeholder="Owner name"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveField('ownerName')}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0 pt-3"
+                  >
+                    done
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11.5px] font-medium text-[#68716C] block">
+                      Owner
+                    </span>
+                    <span className="text-[14px] font-semibold text-[#202522] truncate block">
+                      {formData.ownerName || 'Store Owner'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit('ownerName')}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0"
+                  >
+                    edit
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Category Container */}
+            <div className="bg-white border border-[#E1E6E2] rounded-2xl px-4 py-3 shadow-2xs">
+              {editingField === 'businessType' ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-[#68716C] block mb-1">
+                      Category
+                    </span>
+                    <select
+                      autoFocus
+                      value={formData.businessType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updated: UserProfile = {
+                          ...formData,
+                          businessType: val,
+                        };
+                        setFormData(updated);
+                        if (onUpdateProfile) {
+                          onUpdateProfile(updated);
+                        }
+                        setEditingField(null);
+                        toast.success('Category updated');
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-[#2F7D32] text-[13.5px] text-[#202522] focus:outline-none bg-white cursor-pointer"
+                    >
+                      <option value="Retail & Grocery">Retail & Grocery</option>
+                      <option value="Sari-Sari Store">Sari-Sari Store</option>
+                      <option value="Supermarket & Convenience">Supermarket & Convenience</option>
+                      <option value="Bakery & Food Stand">Bakery & Food Stand</option>
+                      <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+                      <option value="General Merchandising">General Merchandising</option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingField(null)}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0 pt-3"
+                  >
+                    done
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11.5px] font-medium text-[#68716C] block">
+                      Category
+                    </span>
+                    <span className="text-[14px] font-semibold text-[#202522] truncate block">
+                      {formData.businessType || 'Retail & Grocery'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingField('businessType')}
+                    className="text-[13px] text-[#68716C] hover:text-[#202522] font-medium underline underline-offset-2 cursor-pointer transition-colors shrink-0"
+                  >
+                    edit
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* System Storage Container */}
+        <div>
+          <p className="text-[12px] font-semibold text-[#68716C] px-1 mb-2">
+            Storage
+          </p>
+          <div className="bg-white border border-[#E1E6E2] rounded-2xl overflow-hidden shadow-2xs">
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <HardDrive size={16} className="text-[#68716C]" />
+                <span className="text-[13.5px] text-[#68716C]">Database</span>
+              </div>
+              <span className="text-[13px] font-semibold text-[#202522]">
+                Local and offline
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Backup & Tools */}
+        <div>
+          <p className="text-[12px] font-semibold text-[#68716C] px-1 mb-2">
+            Backups
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {/* Export Button */}
+            <button
+              type="button"
+              onClick={handleExportBackup}
+              disabled={isExporting}
+              className="p-3 bg-white hover:bg-[#F6FAF6] border border-[#E1E6E2] hover:border-[#81B783] rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-[0.98] disabled:opacity-60"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center">
+                {isExporting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Download size={16} strokeWidth={2.2} />
+                )}
+              </div>
+              <span className="text-[12px] font-semibold text-[#202522] leading-tight">
+                Export
+              </span>
+            </button>
+
+            {/* Restore Button */}
+            <button
+              type="button"
+              onClick={() => restoreFileInputRef.current?.click()}
+              disabled={isRestoring}
+              className="p-3 bg-white hover:bg-[#F6FAF6] border border-[#E1E6E2] hover:border-[#81B783] rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-[0.98] disabled:opacity-60"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center">
+                <Upload size={16} strokeWidth={2.2} />
+              </div>
+              <span className="text-[12px] font-semibold text-[#202522] leading-tight">
+                Restore
+              </span>
+            </button>
+
+            {/* Storage Health Button */}
+            <button
+              type="button"
+              onClick={() => setShowHealthModal(true)}
+              className="p-3 bg-white hover:bg-[#F6FAF6] border border-[#E1E6E2] hover:border-[#81B783] rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#E8F3E8] text-[#2F7D32] flex items-center justify-center">
+                <ShieldCheck size={16} strokeWidth={2.2} />
+              </div>
+              <span className="text-[12px] font-semibold text-[#202522] leading-tight">
+                Health
+              </span>
+            </button>
+          </div>
+
+          {/* Pending Restore Preview */}
+          {pendingRestore && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-2.5 p-3.5 bg-white border border-[#E1E6E2] rounded-2xl shadow-2xs space-y-2.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={15} className="text-[#C07000]" />
+                  <span className="text-[13px] font-semibold text-[#202522] truncate">
+                    {pendingRestore.storeName}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#68716C]">
+                  {pendingRestore.productCount} items · {pendingRestore.salesCount} sales
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-0.5">
                 <button
-                  id="clear-all-data-button"
                   type="button"
-                  onClick={() => setShowResetBackupReminder(true)}
-                  className="w-full py-3 bg-white hover:bg-[#FDF0EE] border border-[#E1E6E2] hover:border-[#FADCDA] rounded-xl text-[#D94841] font-medium text-[14px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  onClick={() => setPendingRestore(null)}
+                  disabled={isRestoring}
+                  className="flex-1 py-1.5 rounded-xl border border-[#E1E6E2] text-[12px] font-medium text-[#202522] hover:bg-[#F4F6F4] transition-colors cursor-pointer"
                 >
-                  <Trash2 size={16} />
-                  <span>Clear All Data (Start Fresh)</span>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRestoreBackupReminder(true)}
+                  disabled={isRestoring}
+                  className="flex-1 py-1.5 rounded-xl bg-[#2F7D32] hover:bg-[#256B29] text-white text-[12px] font-semibold transition-colors cursor-pointer shadow-2xs flex items-center justify-center gap-1"
+                >
+                  {isRestoring ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Restoring...</span>
+                    </>
+                  ) : (
+                    <span>Apply Restore</span>
+                  )}
                 </button>
               </div>
-            </section>
+            </motion.div>
           )}
-
-          {/* Storage Health Check Modal */}
-          <StorageHealthModal
-            isOpen={showHealthModal}
-            onClose={() => setShowHealthModal(false)}
-          />
-
-          {/* Backup Reminder for Factory Reset */}
-          <BackupReminderModal
-            isOpen={showResetBackupReminder}
-            title="Warning: Resetting Store Data"
-            description="You are about to clear all product inventory, sales history, and store setup. This is a permanent destructive operation."
-            destructiveActionLabel="Yes, Clear All Data"
-            onProceed={() => {
-              setShowResetBackupReminder(false);
-              if (onResetAllData) {
-                onResetAllData();
-                toast.success('All data has been reset.');
-              }
-            }}
-            onCancel={() => setShowResetBackupReminder(false)}
-          />
-
-          {/* Backup Reminder for Restore Overwrite */}
-          <BackupReminderModal
-            isOpen={showRestoreBackupReminder}
-            title="Warning: Overwriting Existing Database"
-            description="Restoring will completely replace your current inventory and sales records with the selected backup file. Download a safety backup of your current database first?"
-            destructiveActionLabel="Yes, Overwrite & Restore"
-            onProceed={() => {
-              setShowRestoreBackupReminder(false);
-              handleConfirmRestore();
-            }}
-            onCancel={() => setShowRestoreBackupReminder(false)}
-          />
-
         </div>
-      )}
+
+        {/* Reset Action */}
+        {onResetAllData && (
+          <div className="pt-2">
+            <button
+              id="clear-all-data-button"
+              type="button"
+              onClick={() => setShowResetBackupReminder(true)}
+              className="w-full py-2.5 rounded-xl text-[13px] font-medium text-[#D94841] hover:bg-red-50/70 border border-transparent hover:border-red-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 size={14} />
+              <span>Reset all data</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Storage Health Check Modal */}
+      <StorageHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+      />
+
+      {/* Backup Reminder for Factory Reset */}
+      <BackupReminderModal
+        isOpen={showResetBackupReminder}
+        title="Reset all data"
+        description="This will clear your products and sales history from this device."
+        destructiveActionLabel="Yes, Reset Everything"
+        onProceed={() => {
+          setShowResetBackupReminder(false);
+          if (onResetAllData) {
+            onResetAllData();
+            toast.success('All data has been reset.');
+          }
+        }}
+        onCancel={() => setShowResetBackupReminder(false)}
+      />
+
+      {/* Backup Reminder for Restore Overwrite */}
+      <BackupReminderModal
+        isOpen={showRestoreBackupReminder}
+        title="Restore database"
+        description="Restoring will replace current records with the selected backup file."
+        destructiveActionLabel="Yes, Restore Now"
+        onProceed={() => {
+          setShowRestoreBackupReminder(false);
+          handleConfirmRestore();
+        }}
+        onCancel={() => setShowRestoreBackupReminder(false)}
+      />
     </motion.div>
   );
 };
