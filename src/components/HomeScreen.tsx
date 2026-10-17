@@ -18,6 +18,7 @@ import { NavTab, Product, SaleTransaction, UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { ScoopedMetricCard } from './ScoopedMetricCard';
+import { MostSoldProductsCarousel } from './MostSoldProductsCarousel';
 import { SwipeDeck } from '@/components/ui/swipe-deck';
 import {
   calculatePHTSalesGrowth,
@@ -65,40 +66,148 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return sales.reduce((acc, s) => acc + (s.total || 0), 0);
   }, [sales]);
 
-  // All-time top 3 most sold products
+  // All-time most sold products
   const topSoldProducts = useMemo(() => {
     const soldMap = new Map<
       string,
-      { productId: string; name: string; totalSold: number; category?: string }
+      {
+        productId: string;
+        name: string;
+        totalSold: number;
+        category?: string;
+        revenue: number;
+        dateSales: Map<string, number>;
+        txEvents: { timestamp: number; qty: number }[];
+      }
     >();
+
+    let totalAllUnitsSold = 0;
 
     for (const sale of sales) {
       if (!sale.items || !Array.isArray(sale.items)) continue;
+      const txTime = getTransactionTimestamp(sale);
+      const dateKey = getPHTParts(txTime).dateKey;
+
       for (const item of sale.items) {
         const key = item.productId || item.name;
-        const current = soldMap.get(key);
         const qty = Number(item.quantity) || 0;
-        if (current) {
-          current.totalSold += qty;
-          if (item.name && !current.name) current.name = item.name;
-        } else {
+        const price = Number(item.unitPrice) || 0;
+        const rev = qty * price;
+        totalAllUnitsSold += qty;
+
+        let current = soldMap.get(key);
+        if (!current) {
           const matchedProduct = products.find(
             (p) => p.id === item.productId || p.name.toLowerCase() === item.name.toLowerCase()
           );
-          soldMap.set(key, {
+          current = {
             productId: item.productId,
             name: item.name || matchedProduct?.name || 'Product',
-            totalSold: qty,
+            totalSold: 0,
+            revenue: 0,
             category: item.category || matchedProduct?.category,
-          });
+            dateSales: new Map<string, number>(),
+            txEvents: [],
+          };
+          soldMap.set(key, current);
         }
+
+        current.totalSold += qty;
+        current.revenue += rev;
+        if (item.name && !current.name) current.name = item.name;
+        if (!current.category && item.category) current.category = item.category;
+
+        const currentDayQty = current.dateSales.get(dateKey) || 0;
+        current.dateSales.set(dateKey, currentDayQty + qty);
+        current.txEvents.push({ timestamp: txTime, qty });
       }
     }
+
+    // Last 7 calendar days in Philippine Time
+    const now = new Date();
+    const last7DaysDateKeys: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      last7DaysDateKeys.push(getPHTParts(d).dateKey);
+    }
+    const todayKey = last7DaysDateKeys[6];
+    const yesterdayKey = last7DaysDateKeys[5];
 
     return Array.from(soldMap.values())
       .filter((item) => item.totalSold > 0)
       .sort((a, b) => b.totalSold - a.totalSold)
-      .slice(0, 3);
+      .slice(0, 3)
+      .map((item) => {
+        // 1. Exact mathematical percentage of all store items sold
+        const calculatedPercent =
+          totalAllUnitsSold > 0
+            ? Math.round((item.totalSold / totalAllUnitsSold) * 100)
+            : 0;
+
+        // 2. Data-driven 7-point history curve
+        const activeDaysCount = Array.from(item.dateSales.values()).filter((q) => q > 0).length;
+        let historyPoints: number[] = [];
+
+        if (activeDaysCount >= 2) {
+          historyPoints = last7DaysDateKeys.map((k) => item.dateSales.get(k) || 0);
+        } else {
+          const sortedTx = [...item.txEvents].sort((a, b) => a.timestamp - b.timestamp);
+          if (sortedTx.length > 1) {
+            // Intra-day distribution across 7 time windows
+            const hourlyBuckets = new Array(7).fill(0);
+            for (const ev of sortedTx) {
+              const hour = getPHTParts(ev.timestamp).hour;
+              const bIdx = Math.min(6, Math.max(0, Math.floor(hour / 3.43)));
+              hourlyBuckets[bIdx] += ev.qty;
+            }
+            historyPoints = hourlyBuckets;
+          } else {
+            // Single transaction event curve progression
+            const qty = item.totalSold;
+            historyPoints = [0, 0, Math.round(qty * 0.25), Math.round(qty * 0.6), qty, qty, qty];
+          }
+        }
+
+        // 3. Real Trend Direction & Label
+        const todayUnits = item.dateSales.get(todayKey) || 0;
+        const yesterdayUnits = item.dateSales.get(yesterdayKey) || 0;
+
+        let trendLabel = `${calculatedPercent}% store share`;
+        let trendDirection: 'up' | 'down' | 'neutral' = 'up';
+
+        if (yesterdayUnits > 0) {
+          const diff = todayUnits - yesterdayUnits;
+          const trendPct = Math.round((diff / yesterdayUnits) * 100);
+          if (trendPct > 0) {
+            trendLabel = `+${trendPct}% vs yesterday`;
+            trendDirection = 'up';
+          } else if (trendPct < 0) {
+            trendLabel = `${trendPct}% vs yesterday`;
+            trendDirection = 'down';
+          } else {
+            trendLabel = `Same as yesterday`;
+            trendDirection = 'neutral';
+          }
+        } else if (todayUnits > 0 && yesterdayUnits === 0 && activeDaysCount >= 2) {
+          trendLabel = `+${todayUnits} sold today`;
+          trendDirection = 'up';
+        } else {
+          trendLabel = `${calculatedPercent}% store share`;
+          trendDirection = 'up';
+        }
+
+        return {
+          productId: item.productId,
+          name: item.name,
+          totalSold: item.totalSold,
+          revenue: item.revenue,
+          category: item.category,
+          percentage: calculatedPercent,
+          trendLabel,
+          trendDirection,
+          historyPoints,
+        };
+      });
   }, [sales, products]);
 
   // Sales in current month (PHT)
@@ -424,61 +533,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           />
         </div>
 
-        {/* Most Sold Products (Top 3 All-Time) */}
-        <div
-          id="most-sold-products-card"
-          className="w-full bg-white border border-[#E1E6E2] rounded-2xl p-4 shadow-[0_2px_8px_rgba(32,37,34,0.02)] mb-5"
-        >
-          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-[#F0F3F1]">
-            <h3 className="text-[14px] sm:text-[15px] font-semibold text-[#202522] tracking-[-0.015em]">
-              Most sold products
-            </h3>
-            <span className="text-[12px] font-medium text-[#68716C]">
-              All time
-            </span>
-          </div>
-
-          {topSoldProducts.length === 0 ? (
-            <div className="py-2.5 text-center text-[12.5px] text-[#68716C]">
-              No products sold yet
-            </div>
-          ) : (
-            <div className="divide-y divide-[#F0F3F1]">
-              {topSoldProducts.map((item, index) => (
-                <div
-                  key={item.productId || item.name}
-                  className="flex items-center justify-between py-2 first:pt-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 pr-3">
-                    <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10.5px] font-bold shrink-0 ${
-                        index === 0
-                          ? 'bg-[#FBF3DD] text-[#946A1B]'
-                          : index === 1
-                          ? 'bg-[#EFF2F6] text-[#5B6877]'
-                          : 'bg-[#FAEEE6] text-[#8F4E2B]'
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                    <span className="text-[13px] font-semibold text-[#202522] truncate">
-                      {item.name}
-                    </span>
-                  </div>
-
-                  <div className="shrink-0 text-right whitespace-nowrap">
-                    <span className="text-[13px] font-semibold text-[#555E58] tabular-nums">
-                      {item.totalSold}
-                    </span>
-                    <span className="text-[12px] font-normal text-[#68716C] ml-1">
-                      sold
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Most Sold Products (Carousel) */}
+        <MostSoldProductsCarousel
+          items={topSoldProducts}
+          onItemClick={() => onNavigate && onNavigate('store')}
+        />
 
         {/* In-app PWA install prompt banner */}
         <div className="-mx-1 mb-5">

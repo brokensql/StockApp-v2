@@ -384,7 +384,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                 key={sale.id}
                 id={`sale-row-${sale.id}`}
                 onClick={() => setSelectedTransaction(sale)}
-                className="w-full h-13 sm:h-13.5 min-h-[52px] bg-white rounded-full border border-[#E1E6E2] px-5 sm:px-6 shadow-[0_4px_14px_rgba(32,37,34,0.06)] hover:shadow-[0_4px_18px_rgba(47,125,50,0.08)] flex items-center justify-between cursor-pointer hover:border-[#2F7D32]/60 active:scale-[0.98] transition-all group select-none"
+                className="w-full bg-white rounded-2xl border border-[#E1E6E2] p-4 sm:p-4.5 shadow-[0_2px_8px_rgba(32,37,34,0.04)] hover:shadow-[0_4px_14px_rgba(47,125,50,0.08)] flex items-center justify-between cursor-pointer hover:border-[#2F7D32]/60 active:scale-[0.99] transition-all group select-none"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {

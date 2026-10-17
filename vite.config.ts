@@ -78,6 +78,10 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'lucide-react', 'lottie-web'],
     },
     build: {
       chunkSizeWarningLimit: 1000,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import lottie from 'lottie-web/build/player/lottie_light';
+import lottie from 'lottie-web';
 import type { AnimationItem } from 'lottie-web';
 
 export interface LottieAnimationProps {
@@ -46,7 +46,7 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
         renderer: 'svg',
         loop,
         autoplay: shouldPlaySegments ? false : autoplay,
-        animationData,
+        animationData: animationData ? JSON.parse(JSON.stringify(animationData)) : undefined,
         path,
         rendererSettings: {
           preserveAspectRatio: 'xMidYMid meet',

@@ -409,3 +409,12 @@ body.capacitor-native,
   animation: particle-flicker 1.8s ease-in-out infinite;
   will-change: opacity, transform;
 }
+
+/* Hide scrollbar for smooth horizontal carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

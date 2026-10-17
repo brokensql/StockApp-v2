@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Download, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Download, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { SaleTransaction } from '../types';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
@@ -120,8 +120,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               />
             </div>
 
-            {/* Bottom Actions: Download Receipt & Delete Transaction */}
-            <div className="w-full mt-3.5 flex flex-col gap-2.5">
+            {/* Bottom Actions: Download Receipt & Delete Transaction Text */}
+            <div className="w-full mt-3.5 flex flex-col gap-2">
               <button
                 id="btn-download-transaction-receipt"
                 type="button"
@@ -142,59 +142,79 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 )}
               </button>
 
-              {onDeleteSale && !showDeleteConfirm && (
+              {onDeleteSale && (
                 <button
                   id="btn-delete-sale-record"
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full h-11 bg-white/95 hover:bg-[#FDF0EE] active:bg-[#FBE8E6] text-[#D94841] border border-white/30 hover:border-[#FADCDA] text-[13.5px] font-medium rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.99] select-none"
+                  className="w-auto mx-auto py-2 px-3 text-[#D94841] hover:text-[#B83832] active:text-[#9B2F2A] text-[13px] font-medium transition-colors cursor-pointer select-none text-center"
                 >
-                  <Trash2 size={16} strokeWidth={2} />
-                  <span>Delete sale record</span>
+                  Delete sale record
                 </button>
-              )}
-
-              {showDeleteConfirm && (
-                <div className="w-full p-4 bg-white rounded-xl shadow-lg border border-[#E1E6E2] text-[#202522]">
-                  <div className="flex items-center gap-2 text-[#D94841] mb-1.5 font-semibold text-[14px]">
-                    <AlertTriangle size={17} />
-                    <span>Delete this sale record?</span>
-                  </div>
-                  <p className="text-[12.5px] text-[#68716C] mb-3 leading-relaxed">
-                    This permanently deletes transaction <span className="font-semibold text-[#202522]">{transaction.transactionNumber}</span> from your history.
-                  </p>
-
-                  <label className="flex items-center gap-2.5 mb-3.5 text-[12.5px] text-[#202522] cursor-pointer select-none bg-[#FAFBFB] p-2.5 rounded-lg border border-[#E1E6E2]">
-                    <input
-                      type="checkbox"
-                      checked={restoreStock}
-                      onChange={(e) => setRestoreStock(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#2F7D32] accent-[#2F7D32] focus:ring-[#2F7D32] cursor-pointer"
-                    />
-                    <span>Restore sold items back to stock</span>
-                  </label>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 h-10 bg-[#F1F3F0] hover:bg-[#E5E8E4] active:bg-[#DDE1DD] text-[#202522] text-[13px] font-medium rounded-lg transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      id="btn-confirm-delete-sale"
-                      type="button"
-                      onClick={handleConfirmDelete}
-                      className="flex-1 h-10 bg-[#D94841] hover:bg-[#B83832] active:bg-[#9B2F2A] text-white text-[13px] font-medium rounded-lg transition-colors cursor-pointer shadow-sm"
-                    >
-                      Yes, Delete
-                    </button>
-                  </div>
-                </div>
               )}
             </div>
           </motion.div>
+
+          {/* Delete Sale Record Confirmation Pop-up: Centered on screen */}
+          {showDeleteConfirm && (
+            <div
+              id="delete-sale-confirm-backdrop"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowDeleteConfirm(false);
+                }
+              }}
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
+                transition={{ duration: 0.16 }}
+                id="delete-sale-confirm-modal"
+                className="w-full max-w-[340px] bg-white rounded-2xl p-5 shadow-2xl border border-[#E1E6E2] text-[#202522] flex flex-col"
+              >
+                <div className="flex items-center gap-2.5 text-[#D94841] mb-2 font-semibold text-[15px]">
+                  <div className="w-8 h-8 rounded-full bg-[#FDF0EF] flex items-center justify-center shrink-0">
+                    <AlertTriangle size={17} className="text-[#D94841]" />
+                  </div>
+                  <span>Delete sale record?</span>
+                </div>
+
+                <p className="text-[13px] text-[#68716C] mb-3.5 leading-relaxed">
+                  This permanently deletes transaction <span className="font-semibold text-[#202522]">{transaction.transactionNumber}</span> from your history.
+                </p>
+
+                <label className="flex items-center gap-2.5 mb-4 text-[13px] text-[#202522] cursor-pointer select-none bg-[#FAFBFB] p-2.5 rounded-xl border border-[#E1E6E2]">
+                  <input
+                    type="checkbox"
+                    checked={restoreStock}
+                    onChange={(e) => setRestoreStock(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#2F7D32] accent-[#2F7D32] focus:ring-[#2F7D32] cursor-pointer"
+                  />
+                  <span>Restore sold items back to stock</span>
+                </label>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 h-10.5 bg-[#F1F3F0] hover:bg-[#E5E8E4] active:bg-[#DDE1DD] text-[#202522] text-[13.5px] font-medium rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    id="btn-confirm-delete-sale"
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    className="flex-1 h-10.5 bg-[#D94841] hover:bg-[#B83832] active:bg-[#9B2F2A] text-white text-[13.5px] font-medium rounded-xl transition-colors cursor-pointer shadow-sm"
+                  >
+                    Yes, Delete
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       )}
     </AnimatePresence>
