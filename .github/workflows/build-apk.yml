@@ -168,9 +168,12 @@ jobs:
               </style>
           </resources>
           XML
-          rm -f android/app/src/main/res/drawable/splash.png
-          rm -f android/app/src/main/res/drawable-port-*/splash.png 2>/dev/null || true
-          rm -f android/app/src/main/res/drawable/splash.xml 2>/dev/null || true
+          # Remove ALL splash drawable variants (base, portrait, landscape, density buckets).
+          # Leaving only qualifier-variant drawables (e.g. drawable-land-*/splash.png) makes
+          # lintVitalRelease fail with MissingDefaultResource and breaks release builds.
+          find android/app/src/main/res -name 'splash.png' -delete
+          find android/app/src/main/res -name 'splash.xml' -delete
+          find android/app/src/main/res -name 'splash.jpg' -delete
 
       - name: Declare camera permission for barcode scanner
         run: |
@@ -403,9 +406,12 @@ jobs:
               </style>
           </resources>
           XML
-          rm -f android/app/src/main/res/drawable/splash.png
-          rm -f android/app/src/main/res/drawable-port-*/splash.png 2>/dev/null || true
-          rm -f android/app/src/main/res/drawable/splash.xml 2>/dev/null || true
+          # Remove ALL splash drawable variants (base, portrait, landscape, density buckets).
+          # Leaving only qualifier-variant drawables (e.g. drawable-land-*/splash.png) makes
+          # lintVitalRelease fail with MissingDefaultResource and breaks release builds.
+          find android/app/src/main/res -name 'splash.png' -delete
+          find android/app/src/main/res -name 'splash.xml' -delete
+          find android/app/src/main/res -name 'splash.jpg' -delete
 
       - name: Declare camera permission for barcode scanner
         run: |
