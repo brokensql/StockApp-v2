@@ -1,7 +1,6 @@
 import buyOnlineData from './buy-online.json';
 import setUpLayoutData from './set-up-layout.json';
 import jobSuccessData from './job-success.json';
-import shoppingCartData from './shopping-cart.json';
 import boxAssembleData from './box-assemble.json';
 import goldMedalData from './gold-medal.json';
 import silverMedalData from './silver-medal.json';
@@ -16,7 +15,6 @@ export const LOTTIE_ANIMATIONS = {
   buyOnline: buyOnlineData,
   setUpLayout: setUpLayoutData,
   jobSuccess: jobSuccessData,
-  shoppingCart: shoppingCartData,
   boxAssemble: boxAssembleData,
   goldMedal: goldMedalData,
   silverMedal: silverMedalData,
@@ -29,7 +27,6 @@ export {
   buyOnlineData,
   setUpLayoutData,
   jobSuccessData,
-  shoppingCartData,
   boxAssembleData,
   goldMedalData,
   silverMedalData,

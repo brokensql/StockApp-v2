@@ -39,13 +39,13 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
     }
 
     try {
-      const shouldPlaySegments = segments || (animationData && animationData.op > 46 && animationData.nm === 'Comp 5 Comp 1');
+      const hasSegments = Boolean(segments && segments.length === 2);
       
       animRef.current = lottie.loadAnimation({
         container: containerRef.current,
         renderer: 'svg',
         loop,
-        autoplay: shouldPlaySegments ? false : autoplay,
+        autoplay: hasSegments ? false : autoplay,
         animationData: animationData ? JSON.parse(JSON.stringify(animationData)) : undefined,
         path,
         rendererSettings: {
@@ -59,9 +59,13 @@ export const LottieAnimation: React.FC<LottieAnimationProps> = ({
           animRef.current.setSpeed(speed);
         }
         
-        if (shouldPlaySegments) {
-          const targetSegments: [number, number] = segments || [0, 46];
-          animRef.current.playSegments(targetSegments, true);
+        if (hasSegments && segments) {
+          animRef.current.playSegments(segments, true);
+          if (loop) {
+            animRef.current.addEventListener('complete', () => {
+              animRef.current?.playSegments(segments, true);
+            });
+          }
         }
 
         animRef.current.addEventListener('complete', () => {

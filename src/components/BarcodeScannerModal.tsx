@@ -30,8 +30,7 @@ import { Product, SaleItem, SaleTransaction } from '../types';
 import { ProductThumbnail } from './ProductThumbnail';
 import { useProductImages } from '../hooks/useProductImages';
 import { STANDARD_CATEGORIES } from '../data/categories';
-import { shoppingCartData } from '../assets/lottie';
-import { LottieAnimation } from './LottieAnimation';
+
 
 // Web standard Native BarcodeDetector interface
 interface DetectedBarcode {
@@ -1508,16 +1507,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         type="button"
                         onClick={handleCheckout}
                         aria-label="Proceed to checkout"
-                        className="-mr-2.5 sm:-mr-3 w-[82px] sm:w-[90px] h-[58px] sm:h-[62px] rounded-full bg-white hover:bg-[#F2F4F2] active:bg-[#E5EAE6] text-[#202522] flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.16)] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none overflow-hidden relative"
+                        className="-mr-2.5 sm:-mr-3 w-[84px] sm:w-[92px] h-[54px] sm:h-[58px] rounded-full bg-white hover:bg-[#F7FAF7] active:bg-[#EDF2ED] text-[#2F7D32] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#D5DCD6] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none"
                       >
-                        <div className="absolute inset-0 m-auto w-[88px] h-[88px] sm:w-[98px] sm:h-[98px] flex items-center justify-center pointer-events-none shrink-0 origin-center scale-[1.65] -translate-y-2.5">
-                          <LottieAnimation
-                            animationData={shoppingCartData}
-                            loop={true}
-                            autoplay={true}
-                            className="w-full h-full flex items-center justify-center"
-                          />
-                        </div>
+                        <ShoppingCart size={26} strokeWidth={2.2} />
                       </button>
                     </div>
                   )}
@@ -1942,16 +1934,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         type="button"
                         onClick={handleCheckout}
                         aria-label="Proceed to checkout"
-                        className="-mr-2.5 sm:-mr-3 w-[82px] sm:w-[90px] h-[58px] sm:h-[62px] rounded-full bg-white hover:bg-[#F2F4F2] active:bg-[#E5EAE6] text-[#202522] flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.16)] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none overflow-hidden relative"
+                        className="-mr-2.5 sm:-mr-3 w-[84px] sm:w-[92px] h-[54px] sm:h-[58px] rounded-full bg-white hover:bg-[#F7FAF7] active:bg-[#EDF2ED] text-[#2F7D32] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-[#D5DCD6] active:scale-95 transition-all cursor-pointer z-10 shrink-0 select-none"
                       >
-                        <div className="absolute inset-0 m-auto w-[88px] h-[88px] sm:w-[98px] sm:h-[98px] flex items-center justify-center pointer-events-none shrink-0 origin-center scale-[1.65] -translate-y-2.5">
-                          <LottieAnimation
-                            animationData={shoppingCartData}
-                            loop={true}
-                            autoplay={true}
-                            className="w-full h-full flex items-center justify-center"
-                          />
-                        </div>
+                        <ShoppingCart size={26} strokeWidth={2.2} />
                       </button>
                     </div>
                   )}

@@ -15,6 +15,7 @@ import {
   Smartphone,
   CreditCard,
   Wallet,
+  ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Product, SaleItem, SaleTransaction, PaymentMethod } from '../types';
@@ -31,6 +32,7 @@ import { generateEntityId } from '../utils/idGenerator';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { useProductImages } from '../hooks/useProductImages';
+
 
 const CheckoutCardImage: React.FC<{ src?: string | null; alt: string }> = ({ src, alt }) => {
   const [error, setError] = useState(false);
@@ -505,11 +507,13 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               id="empty-cart-state"
               className="py-10 text-center flex flex-col items-center"
             >
-              <ShoppingBag size={36} strokeWidth={1.5} className="text-[#68716C]/60 mb-2.5" />
-              <p className="text-[14px] font-semibold text-[#202522]">
+              <div className="w-36 h-24 sm:w-44 sm:h-28 rounded-full bg-white border border-[#E1E6E2] shadow-[0_6px_24px_rgba(32,37,34,0.06)] flex items-center justify-center mb-3.5 select-none pointer-events-none p-2">
+                <ShoppingCart size={36} className="text-[#2F7D32]" strokeWidth={2} />
+              </div>
+              <p className="text-[15px] font-semibold text-[#202522]">
                 No products in sale yet
               </p>
-              <p className="text-[14px] text-[#68716C] mt-1 max-w-[240px] mx-auto">
+              <p className="text-[13.5px] text-[#68716C] mt-1 max-w-[240px] mx-auto">
                 Scan customer items using the camera scanner.
               </p>
             </div>
