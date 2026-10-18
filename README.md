@@ -84,7 +84,7 @@ Every push to `main` runs two GitHub Actions workflows:
 1. **Deploy to GitHub Pages** (`.github/workflows/deploy-pages.yml`)
    Builds the web app and publishes it to **[brokensql.github.io/StockApp-v2](https://brokensql.github.io/StockApp-v2/)**. Pages is served from GitHub Actions (`enablement: true`), and the Vite build uses relative asset paths so it works correctly under the repo sub-path.
 2. **Build Android APK** (`.github/workflows/build-apk.yml`)
-   Builds the web app, syncs it into a generated Capacitor Android project, and compiles a **debug APK**. The APK is attached to the rolling prerelease **[`apk-latest`](https://github.com/brokensql/StockApp-v2/releases/tag/apk-latest)** — always the APK from the most recent successful build. Tagged releases (`v*`) produce a release build.
+   Builds the web app, syncs it into a generated Capacitor Android project, and compiles a **debug APK**. The APK is attached to the rolling prerelease **[`apk-latest`](https://github.com/brokensql/StockApp-v2/releases/tag/apk-latest)** — always the APK from the most recent successful build. Pushing a version tag (`git tag v0.1.0 && git push origin v0.1.0`) additionally creates a **GitHub Release** for that tag with a directly installable APK attached. Until release signing is configured, that APK is the debug-signed build; add the `RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and `RELEASE_KEY_PASSWORD` repository secrets to switch it to a signed release build.
 
 ## 🤖 Building the Android app locally
 

@@ -250,6 +250,10 @@ jobs:
   build-release-apk:
     name: Build Release APK
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    env:
+      HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -529,9 +533,44 @@ jobs:
           echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
           echo "Release APK path: $APK"
 
+      - name: Build fallback debug APK (release signing not configured)
+        if: env.HAS_KEYSTORE != 'true'
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Locate fallback debug APK
+        if: env.HAS_KEYSTORE != 'true'
+        id: locate_debug
+        run: |
+          APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -n1)
+          echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
+          echo "Fallback debug APK path: $APK"
+
       - name: Upload Release APK (retain 30 days)
         uses: actions/upload-artifact@v4
         with:
           name: sage-inventory-release-apk
           path: ${{ steps.locate.outputs.apk_path }}
           retention-days: 30
+
+      - name: Publish GitHub Release for tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            APK="${{ steps.locate.outputs.apk_path }}"
+            ASSET="stockapp-${TAG}.apk"
+            SIGNING_NOTE="Signed release build."
+          else
+            APK="${{ steps.locate_debug.outputs.apk_path }}"
+            ASSET="stockapp-${TAG}-debug.apk"
+            SIGNING_NOTE="Release signing is not configured yet, so this is a debug-signed APK (directly installable on any Android device)."
+          fi
+          cp "$APK" "$ASSET"
+          gh release create "$TAG" \
+            --title "StockApp $TAG" \
+            --notes "Automated release build from tag $TAG. $SIGNING_NOTE" \
+            || true
+          gh release upload "$TAG" "$ASSET" --clobber
+          echo "### Release $TAG published with asset $ASSET" >> $GITHUB_STEP_SUMMARY
