@@ -102,7 +102,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
     switch (report.status) {
       case 'healthy':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[12px] font-semibold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-800 border border-zinc-200 text-[12px] font-semibold">
             <ShieldCheck size={14} />
             <span>Optimal Health (ACID Protected)</span>
           </span>
@@ -155,7 +155,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
           {/* Header */}
           <div className="px-5 py-4 border-b border-[#EAEFEA] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#E8F3E8] border border-[#81B783] flex items-center justify-center text-[#2F7D32]">
+              <div className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-800">
                 <HardDrive size={18} />
               </div>
               <div>
@@ -176,7 +176,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
           <div className="p-5 overflow-y-auto space-y-4">
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center text-[#68716C] gap-3">
-                <Loader2 size={28} className="animate-spin text-[#2F7D32]" />
+                <Loader2 size={28} className="animate-spin text-zinc-800" />
                 <p className="text-[13px] font-medium">Scanning IndexedDB stores and quota...</p>
               </div>
             ) : report ? (
@@ -213,7 +213,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
                           ? 'bg-[#D94841]'
                           : report.quota.percentUsed > 75
                           ? 'bg-[#E65100]'
-                          : 'bg-[#2F7D32]'
+                          : 'bg-zinc-800'
                       }`}
                       style={{ width: `${Math.max(4, Math.min(100, report.quota.percentUsed))}%` }}
                     />
@@ -228,7 +228,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   <div className="p-3 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
                     <div className="flex items-center gap-1.5 text-[#68716C] text-[11px] mb-1">
-                      <Layers size={13} className="text-[#2F7D32]" />
+                      <Layers size={13} className="text-zinc-600" />
                       <span>Products</span>
                     </div>
                     <p className="text-[18px] font-bold text-[#202522]">
@@ -238,7 +238,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
 
                   <div className="p-3 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
                     <div className="flex items-center gap-1.5 text-[#68716C] text-[11px] mb-1">
-                      <FileText size={13} className="text-[#2F7D32]" />
+                      <FileText size={13} className="text-zinc-600" />
                       <span>Sales Ledger</span>
                     </div>
                     <p className="text-[18px] font-bold text-[#202522]">
@@ -248,7 +248,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
 
                   <div className="p-3 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
                     <div className="flex items-center gap-1.5 text-[#68716C] text-[11px] mb-1">
-                      <ImageIcon size={13} className="text-[#2F7D32]" />
+                      <ImageIcon size={13} className="text-zinc-600" />
                       <span>Image Assets</span>
                     </div>
                     <p className="text-[18px] font-bold text-[#202522]">
@@ -258,7 +258,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
 
                   <div className="p-3 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl">
                     <div className="flex items-center gap-1.5 text-[#68716C] text-[11px] mb-1">
-                      <UserCheck size={13} className="text-[#2F7D32]" />
+                      <UserCheck size={13} className="text-zinc-600" />
                       <span>Profile</span>
                     </div>
                     <p className="text-[13px] font-semibold text-[#202522]">
@@ -268,7 +268,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
 
                   <div className="p-3 bg-[#FAFBFB] border border-[#E1E6E2] rounded-xl col-span-2 sm:col-span-2">
                     <div className="flex items-center gap-1.5 text-[#68716C] text-[11px] mb-1">
-                      <Database size={13} className="text-[#2F7D32]" />
+                      <Database size={13} className="text-zinc-600" />
                       <span>Receipt Sequence Counter</span>
                     </div>
                     <p className="text-[14px] font-semibold text-[#202522]">
@@ -291,15 +291,15 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
                     </ul>
                   </div>
                 ) : (
-                  <div className="p-3 bg-[#F4F9F4] border border-[#C8E6C9] rounded-xl flex items-center gap-2.5 text-[#2E7D32] text-[12px]">
-                    <CheckCircle2 size={16} className="flex-shrink-0" />
+                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl flex items-center gap-2.5 text-zinc-800 text-[12px]">
+                    <CheckCircle2 size={16} className="flex-shrink-0 text-zinc-700" />
                     <span>0 corruption issues detected. All ACID invariants verified.</span>
                   </div>
                 )}
 
                 {/* Repair Result Banner */}
                 {repairResult && (
-                  <div className="p-3.5 bg-[#E8F5E9] border border-[#A5D6A7] rounded-xl text-[12px] text-[#1B5E20] space-y-1">
+                  <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-[12px] text-zinc-800 space-y-1">
                     <p className="font-semibold flex items-center gap-1.5">
                       <CheckCircle2 size={14} />
                       <span>Database Repair Complete</span>
@@ -330,7 +330,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
                 type="button"
                 onClick={handleExportBackup}
                 disabled={isExporting || loading}
-                className="py-2 px-3 bg-white hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[12px] font-medium text-[#2F7D32] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+                className="py-2 px-3 bg-white hover:bg-[#F2F4F2] border border-[#E1E6E2] rounded-xl text-[12px] font-medium text-zinc-800 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
               >
                 {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                 <span>Export Backup</span>
@@ -340,7 +340,7 @@ export const StorageHealthModal: React.FC<StorageHealthModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="py-2 px-4 bg-[#2F7D32] text-white rounded-xl text-[12px] font-semibold hover:bg-[#256B29] transition-colors cursor-pointer"
+              className="py-2 px-4 bg-zinc-900 text-white rounded-xl text-[12px] font-semibold hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               Done
             </button>

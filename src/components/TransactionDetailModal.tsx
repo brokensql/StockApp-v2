@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 import { SaleTransaction } from '../types';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { downloadReceiptTicket } from '../utils/downloadReceipt';
+import { getStoredTIN } from '../utils/storeProfile';
 
 interface TransactionDetailModalProps {
   isOpen: boolean;
   transaction: SaleTransaction | null;
   storeName?: string;
+  tinNumber?: string;
   onClose: () => void;
   onDeleteSale?: (saleId: string, restoreStock: boolean) => void;
 }
@@ -18,6 +20,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   isOpen,
   transaction,
   storeName,
+  tinNumber,
   onClose,
   onDeleteSale,
 }) => {
@@ -29,6 +32,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
   if (!transaction) return null;
 
   const effectiveStoreName = storeName || transaction.storeName;
+  const effectiveTIN = tinNumber || transaction.tinNumber || getStoredTIN();
 
   const handleClose = () => {
     setShowDeleteConfirm(false);
@@ -48,7 +52,8 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         transaction,
         transaction.cashTendered,
         transaction.changeAmount,
-        effectiveStoreName
+        effectiveStoreName,
+        effectiveTIN
       );
       if (result.success) {
         toast.success(result.message || 'Receipt saved to StockApp album in gallery!');
@@ -115,6 +120,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               <ReceiptTicketCard
                 transaction={transaction}
                 storeName={effectiveStoreName}
+                tinNumber={effectiveTIN}
                 enableConfetti={false}
                 showAllProducts={true}
               />

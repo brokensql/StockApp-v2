@@ -46,6 +46,7 @@ import {
 const DEFAULT_PROFILE: UserProfile = {
   ownerName: 'Store Owner',
   storeName: 'My Store',
+  tinNumber: '',
   email: '',
   phone: '',
   address: '',

@@ -4,7 +4,7 @@ import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from './philippineDate';
-import { getStoredStoreName } from './storeProfile';
+import { getStoredStoreName, getStoredTIN } from './storeProfile';
 
 // Format currency for canvas fallback
 function formatPHP(amount?: number | null): string {
@@ -39,7 +39,8 @@ function generateCanvasReceipt(
   transaction: SaleTransaction,
   cashTendered?: number | string,
   changeAmount?: number,
-  storeName?: string
+  storeName?: string,
+  tinNumber?: string
 ): string {
   const width = 420;
   const itemsCount = transaction.items?.length || 0;
@@ -64,6 +65,11 @@ function generateCanvasReceipt(
     storeName?.trim() ||
     transaction.storeName?.trim() ||
     getStoredStoreName();
+
+  const resolvedTIN =
+    tinNumber?.trim() ||
+    transaction.tinNumber?.trim() ||
+    getStoredTIN();
 
   // Background canvas tint
   ctx.fillStyle = '#F7F9FB';
@@ -112,9 +118,15 @@ function generateCanvasReceipt(
   ctx.textAlign = 'center';
   ctx.fillText(resolvedStoreName, circleX, storeNameY);
 
+  if (resolvedTIN) {
+    ctx.fillStyle = '#68716C';
+    ctx.font = 'bold 12px monospace, sans-serif';
+    ctx.fillText(`TIN: ${resolvedTIN}`, circleX, storeNameY + 16);
+  }
+
   ctx.fillStyle = '#68716C';
   ctx.font = '13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Your payment has been processed successfully.', circleX, storeNameY + 20);
+  ctx.fillText('Your payment has been processed successfully.', circleX, storeNameY + (resolvedTIN ? 33 : 20));
 
   // 3. Perforated Divider
   const notchY = 194;
@@ -185,6 +197,14 @@ function generateCanvasReceipt(
   ctx.textAlign = 'right';
   ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
   ctx.fillText(formatPHP(transaction.total), rightX, currentY);
+
+  if (resolvedTIN) {
+    currentY += 15;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#68716C';
+    ctx.font = '11px monospace, sans-serif';
+    ctx.fillText(`TIN: ${resolvedTIN}`, leftX, currentY);
+  }
 
   // Bought Products Header
   currentY += 26;
@@ -346,7 +366,8 @@ export async function downloadReceiptTicket(
   transaction: SaleTransaction,
   cashTendered?: number | string,
   changeAmount?: number,
-  storeName?: string
+  storeName?: string,
+  tinNumber?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     let dataUrl = '';
@@ -378,7 +399,7 @@ export async function downloadReceiptTicket(
 
     // Attempt 2: Fallback to canvas renderer if DOM capture failed or returned empty
     if (!dataUrl || dataUrl.length < 100) {
-      dataUrl = generateCanvasReceipt(transaction, cashTendered, changeAmount, storeName);
+      dataUrl = generateCanvasReceipt(transaction, cashTendered, changeAmount, storeName, tinNumber);
     }
 
     const txNum = transaction.transactionNumber || 'sale';

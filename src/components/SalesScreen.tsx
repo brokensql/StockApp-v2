@@ -12,6 +12,7 @@ import {
 } from '../utils/philippineDate';
 import { SALES_PAGE_CLEARED_IDS_KEY } from '../utils/storageKeys';
 import { BackupReminderModal } from './BackupReminderModal';
+import { getStoredTIN } from '../utils/storeProfile';
 
 interface SalesScreenProps {
   products: Product[];
@@ -23,6 +24,7 @@ interface SalesScreenProps {
   onStartNewSale?: () => void;
   isStartingSaleImmediately?: boolean;
   storeName?: string;
+  tinNumber?: string;
 }
 
 export const SalesScreen: React.FC<SalesScreenProps> = ({
@@ -35,6 +37,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
   onStartNewSale,
   isStartingSaleImmediately = false,
   storeName,
+  tinNumber,
 }) => {
   const [isActiveSaleOpen, setIsActiveSaleOpen] = useState(isStartingSaleImmediately);
   const [selectedTransaction, setSelectedTransaction] = useState<SaleTransaction | null>(null);
@@ -162,6 +165,8 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
     }
   };
 
+  const effectiveTIN = (tinNumber?.trim() || getStoredTIN())?.trim();
+
   // Filtered sales
   const filteredSales = useMemo(() => {
     return visibleSales.filter((sale) => {
@@ -176,14 +181,15 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
         const matchesTx = sale.transactionNumber.toLowerCase().includes(q);
         const matchesPrimary = sale.primaryItemName.toLowerCase().includes(q);
         const matchesItems = sale.items.some((it) => it.name.toLowerCase().includes(q));
-        if (!matchesTx && !matchesPrimary && !matchesItems) {
+        const matchesTin = (sale.tinNumber || effectiveTIN || '').toLowerCase().includes(q);
+        if (!matchesTx && !matchesPrimary && !matchesItems && !matchesTin) {
           return false;
         }
       }
 
       return true;
     });
-  }, [visibleSales, searchQuery, filterMethod]);
+  }, [visibleSales, searchQuery, filterMethod, effectiveTIN]);
 
   if (isActiveSaleOpen) {
     return (
@@ -191,6 +197,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
         products={products}
         existingSales={visibleSales}
         storeName={storeName}
+        tinNumber={effectiveTIN}
         onCompleteSale={handleSaleCompleted}
         onCancelSale={() => setIsActiveSaleOpen(false)}
       />
@@ -413,7 +420,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                   </p>
                 </div>
 
-                {/* Right: Amount & Receipt ID */}
+                {/* Right: Amount & Receipt ID & TIN */}
                 <div className="text-right flex-shrink-0">
                   <p className="text-[14.5px] sm:text-[15px] font-bold text-[#202522] tabular-nums leading-snug">
                     {formatCurrency(sale.total)}
@@ -421,6 +428,11 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
                   <p className="text-[11px] text-[#929A95] font-mono mt-0.5 leading-tight">
                     {sale.transactionNumber}
                   </p>
+                  {(sale.tinNumber || effectiveTIN) && (
+                    <p className="text-[10px] text-[#68716C] font-mono mt-0.5 leading-tight">
+                      TIN: {sale.tinNumber || effectiveTIN}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -433,6 +445,7 @@ export const SalesScreen: React.FC<SalesScreenProps> = ({
         isOpen={Boolean(selectedTransaction)}
         transaction={selectedTransaction}
         storeName={storeName || selectedTransaction?.storeName}
+        tinNumber={selectedTransaction?.tinNumber || effectiveTIN}
         onClose={() => setSelectedTransaction(null)}
         onDeleteSale={onDeleteSale}
       />

@@ -3,6 +3,7 @@ export type NavTab = 'home' | 'store' | 'statistics' | 'profile' | 'inventory' |
 export interface UserProfile {
   ownerName: string;
   storeName: string;
+  tinNumber?: string;
   email: string;
   phone: string;
   address: string;
@@ -55,6 +56,7 @@ export interface SaleTransaction {
   itemCount: number;
   primaryItemName: string;
   storeName?: string;
+  tinNumber?: string;
   cashTendered?: number;
   changeAmount?: number;
 }

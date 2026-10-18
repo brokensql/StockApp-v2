@@ -29,6 +29,7 @@ import {
 } from '../utils/stockValidation';
 import { downloadReceiptTicket } from '../utils/downloadReceipt';
 import { generateEntityId } from '../utils/idGenerator';
+import { getStoredTIN } from '../utils/storeProfile';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { useProductImages } from '../hooks/useProductImages';
@@ -64,6 +65,7 @@ interface ActiveSaleScreenProps {
   initialItems?: SaleItem[];
   existingSales?: SaleTransaction[];
   storeName?: string;
+  tinNumber?: string;
 }
 
 export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
@@ -73,6 +75,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
   initialItems = [],
   existingSales = [],
   storeName,
+  tinNumber,
 }) => {
   const [cart, setCart] = useState<SaleItem[]>(() =>
     sanitizeCartStock(initialItems || [], products)
@@ -94,12 +97,14 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       const cardEl =
         (receiptContainerRef.current?.querySelector('#receipt-ticket-card') as HTMLElement) ||
         receiptContainerRef.current;
+      const effectiveTin = (tinNumber?.trim() || completedTx.tinNumber?.trim() || getStoredTIN())?.trim();
       const result = await downloadReceiptTicket(
         cardEl,
         completedTx,
         cashTendered,
         changeAmount,
-        storeName || completedTx.storeName
+        storeName || completedTx.storeName,
+        effectiveTin
       );
       if (result.success) {
         toast.success(result.message || 'Receipt saved to StockApp album in gallery!');
@@ -283,6 +288,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
     const timeStr = formatPHTTimestamp(now);
 
     const txNumber = getNextReceiptId(existingSales);
+    const effectiveTin = (tinNumber?.trim() || getStoredTIN())?.trim();
 
     const newTransaction: SaleTransaction = {
       id: generateEntityId('tx'),
@@ -296,6 +302,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
       itemCount: totalItemsCount,
       primaryItemName: cart[0].name,
       storeName: storeName || 'My Store',
+      tinNumber: effectiveTin || undefined,
       cashTendered: paymentMethod === 'cash' && cashTendered !== '' ? roundMoney(parsedTendered) : undefined,
       changeAmount: paymentMethod === 'cash' && changeAmount > 0 ? roundMoney(changeAmount) : undefined,
     };
@@ -392,6 +399,7 @@ export const ActiveSaleScreen: React.FC<ActiveSaleScreenProps> = ({
               cashTendered={cashTendered}
               changeAmount={changeAmount}
               storeName={storeName || completedTx.storeName}
+              tinNumber={tinNumber || completedTx.tinNumber}
               showAllProducts={true}
             />
           </div>

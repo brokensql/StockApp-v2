@@ -89,11 +89,11 @@ export const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
               <p className="text-[12px] text-[#68716C] leading-relaxed">{description}</p>
             </div>
 
-            <div className="p-3.5 bg-[#F4F9F4] rounded-xl border border-[#D5EBD5] flex items-start gap-3">
+            <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 flex items-start gap-3">
               {hasExported ? (
-                <CheckCircle2 size={18} className="text-[#2F7D32] flex-shrink-0 mt-0.5" />
+                <CheckCircle2 size={18} className="text-zinc-800 flex-shrink-0 mt-0.5" />
               ) : (
-                <Download size={18} className="text-[#2F7D32] flex-shrink-0 mt-0.5" />
+                <Download size={18} className="text-zinc-800 flex-shrink-0 mt-0.5" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-medium text-[#202522]">
@@ -108,7 +108,7 @@ export const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
                   type="button"
                   onClick={handleDownloadBackup}
                   disabled={isExporting}
-                  className="mt-2.5 py-1.5 px-3 bg-white hover:bg-[#E8F3E8] border border-[#81B783] rounded-lg text-[#2F7D32] text-[12px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
+                  className="mt-2.5 py-1.5 px-3 bg-white hover:bg-zinc-100 border border-zinc-300 rounded-lg text-zinc-800 text-[12px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
                 >
                   {isExporting ? (
                     <>
@@ -146,7 +146,7 @@ export const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
               className={`py-2.5 px-4 rounded-xl text-[13px] font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
                 isDestructive
                   ? 'bg-[#D94841] hover:bg-[#B83832] active:bg-[#9B2A25]'
-                  : 'bg-[#2F7D32] hover:bg-[#256B29]'
+                  : 'bg-zinc-900 hover:bg-zinc-800'
               }`}
             >
               <span>{destructiveActionLabel}</span>

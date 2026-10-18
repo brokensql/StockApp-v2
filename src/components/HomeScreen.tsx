@@ -19,6 +19,7 @@ import { PWAInstallButton } from './PWAInstallButton';
 import { ReceiptTicketCard } from './ReceiptTicketCard';
 import { ScoopedMetricCard } from './ScoopedMetricCard';
 import { MostSoldProductsCarousel } from './MostSoldProductsCarousel';
+import { GoalsSection } from './GoalsSection';
 import { SwipeDeck } from '@/components/ui/swipe-deck';
 import {
   calculatePHTSalesGrowth,
@@ -539,6 +540,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onItemClick={() => onNavigate && onNavigate('store')}
         />
 
+        {/* Goals Section (Future Feature) */}
+        <GoalsSection />
+
         {/* In-app PWA install prompt banner */}
         <div className="-mx-1 mb-5">
           <PWAInstallButton variant="banner" />
@@ -599,6 +603,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <ReceiptTicketCard
                       transaction={sale}
                       storeName={userProfile?.storeName || sale.storeName}
+                      tinNumber={userProfile?.tinNumber || sale.tinNumber}
                       hideThankYou
                       hideBrokenLine={!active}
                       isPeekingShadow={!active}

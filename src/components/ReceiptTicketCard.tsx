@@ -3,7 +3,7 @@ import { Store } from 'lucide-react';
 import { SaleTransaction } from '../types';
 import { getPHTParts } from '../utils/philippineDate';
 import { ConfettiExplosion } from './ui/ticket-confirmation-card';
-import { getStoredStoreName } from '../utils/storeProfile';
+import { getStoredStoreName, getStoredTIN } from '../utils/storeProfile';
 
 interface ReceiptTicketCardProps {
   transaction: SaleTransaction;
@@ -15,6 +15,7 @@ interface ReceiptTicketCardProps {
   hideBrokenLine?: boolean;
   isPeekingShadow?: boolean;
   storeName?: string;
+  tinNumber?: string;
   showAllProducts?: boolean;
 }
 
@@ -28,6 +29,7 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
   hideBrokenLine = false,
   isPeekingShadow = false,
   storeName,
+  tinNumber,
   showAllProducts = false,
 }) => {
   const [showConfetti, setShowConfetti] = React.useState(false);
@@ -40,6 +42,12 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
     storeName?.trim() ||
     transaction.storeName?.trim() ||
     getStoredStoreName();
+
+  const displayTIN = (
+    tinNumber?.trim() ||
+    transaction.tinNumber?.trim() ||
+    getStoredTIN()
+  )?.trim();
 
   React.useEffect(() => {
     if (!hideThankYou && enableConfetti) {
@@ -165,6 +173,11 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
               <h1 className="text-[22px] sm:text-[25px] font-extrabold text-[#202522] tracking-tight leading-tight line-clamp-2 select-none -mt-1 sm:-mt-1.5">
                 {displayStoreName}
               </h1>
+              {displayTIN && (
+                <p className="text-[12px] font-semibold text-[#68716C] mt-1 select-none">
+                  TIN: <span className="font-mono text-[#202522] font-bold">{displayTIN}</span>
+                </p>
+              )}
               <p className="text-[13px] text-[#68716C] mt-1 max-w-[260px] mx-auto leading-relaxed">
                 Your payment has been processed successfully.
               </p>
@@ -245,6 +258,11 @@ export const ReceiptTicketCard: React.FC<ReceiptTicketCardProps> = ({
             <span className="text-[14px] font-bold text-[#202522] font-mono tracking-tight">
               {transaction.transactionNumber}
             </span>
+            {displayTIN && (
+              <span className="block text-[11px] font-medium text-[#68716C] mt-0.5">
+                TIN: <span className="font-mono text-[#202522] font-semibold">{displayTIN}</span>
+              </span>
+            )}
           </div>
           <div className="text-right">
             <span className="block text-[11px] font-medium text-[#68716C]">

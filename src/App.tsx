@@ -280,6 +280,7 @@ export default function App() {
     const defaultProfile: UserProfile = {
       ownerName: '',
       storeName: '',
+      tinNumber: '',
       email: '',
       phone: '',
       address: '',
@@ -556,6 +557,7 @@ export default function App() {
             products={products}
             existingSales={sales}
             storeName={userProfile.storeName}
+            tinNumber={userProfile.tinNumber}
             onCompleteSale={handleCompleteSale}
             onCancelSale={() =>
               setActiveSaleSession({
@@ -653,6 +655,7 @@ export default function App() {
                 products={products}
                 sales={sales}
                 storeName={userProfile.storeName}
+                tinNumber={userProfile.tinNumber}
                 onCompleteSale={handleCompleteSale}
                 onDeleteSale={handleDeleteSale}
                 onBack={() => setActiveTab('home')}
