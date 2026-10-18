@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
+    // Relative asset base so the same build works when hosted under a sub-path
+    // (GitHub Pages /StockApp-v2/) and inside the Capacitor Android WebView.
+    base: './',
     plugins: [
       react(),
       tailwindcss(),
@@ -20,42 +23,41 @@ export default defineConfig(() => {
           'icon_512.png',
         ],
         manifest: {
-          id: '/',
           name: 'StockApp',
           short_name: 'StockApp',
           description: 'A simple way to manage your inventory and sales.',
           theme_color: '#64A30E',
           background_color: '#ffffff',
           display: 'standalone',
-          start_url: '/',
-          scope: '/',
+          start_url: './',
+          scope: './',
           icons: [
             {
-              src: '/icon_192.png',
+              src: 'icon_192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon_152.png',
+              src: 'icon_152.png',
               sizes: '152x152',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon_512.png',
+              src: 'icon_512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon_192.png',
+              src: 'icon_192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'maskable',
             },
             {
-              src: '/icon_512.png',
+              src: 'icon_512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
